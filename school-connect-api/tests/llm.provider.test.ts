@@ -1,8 +1,13 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
 import { createLLMProvider } from "../src/services/llm.provider.factory.js";
 import { StubLLMProvider } from "../src/services/llm.stub.provider.js";
+import { OpenAIProvider } from "../src/services/openai.provider.js";
 import type { LLMChatInput } from "../src/services/llm.provider.js";
+
+afterEach(() => {
+  delete process.env.LLM_PROVIDER;
+});
 
 describe("StubLLMProvider", () => {
   it("returns a valid LLMChatResult", async () => {
@@ -53,7 +58,37 @@ describe("StubLLMProvider", () => {
 });
 
 describe("createLLMProvider", () => {
-  it("returns a functional LLM provider", async () => {
+  it("defaults to the stub provider when LLM_PROVIDER is not set", () => {
+    expect(createLLMProvider()).toBeInstanceOf(StubLLMProvider);
+  });
+
+  it("selects the stub provider explicitly", () => {
+    process.env.LLM_PROVIDER = "stub";
+
+    expect(createLLMProvider()).toBeInstanceOf(StubLLMProvider);
+  });
+
+  it("selects the OpenAI provider explicitly", () => {
+    process.env.LLM_PROVIDER = "openai";
+
+    expect(createLLMProvider()).toBeInstanceOf(OpenAIProvider);
+  });
+
+  it("normalizes the provider name", () => {
+    process.env.LLM_PROVIDER = " OpenAI ";
+
+    expect(createLLMProvider()).toBeInstanceOf(OpenAIProvider);
+  });
+
+  it("rejects an unsupported provider", () => {
+    process.env.LLM_PROVIDER = "unsupported";
+
+    expect(() => createLLMProvider()).toThrow(
+      "Unsupported LLM provider: unsupported",
+    );
+  });
+
+  it("returns a functional stub provider", async () => {
     const provider = createLLMProvider();
 
     expect(provider).toBeInstanceOf(StubLLMProvider);
