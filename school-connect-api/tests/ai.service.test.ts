@@ -1,15 +1,26 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import type { AuthorizedContext } from "../src/authorization/authorized-context.js";
 import { env } from "../src/config/env.js";
 import {
   AIServiceError,
   AIServiceImpl,
+  aiService,
 } from "../src/services/ai.service.js";
 import {
   LLMProviderError,
   type LLMProvider,
 } from "../src/services/llm.provider.js";
+
+const factoryProvider = vi.hoisted(() => ({
+  chat: vi.fn(async () => ({
+    content: "Réponse du provider sélectionné",
+  })),
+}));
+
+vi.mock("../src/services/llm.provider.factory.js", () => ({
+  createLLMProvider: vi.fn(() => factoryProvider),
+}));
 
 const context: AuthorizedContext = {
   userId: "user-test",
@@ -68,6 +79,42 @@ describe("AIServiceImpl", () => {
       message: {
         role: "assistant",
         content: "Réponse test",
+      },
+    });
+  });
+
+  it("uses the provider returned by the LLM provider factory", async () => {
+    factoryProvider.chat.mockClear();
+
+    await expect(
+      aiService.chat({
+        message: "Bonjour factory",
+        context,
+      }),
+    ).resolves.toEqual({
+      conversationId: null,
+      message: {
+        role: "assistant",
+        content: "Réponse du provider sélectionné",
+      },
+    });
+
+    expect(factoryProvider.chat).toHaveBeenCalledTimes(1);
+    expect(factoryProvider.chat).toHaveBeenCalledWith({
+      messages: [
+        {
+          role: "user",
+          content: "Bonjour factory",
+        },
+      ],
+      config: {
+        ...(env.LLM_API_KEY !== undefined
+          ? { apiKey: env.LLM_API_KEY }
+          : {}),
+        ...(env.LLM_MODEL !== undefined
+          ? { model: env.LLM_MODEL }
+          : {}),
+        timeoutMs: env.LLM_TIMEOUT_MS,
       },
     });
   });
