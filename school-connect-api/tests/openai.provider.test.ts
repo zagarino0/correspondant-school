@@ -3,33 +3,37 @@ import { describe, expect, it, vi } from "vitest";
 import { OpenAIProvider } from "../src/services/openai.provider.js";
 import { LLMProviderError } from "../src/services/llm.provider.js";
 
-const responsesCreate = vi.fn();
-
-let APIConnectionTimeoutError: new (message: string) => Error;
-let AuthenticationError: new (message: string) => Error;
-let RateLimitError: new (message: string) => Error;
-let APIConnectionError: new (message: string) => Error;
-let APIError: new (message: string) => Error;
-
-vi.mock("openai", () => {
+const {
+  responsesCreate,
+  APIConnectionTimeoutError,
+  AuthenticationError,
+  RateLimitError,
+  APIConnectionError,
+  APIError,
+} = vi.hoisted(() => {
   class MockAPIConnectionTimeoutError extends Error {}
   class MockAuthenticationError extends Error {}
   class MockRateLimitError extends Error {}
   class MockAPIConnectionError extends Error {}
   class MockAPIError extends Error {}
 
-  APIConnectionTimeoutError = MockAPIConnectionTimeoutError;
-  AuthenticationError = MockAuthenticationError;
-  RateLimitError = MockRateLimitError;
-  APIConnectionError = MockAPIConnectionError;
-  APIError = MockAPIError;
+  return {
+    responsesCreate: vi.fn(),
+    APIConnectionTimeoutError: MockAPIConnectionTimeoutError,
+    AuthenticationError: MockAuthenticationError,
+    RateLimitError: MockRateLimitError,
+    APIConnectionError: MockAPIConnectionError,
+    APIError: MockAPIError,
+  };
+});
 
+vi.mock("openai", () => {
   class OpenAI {
-    static APIConnectionTimeoutError = MockAPIConnectionTimeoutError as typeof Error;
-    static AuthenticationError = MockAuthenticationError as typeof Error;
-    static RateLimitError = MockRateLimitError as typeof Error;
-    static APIConnectionError = MockAPIConnectionError as typeof Error;
-    static APIError = MockAPIError as typeof Error;
+    static APIConnectionTimeoutError = APIConnectionTimeoutError as typeof Error;
+    static AuthenticationError = AuthenticationError as typeof Error;
+    static RateLimitError = RateLimitError as typeof Error;
+    static APIConnectionError = APIConnectionError as typeof Error;
+    static APIError = APIError as typeof Error;
 
     responses = {
       create: responsesCreate,
