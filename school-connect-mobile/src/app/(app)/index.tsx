@@ -66,21 +66,36 @@ export default function AppHomeScreen() {
           </Text>
         </Pressable>
 
-        <Pressable style={styles.navItem}>
+        <Pressable
+          style={styles.navItem}
+          onPress={() => router.push("/(app)/messages")}
+          accessibilityRole="button"
+          accessibilityLabel="Messages"
+        >
           <Text style={styles.navIcon}>✉</Text>
           <Text style={styles.navLabel}>
             Messages
           </Text>
         </Pressable>
 
-        <Pressable style={styles.navItem}>
+        <Pressable
+          style={styles.navItem}
+          onPress={() => router.push("/(app)/assistant")}
+          accessibilityRole="button"
+          accessibilityLabel="Assistant"
+        >
           <Text style={styles.navIcon}>✦</Text>
           <Text style={styles.navLabel}>
             Assistant
           </Text>
         </Pressable>
 
-        <Pressable style={styles.navItem}>
+       <Pressable
+          style={styles.navItem}
+          onPress={() => router.push("/(app)/profile")}
+          accessibilityRole="button"
+          accessibilityLabel="Profil"
+        >
           <Text style={styles.navIcon}>♙</Text>
           <Text style={styles.navLabel}>
             Profil
