@@ -3,18 +3,19 @@ export interface LLMMessage {
   content: string;
 }
 
-export interface LLMChatInput {
-  messages: LLMMessage[];
-}
-
-export interface LLMChatResult {
-  content: string;
-}
-
 export interface LLMProviderConfig {
   apiKey?: string;
   model?: string;
   timeoutMs: number;
+}
+
+export interface LLMChatInput {
+  messages: LLMMessage[];
+  config: LLMProviderConfig;
+}
+
+export interface LLMChatResult {
+  content: string;
 }
 
 export type LLMErrorCode =
