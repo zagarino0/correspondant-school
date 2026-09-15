@@ -16,6 +16,7 @@ import { attendanceRoutes } from "../routes/attendance.routes.js";
 import { gradeRoutes } from "../routes/grade.routes.js";
 import { assignmentRoutes } from "../routes/assignment.routes.js";
 import { scheduleRoutes } from "../routes/schedule.routes.js";
+import { aiRoutes } from "../routes/ai.routes.js";
 
 import jwtPlugin from "../plugins/jwt.js";
 
@@ -49,47 +50,50 @@ export async function buildApp() {
   await app.register(healthRoutes, {
     prefix: "/api/v1",
   });
-      await app.register(authRoutes, {
-  prefix: "/api/v1/auth",
-});
-     await app.register(userRoutes, {
-  prefix: "/api/v1",
-});
-    await app.register(schoolRoutes, {
-  prefix: "/api/v1",
-});
-  await app.register(studentRoutes, {
-  prefix: "/api/v1",
-});
-  await app.register(attendanceRoutes, {
-  prefix: "/api/v1",
-});
- await app.register(gradeRoutes, {
-   prefix: "/api/v1" 
-});
-  await app.register(assignmentRoutes, {
-  prefix: "/api/v1/assignments",
-});
-  await app.register(scheduleRoutes, {
-  prefix: "/api/v1/schedules",
-});
-
- app.setErrorHandler(
-  (error: FastifyError, request, reply) => {
-    request.log.error(error);
-
-    return reply.status(
-      error.statusCode ?? 500
-    ).send({
-      error: {
-        code: "INTERNAL_SERVER_ERROR",
-        message:
-          env.NODE_ENV === "production"
-            ? "Internal server error"
-            : error.message,
-      },
-    });
+  await app.register(authRoutes, {
+    prefix: "/api/v1/auth",
   });
+  await app.register(userRoutes, {
+    prefix: "/api/v1",
+  });
+  await app.register(schoolRoutes, {
+    prefix: "/api/v1",
+  });
+  await app.register(studentRoutes, {
+    prefix: "/api/v1",
+  });
+  await app.register(attendanceRoutes, {
+    prefix: "/api/v1",
+  });
+  await app.register(gradeRoutes, {
+    prefix: "/api/v1",
+  });
+  await app.register(assignmentRoutes, {
+    prefix: "/api/v1/assignments",
+  });
+  await app.register(scheduleRoutes, {
+    prefix: "/api/v1/schedules",
+  });
+  await app.register(aiRoutes, {
+    prefix: "/api/v1/ai",
+  });
+
+  app.setErrorHandler(
+    (error: FastifyError, request, reply) => {
+      request.log.error(error);
+
+      return reply.status(
+        error.statusCode ?? 500
+      ).send({
+        error: {
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            env.NODE_ENV === "production"
+              ? "Internal server error"
+              : error.message,
+        },
+      });
+    });
 
   return app;
 }
