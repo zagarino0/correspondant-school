@@ -4,6 +4,7 @@ import {
   LLMProviderError,
   type LLMProvider,
 } from "./llm.provider.js";
+import { createLLMProvider } from "./llm.provider.factory.js";
 
 export type AIServiceErrorCode = "AI_SERVICE_ERROR" | "AI_RATE_LIMITED";
 
@@ -98,12 +99,4 @@ export class AIServiceImpl implements AIService {
   }
 }
 
-const stubLLMProvider: LLMProvider = {
-  async chat() {
-    return {
-      content: "LLM provider stub.",
-    };
-  },
-};
-
-export const aiService: AIService = new AIServiceImpl(stubLLMProvider);
+export const aiService: AIService = new AIServiceImpl(createLLMProvider());
