@@ -74,6 +74,11 @@ export class AIServiceImpl implements AIService {
             content: input.message,
           },
         ],
+        config: {
+          apiKey: env.LLM_API_KEY,
+          model: env.LLM_MODEL,
+          timeoutMs: env.LLM_TIMEOUT_MS,
+        },
       });
 
       return {
@@ -96,9 +101,5 @@ const stubLLMProvider: LLMProvider = {
     };
   },
 };
-
-void env.LLM_API_KEY;
-void env.LLM_MODEL;
-void env.LLM_TIMEOUT_MS;
 
 export const aiService: AIService = new AIServiceImpl(stubLLMProvider);
