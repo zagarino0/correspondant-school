@@ -5,11 +5,11 @@ import { LLMProviderError } from "../src/services/llm.provider.js";
 
 const responsesCreate = vi.fn();
 
-let APIConnectionTimeoutError: typeof Error;
-let AuthenticationError: typeof Error;
-let RateLimitError: typeof Error;
-let APIConnectionError: typeof Error;
-let APIError: typeof Error;
+let APIConnectionTimeoutError: new (message: string) => Error;
+let AuthenticationError: new (message: string) => Error;
+let RateLimitError: new (message: string) => Error;
+let APIConnectionError: new (message: string) => Error;
+let APIError: new (message: string) => Error;
 
 vi.mock("openai", () => {
   class MockAPIConnectionTimeoutError extends Error {}
@@ -25,11 +25,11 @@ vi.mock("openai", () => {
   APIError = MockAPIError;
 
   class OpenAI {
-    static APIConnectionTimeoutError = MockAPIConnectionTimeoutError;
-    static AuthenticationError = MockAuthenticationError;
-    static RateLimitError = MockRateLimitError;
-    static APIConnectionError = MockAPIConnectionError;
-    static APIError = MockAPIError;
+    static APIConnectionTimeoutError = MockAPIConnectionTimeoutError as typeof Error;
+    static AuthenticationError = MockAuthenticationError as typeof Error;
+    static RateLimitError = MockRateLimitError as typeof Error;
+    static APIConnectionError = MockAPIConnectionError as typeof Error;
+    static APIError = MockAPIError as typeof Error;
 
     responses = {
       create: responsesCreate,
