@@ -41,6 +41,10 @@ const envSchema = z.object({
     .string()
     .default("info"),
 
+  LLM_PROVIDER: z
+    .enum(["stub", "openai"])
+    .default("stub"),
+
   LLM_API_KEY: z
     .string()
     .min(1)
