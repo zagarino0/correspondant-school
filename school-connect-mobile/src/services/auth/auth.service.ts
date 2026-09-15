@@ -24,7 +24,7 @@ export async function login(
   const payload: LoginPayload = { email, password };
 
   const response = await apiClient.post<LoginResponse>(
-    "/auth/login",
+    "/api/v1/auth/login",
     payload,
   );
 
@@ -48,7 +48,7 @@ export async function refreshAccessToken(
   const response = await apiClient.post<{
     accessToken: string;
     refreshToken: string;
-  }>("/auth/refresh", {
+  }>("/api/v1/auth/refresh", {
     refreshToken,
   });
 
@@ -62,7 +62,7 @@ export async function getCurrentUser(): Promise<
   AuthMeResponse["user"]
 > {
   const response = await apiClient.get<AuthMeResponse>(
-    "/auth/me",
+    "/api/v1/auth/me",
   );
 
   return response.data.user;
