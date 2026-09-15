@@ -1,12 +1,20 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+const envMock = vi.hoisted(() => ({
+  LLM_PROVIDER: "stub" as "stub" | "openai",
+}));
+
+vi.mock("../src/config/env.js", () => ({
+  env: envMock,
+}));
+
 import { createLLMProvider } from "../src/services/llm.provider.factory.js";
 import { StubLLMProvider } from "../src/services/llm.stub.provider.js";
 import { OpenAIProvider } from "../src/services/openai.provider.js";
 import type { LLMChatInput } from "../src/services/llm.provider.js";
 
 afterEach(() => {
-  vi.unstubAllEnvs();
+  envMock.LLM_PROVIDER = "stub";
 });
 
 describe("StubLLMProvider", () => {
@@ -59,32 +67,34 @@ describe("StubLLMProvider", () => {
 
 describe("createLLMProvider", () => {
   it("defaults to the stub provider when LLM_PROVIDER is not set", () => {
+    envMock.LLM_PROVIDER = "stub";
+
     expect(createLLMProvider()).toBeInstanceOf(StubLLMProvider);
   });
 
-  it("selects the stub provider explicitly", async () => {
-    vi.stubEnv("LLM_PROVIDER", "stub");
+  it("selects the stub provider explicitly", () => {
+    envMock.LLM_PROVIDER = "stub";
 
-    const provider = createLLMProvider();
-
-    expect(provider).toBeInstanceOf(StubLLMProvider);
+    expect(createLLMProvider()).toBeInstanceOf(StubLLMProvider);
   });
 
   it("selects the OpenAI provider explicitly", () => {
-    vi.stubEnv("LLM_PROVIDER", "openai");
+    envMock.LLM_PROVIDER = "openai";
 
     expect(createLLMProvider()).toBeInstanceOf(OpenAIProvider);
   });
 
-  it("uses the normalized OpenAI provider value from environment configuration", () => {
-    vi.stubEnv("LLM_PROVIDER", "openai");
+  it("reads the OpenAI provider from centralized environment configuration", () => {
+    envMock.LLM_PROVIDER = "openai";
 
     expect(createLLMProvider()).toBeInstanceOf(OpenAIProvider);
   });
 
-  it("uses the default provider when the environment variable is cleared", () => {
-    vi.stubEnv("LLM_PROVIDER", "");
+  it("uses the default provider after resetting centralized environment configuration", () => {
+    envMock.LLM_PROVIDER = "openai";
+    expect(createLLMProvider()).toBeInstanceOf(OpenAIProvider);
 
+    envMock.LLM_PROVIDER = "stub";
     expect(createLLMProvider()).toBeInstanceOf(StubLLMProvider);
   });
 
