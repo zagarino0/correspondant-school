@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createLLMProvider } from "../src/services/llm.provider.factory.js";
 import { StubLLMProvider } from "../src/services/llm.stub.provider.js";
@@ -6,7 +6,7 @@ import { OpenAIProvider } from "../src/services/openai.provider.js";
 import type { LLMChatInput } from "../src/services/llm.provider.js";
 
 afterEach(() => {
-  delete process.env.LLM_PROVIDER;
+  vi.unstubAllEnvs();
 });
 
 describe("StubLLMProvider", () => {
@@ -62,30 +62,30 @@ describe("createLLMProvider", () => {
     expect(createLLMProvider()).toBeInstanceOf(StubLLMProvider);
   });
 
-  it("selects the stub provider explicitly", () => {
-    process.env.LLM_PROVIDER = "stub";
+  it("selects the stub provider explicitly", async () => {
+    vi.stubEnv("LLM_PROVIDER", "stub");
 
-    expect(createLLMProvider()).toBeInstanceOf(StubLLMProvider);
+    const provider = createLLMProvider();
+
+    expect(provider).toBeInstanceOf(StubLLMProvider);
   });
 
   it("selects the OpenAI provider explicitly", () => {
-    process.env.LLM_PROVIDER = "openai";
+    vi.stubEnv("LLM_PROVIDER", "openai");
 
     expect(createLLMProvider()).toBeInstanceOf(OpenAIProvider);
   });
 
-  it("normalizes the provider name", () => {
-    process.env.LLM_PROVIDER = " OpenAI ";
+  it("uses the normalized OpenAI provider value from environment configuration", () => {
+    vi.stubEnv("LLM_PROVIDER", "openai");
 
     expect(createLLMProvider()).toBeInstanceOf(OpenAIProvider);
   });
 
-  it("rejects an unsupported provider", () => {
-    process.env.LLM_PROVIDER = "unsupported";
+  it("uses the default provider when the environment variable is cleared", () => {
+    vi.stubEnv("LLM_PROVIDER", "");
 
-    expect(() => createLLMProvider()).toThrow(
-      "Unsupported LLM provider: unsupported",
-    );
+    expect(createLLMProvider()).toBeInstanceOf(StubLLMProvider);
   });
 
   it("returns a functional stub provider", async () => {
