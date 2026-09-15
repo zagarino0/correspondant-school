@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { AuthorizedContext } from "../src/authorization/authorized-context.js";
+import { env } from "../src/config/env.js";
 import {
   AIServiceError,
   AIServiceImpl,
@@ -28,7 +29,7 @@ function createFailingProvider(error: unknown): LLMProvider {
 }
 
 describe("AIServiceImpl", () => {
-  it("returns the provider response on success", async () => {
+  it("returns the provider response and forwards the provider config", async () => {
     const provider: LLMProvider = {
       async chat(input) {
         expect(input.messages).toEqual([
@@ -37,6 +38,16 @@ describe("AIServiceImpl", () => {
             content: "Bonjour",
           },
         ]);
+
+        expect(input.config).toEqual({
+          ...(env.LLM_API_KEY !== undefined
+            ? { apiKey: env.LLM_API_KEY }
+            : {}),
+          ...(env.LLM_MODEL !== undefined
+            ? { model: env.LLM_MODEL }
+            : {}),
+          timeoutMs: env.LLM_TIMEOUT_MS,
+        });
 
         return {
           content: "Réponse test",
