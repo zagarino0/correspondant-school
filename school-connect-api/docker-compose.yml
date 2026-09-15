@@ -1,0 +1,25 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: school-connect-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: schoolconnect
+      POSTGRES_PASSWORD: schoolconnect
+      POSTGRES_DB: school_connect
+    ports:
+      - "5433:5432"
+    volumes:
+      - school_connect_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U schoolconnect -d school_connect"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  school_connect_postgres_data:
