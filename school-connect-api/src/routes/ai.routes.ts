@@ -33,7 +33,7 @@ export async function aiRoutes(
 
       const response = await aiService.chat({
         message,
-        conversationId,
+        ...(conversationId !== undefined ? { conversationId } : {}),
       });
 
       return reply.code(200).send(response);
