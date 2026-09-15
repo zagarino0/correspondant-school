@@ -14,3 +14,15 @@ export interface AIChatResult {
 export interface AIService {
   chat(input: AIChatInput): Promise<AIChatResult>;
 }
+
+export class AIServiceImpl implements AIService {
+  async chat(input: AIChatInput): Promise<AIChatResult> {
+    return {
+      conversationId: input.conversationId ?? null,
+      message: {
+        role: "assistant",
+        content: "AI service stub.",
+      },
+    };
+  }
+}
