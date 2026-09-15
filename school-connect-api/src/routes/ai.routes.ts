@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 
 import { authenticate } from "../middleware/authenticate.js";
+import { aiService } from "../services/ai.service.js";
 
 const aiChatRequestSchema = z.object({
   message: z.string().trim().min(1).max(2000),
@@ -30,14 +31,12 @@ export async function aiRoutes(
 
       const { message, conversationId } = result.data;
 
-      return reply.code(200).send({
-        conversationId: conversationId ?? null,
-        message: {
-          role: "assistant",
-          content: "AI chat contract validated.",
-        },
-        input: message,
+      const response = await aiService.chat({
+        message,
+        conversationId,
       });
+
+      return reply.code(200).send(response);
     },
   );
 }
