@@ -40,6 +40,22 @@ const envSchema = z.object({
   LOG_LEVEL: z
     .string()
     .default("info"),
+
+  LLM_API_KEY: z
+    .string()
+    .min(1)
+    .optional(),
+
+  LLM_MODEL: z
+    .string()
+    .min(1)
+    .optional(),
+
+  LLM_TIMEOUT_MS: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(30000),
 });
 
 export const env = envSchema.parse(process.env);
