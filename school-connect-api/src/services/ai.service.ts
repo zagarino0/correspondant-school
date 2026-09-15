@@ -75,8 +75,12 @@ export class AIServiceImpl implements AIService {
           },
         ],
         config: {
-          apiKey: env.LLM_API_KEY,
-          model: env.LLM_MODEL,
+          ...(env.LLM_API_KEY !== undefined
+            ? { apiKey: env.LLM_API_KEY }
+            : {}),
+          ...(env.LLM_MODEL !== undefined
+            ? { model: env.LLM_MODEL }
+            : {}),
           timeoutMs: env.LLM_TIMEOUT_MS,
         },
       });
