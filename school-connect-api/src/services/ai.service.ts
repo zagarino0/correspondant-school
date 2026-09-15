@@ -26,3 +26,5 @@ export class AIServiceImpl implements AIService {
     };
   }
 }
+
+export const aiService: AIService = new AIServiceImpl();
