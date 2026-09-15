@@ -1,6 +1,9 @@
+import type { AuthorizedContext } from "../authorization/authorized-context.js";
+
 export interface AIChatInput {
   message: string;
   conversationId?: string;
+  context: AuthorizedContext;
 }
 
 export interface AIChatResult {
@@ -17,6 +20,8 @@ export interface AIService {
 
 export class AIServiceImpl implements AIService {
   async chat(input: AIChatInput): Promise<AIChatResult> {
+    void input.context;
+
     return {
       conversationId: input.conversationId ?? null,
       message: {
