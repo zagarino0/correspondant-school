@@ -1,9 +1,10 @@
+import { env } from "../config/env.js";
 import type { LLMProvider } from "./llm.provider.js";
 import { OpenAIProvider } from "./openai.provider.js";
 import { StubLLMProvider } from "./llm.stub.provider.js";
 
 export function createLLMProvider(): LLMProvider {
-  const provider = process.env.LLM_PROVIDER?.trim().toLowerCase() ?? "stub";
+  const provider = env.LLM_PROVIDER;
 
   if (provider === "stub") {
     return new StubLLMProvider();
