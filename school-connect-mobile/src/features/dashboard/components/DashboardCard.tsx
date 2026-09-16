@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text } from "react-native";
 
 import type { DashboardCardData } from "../dashboard.types";
 
@@ -8,9 +8,19 @@ export function DashboardCard({
   title,
   value,
   description,
+  onPress,
 }: DashboardCardProps) {
   return (
-    <View style={styles.card}>
+    <Pressable
+      style={({ pressed }) => [
+        styles.card,
+        pressed && onPress ? styles.cardPressed : null,
+      ]}
+      onPress={onPress}
+      disabled={!onPress}
+      accessibilityRole={onPress ? "button" : undefined}
+      accessibilityLabel={onPress ? title : undefined}
+    >
       <Text style={styles.title}>{title}</Text>
 
       {value ? (
@@ -20,7 +30,7 @@ export function DashboardCard({
       {description ? (
         <Text style={styles.description}>{description}</Text>
       ) : null}
-    </View>
+    </Pressable>
   );
 }
 
@@ -33,6 +43,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
     borderColor: "#E5E7EB",
+  },
+  cardPressed: {
+    opacity: 0.7,
   },
   title: {
     fontSize: 14,
