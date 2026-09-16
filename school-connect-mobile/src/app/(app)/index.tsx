@@ -1,9 +1,8 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
 
 import { DashboardHeader } from "../../features/dashboard/components/DashboardHeader";
-import { DashboardSection } from "../../features/dashboard/components/DashboardSection";
-import type { DashboardSectionData } from "../../features/dashboard/dashboard.types";
+import { StudentDashboard } from "../../features/dashboard/dashboards/StudentDashboard";
 import { useAuthStore } from "../../stores/authStore";
 
 export default function AppHomeScreen() {
@@ -17,23 +16,18 @@ export default function AppHomeScreen() {
     router.replace("/(auth)/login");
   };
 
-  const shellSection: DashboardSectionData = {
-    id: "overview",
-    title: "Vue d’ensemble",
-    cards: [
-      {
-        id: "account",
-        title: "Compte",
-        value: "Actif",
-        description: "Votre espace personnel est prêt.",
-      },
-      {
-        id: "access",
-        title: "Accès",
-        value: user?.role ?? "-",
-        description: "Les modules seront adaptés à votre rôle.",
-      },
-    ],
+  const renderDashboard = () => {
+    switch (user?.role) {
+      case "STUDENT":
+        return (
+          <StudentDashboard
+            firstName={user.firstName}
+          />
+        );
+
+      default:
+        return <StudentDashboard firstName={user?.firstName ?? ""} />;
+    }
   };
 
   return (
@@ -43,17 +37,7 @@ export default function AppHomeScreen() {
         role={user?.role ?? "STUDENT"}
       />
 
-      <ScrollView
-        style={styles.content}
-        contentContainerStyle={styles.contentContainer}
-      >
-        <Text style={styles.title}>Tableau de bord</Text>
-        <Text style={styles.subtitle}>
-          Votre espace School Connect
-        </Text>
-
-        <DashboardSection {...shellSection} />
-      </ScrollView>
+      {renderDashboard()}
 
       <View style={styles.bottomNavigation}>
         <Pressable style={styles.navItem}>
@@ -108,23 +92,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F5F7FA",
-  },
-  content: {
-    flex: 1,
-  },
-  contentContainer: {
-    padding: 24,
-    paddingBottom: 24,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#111827",
-  },
-  subtitle: {
-    marginTop: 8,
-    fontSize: 15,
-    color: "#6B7280",
   },
   bottomNavigation: {
     flexDirection: "row",
