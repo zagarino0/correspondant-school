@@ -1,4 +1,5 @@
 import { ScrollView, StyleSheet, Text } from "react-native";
+import { useRouter } from "expo-router";
 
 import { DashboardSection } from "../components/DashboardSection";
 import type { DashboardSectionData } from "../dashboard.types";
@@ -10,6 +11,8 @@ type StudentDashboardProps = {
 export function StudentDashboard({
   firstName,
 }: StudentDashboardProps) {
+  const router = useRouter();
+
   const sections: DashboardSectionData[] = [
     {
       id: "student-overview",
@@ -37,6 +40,7 @@ export function StudentDashboard({
           id: "schedule",
           title: "Emploi du temps",
           description: "Consulter vos cours et horaires.",
+          onPress: () => router.push("/(app)/schedule"),
         },
         {
           id: "messages",
