@@ -16,6 +16,7 @@ import { attendanceRoutes } from "../routes/attendance.routes.js";
 import { gradeRoutes } from "../routes/grade.routes.js";
 import { assignmentRoutes } from "../routes/assignment.routes.js";
 import { scheduleRoutes } from "../routes/schedule.routes.js";
+import { studentScheduleRoutes } from "../routes/student-schedule.routes.js";
 import { aiRoutes } from "../routes/ai.routes.js";
 
 import jwtPlugin from "../plugins/jwt.js";
@@ -71,6 +72,9 @@ export async function buildApp() {
   await app.register(assignmentRoutes, {
     prefix: "/api/v1/assignments",
   });
+  await app.register(studentScheduleRoutes, {
+    prefix: "/api/v1/schedules",
+  });
   await app.register(scheduleRoutes, {
     prefix: "/api/v1/schedules",
   });
@@ -97,6 +101,3 @@ export async function buildApp() {
 
   return app;
 }
-
-
-
