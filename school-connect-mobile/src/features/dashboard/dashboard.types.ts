@@ -11,6 +11,7 @@ export type DashboardCardData = {
   title: string;
   value?: string;
   description?: string;
+  onPress?: () => void;
 };
 
 export type DashboardSectionData = {
