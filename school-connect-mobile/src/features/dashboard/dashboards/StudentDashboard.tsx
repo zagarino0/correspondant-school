@@ -5,9 +5,22 @@ import { useRouter } from "expo-router";
 import { DashboardSection } from "../components/DashboardSection";
 import type { DashboardSectionData } from "../dashboard.types";
 import { getMyAssignments } from "../../../services/assignments/assignment.service";
+import { getMyNextSchedule } from "../../../services/schedule/schedule.service";
+import type { StudentSchedule } from "../../schedule/schedule.types";
+import { normalizeApiError } from "../../../services/api/errors";
 
 type StudentDashboardProps = {
   firstName: string;
+};
+
+const dayLabels: Record<StudentSchedule["dayOfWeek"], string> = {
+  MONDAY: "Lundi",
+  TUESDAY: "Mardi",
+  WEDNESDAY: "Mercredi",
+  THURSDAY: "Jeudi",
+  FRIDAY: "Vendredi",
+  SATURDAY: "Samedi",
+  SUNDAY: "Dimanche",
 };
 
 export function StudentDashboard({
@@ -16,6 +29,9 @@ export function StudentDashboard({
   const router = useRouter();
   const [assignmentCount, setAssignmentCount] = useState<number | null>(null);
   const [assignmentsError, setAssignmentsError] = useState(false);
+  const [nextSchedule, setNextSchedule] = useState<StudentSchedule | null>(null);
+  const [nextScheduleLoading, setNextScheduleLoading] = useState(true);
+  const [nextScheduleError, setNextScheduleError] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -42,6 +58,61 @@ export function StudentDashboard({
     };
   }, []);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadNextSchedule() {
+      try {
+        setNextScheduleError(false);
+        setNextScheduleLoading(true);
+        const response = await getMyNextSchedule();
+
+        if (isMounted) {
+          setNextSchedule(response.schedule);
+        }
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+
+        const apiError = normalizeApiError(error);
+
+        if (apiError.code === "NOT_FOUND") {
+          setNextSchedule(null);
+          setNextScheduleError(false);
+        } else {
+          setNextScheduleError(true);
+        }
+      } finally {
+        if (isMounted) {
+          setNextScheduleLoading(false);
+        }
+      }
+    }
+
+    void loadNextSchedule();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const nextScheduleValue = nextScheduleLoading
+    ? "…"
+    : nextScheduleError
+      ? "—"
+      : nextSchedule
+        ? nextSchedule.subject
+        : "Aucun cours";
+
+  const nextScheduleDescription = nextScheduleLoading
+    ? "Chargement du prochain cours."
+    : nextScheduleError
+      ? "Impossible de charger le prochain cours."
+      : nextSchedule
+        ? `${dayLabels[nextSchedule.dayOfWeek]} · ${nextSchedule.startTime} - ${nextSchedule.endTime}${nextSchedule.room ? ` · Salle ${nextSchedule.room}` : ""}`
+        : "Aucun prochain cours prévu.";
+
   const sections: DashboardSectionData[] = [
     {
       id: "student-overview",
@@ -57,8 +128,8 @@ export function StudentDashboard({
         {
           id: "next-class",
           title: "Prochain cours",
-          value: "—",
-          description: "Votre prochaine séance.",
+          value: nextScheduleValue,
+          description: nextScheduleDescription,
         },
       ],
     },
