@@ -25,11 +25,14 @@ const dayLabels: Record<ScheduleDay, string> = {
   SUNDAY: "Dimanche",
 };
 
-function getUniqueDays(schedules: StudentSchedule[]): ScheduleDay[] {
-  return Array.from(
-    new Set(schedules.map((schedule) => schedule.dayOfWeek)),
-  );
-}
+const timetableDays: ScheduleDay[] = [
+  "MONDAY",
+  "TUESDAY",
+  "WEDNESDAY",
+  "THURSDAY",
+  "FRIDAY",
+  "SATURDAY",
+];
 
 function getUniqueTimeSlots(schedules: StudentSchedule[]): string[] {
   return Array.from(
@@ -38,7 +41,7 @@ function getUniqueTimeSlots(schedules: StudentSchedule[]): string[] {
         (schedule) => `${schedule.startTime} - ${schedule.endTime}`,
       ),
     ),
-  );
+  ).sort((first, second) => first.localeCompare(second));
 }
 
 function getScheduleForCell(
@@ -92,11 +95,6 @@ export default function ScheduleScreen() {
     };
   }, []);
 
-  const days = useMemo(
-    () => getUniqueDays(schedules),
-    [schedules],
-  );
-
   const timeSlots = useMemo(
     () => getUniqueTimeSlots(schedules),
     [schedules],
@@ -147,7 +145,7 @@ export default function ScheduleScreen() {
                 <Text style={styles.headerText}>Horaire</Text>
               </View>
 
-              {days.map((day) => (
+              {timetableDays.map((day) => (
                 <View
                   key={day}
                   style={[styles.dayCell, styles.headerCell]}
@@ -165,7 +163,7 @@ export default function ScheduleScreen() {
                   <Text style={styles.timeText}>{timeSlot}</Text>
                 </View>
 
-                {days.map((day) => {
+                {timetableDays.map((day) => {
                   const cellSchedules = getScheduleForCell(
                     schedules,
                     day,
