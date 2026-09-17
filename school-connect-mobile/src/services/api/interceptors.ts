@@ -13,21 +13,16 @@ import {
 } from "../storage/secureStorage";
 import { normalizeApiError } from "./errors";
 
-type RetryableRequestConfig =
-  InternalAxiosRequestConfig & {
-    _retry?: boolean;
-  };
+type RetryableRequestConfig = InternalAxiosRequestConfig & {
+  _retry?: boolean;
+};
 
 type RefreshResponse = {
   accessToken: string;
   refreshToken: string;
 };
 
-let isRefreshing = false;
-
-let refreshPromise:
-  | Promise<RefreshResponse>
-  | null = null;
+let refreshPromise: Promise<RefreshResponse> | null = null;
 
 async function refreshTokens(): Promise<RefreshResponse> {
   const refreshToken = await getRefreshToken();
@@ -37,10 +32,8 @@ async function refreshTokens(): Promise<RefreshResponse> {
   }
 
   const response = await axios.post<RefreshResponse>(
-    `${env.apiUrl}/auth/refresh`,
-    {
-      refreshToken,
-    },
+    `${env.apiUrl}/api/v1/auth/refresh`,
+    { refreshToken },
     {
       headers: {
         "Content-Type": "application/json",
@@ -53,64 +46,58 @@ async function refreshTokens(): Promise<RefreshResponse> {
   await updateSessionTokens(
     response.data.accessToken,
     response.data.refreshToken,
-    );
+  );
 
   return response.data;
 }
 
-export function setupApiInterceptors(
-  client: AxiosInstance,
-) {
-  client.interceptors.request.use(
-    async (config) => {
-      const accessToken = await getAccessToken();
+export function setupApiInterceptors(client: AxiosInstance) {
+  client.interceptors.request.use(async (config) => {
+    const accessToken = await getAccessToken();
 
-      if (accessToken) {
-        config.headers.Authorization =
-          `Bearer ${accessToken}`;
-      }
+    if (accessToken) {
+      config.headers.Authorization = `Bearer ${accessToken}`;
+    }
 
-      return config;
-    },
-  );
+    return config;
+  });
 
   client.interceptors.response.use(
     (response) => response,
-
     async (error: AxiosError) => {
       const originalRequest =
-        error.config as RetryableRequestConfig | undefined;   
+        error.config as RetryableRequestConfig | undefined;
 
-            if (
-            error.response?.status !== 401 ||
-            !originalRequest ||
-            originalRequest._retry ||
-            originalRequest.url?.endsWith("/auth/login")
-            ) {
-            return Promise.reject(
-                normalizeApiError(error),
-            );
-            }
+      if (
+        error.response?.status !== 401 ||
+        !originalRequest ||
+        originalRequest._retry ||
+        originalRequest.url?.endsWith("/auth/login") ||
+        originalRequest.url?.endsWith("/auth/refresh")
+      ) {
+        return Promise.reject(normalizeApiError(error));
+      }
 
-                originalRequest._retry = true;
+      originalRequest._retry = true;
 
       try {
-                if (!refreshPromise) {
-        throw new Error("Refresh request unavailable.");
+        if (!refreshPromise) {
+          refreshPromise = refreshTokens().finally(() => {
+            refreshPromise = null;
+          });
         }
 
         const tokens = await refreshPromise;
 
         originalRequest.headers.Authorization =
-        `Bearer ${tokens.accessToken}`;
-                return client.request(originalRequest);
-            } catch (refreshError) {
-                await clearSession();
+          `Bearer ${tokens.accessToken}`;
 
-                return Promise.reject(
-                normalizeApiError(refreshError),
-                );
-            }
-            },
+        return client.request(originalRequest);
+      } catch (refreshError) {
+        await clearSession();
+
+        return Promise.reject(normalizeApiError(refreshError));
+      }
+    },
   );
 }
