@@ -5,6 +5,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
@@ -58,6 +59,7 @@ function getScheduleForCell(
 
 export default function ScheduleScreen() {
   const router = useRouter();
+  const { width: screenWidth } = useWindowDimensions();
   const [schedules, setSchedules] = useState<StudentSchedule[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -100,6 +102,13 @@ export default function ScheduleScreen() {
     [schedules],
   );
 
+  const tableWidth = Math.max(screenWidth - 32, 640);
+  const timeColumnWidth = Math.min(
+    112,
+    Math.max(88, tableWidth * 0.17),
+  );
+  const dayColumnWidth = (tableWidth - timeColumnWidth) / timetableDays.length;
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -135,72 +144,98 @@ export default function ScheduleScreen() {
         </View>
       ) : (
         <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.horizontalContent}
+          style={styles.verticalScroll}
+          contentContainerStyle={styles.verticalContent}
+          showsVerticalScrollIndicator={false}
         >
-          <View style={styles.table}>
-            <View style={styles.row}>
-              <View style={[styles.timeCell, styles.headerCell]}>
-                <Text style={styles.headerText}>Horaire</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={true}
+            contentContainerStyle={styles.horizontalContent}
+          >
+            <View style={[styles.table, { width: tableWidth }]}>
+              <View style={styles.row}>
+                <View
+                  style={[
+                    styles.timeCell,
+                    styles.headerCell,
+                    { width: timeColumnWidth },
+                  ]}
+                >
+                  <Text style={styles.headerText}>Horaire</Text>
+                </View>
+
+                {timetableDays.map((day) => (
+                  <View
+                    key={day}
+                    style={[
+                      styles.dayCell,
+                      styles.headerCell,
+                      { width: dayColumnWidth },
+                    ]}
+                  >
+                    <Text style={styles.headerText} numberOfLines={1}>
+                      {dayLabels[day]}
+                    </Text>
+                  </View>
+                ))}
               </View>
 
-              {timetableDays.map((day) => (
-                <View
-                  key={day}
-                  style={[styles.dayCell, styles.headerCell]}
-                >
-                  <Text style={styles.headerText}>
-                    {dayLabels[day]}
-                  </Text>
+              {timeSlots.map((timeSlot) => (
+                <View key={timeSlot} style={styles.row}>
+                  <View
+                    style={[
+                      styles.timeCell,
+                      { width: timeColumnWidth },
+                    ]}
+                  >
+                    <Text style={styles.timeText} numberOfLines={2}>
+                      {timeSlot}
+                    </Text>
+                  </View>
+
+                  {timetableDays.map((day) => {
+                    const cellSchedules = getScheduleForCell(
+                      schedules,
+                      day,
+                      timeSlot,
+                    );
+
+                    return (
+                      <View
+                        key={`${timeSlot}-${day}`}
+                        style={[styles.dayCell, { width: dayColumnWidth }]}
+                      >
+                        {cellSchedules.length > 0 ? (
+                          cellSchedules.map((schedule) => (
+                            <View
+                              key={schedule.id}
+                              style={styles.scheduleItem}
+                            >
+                              <Text
+                                style={styles.subjectText}
+                                numberOfLines={3}
+                              >
+                                {schedule.subject}
+                              </Text>
+
+                              {schedule.room ? (
+                                <Text style={styles.roomText} numberOfLines={2}>
+                                  {schedule.room}
+                                </Text>
+                              ) : null}
+                            </View>
+                          ))
+                        ) : (
+                          <Text style={styles.emptyText}>—</Text>
+                        )}
+                      </View>
+                    );
+                  })}
                 </View>
               ))}
             </View>
-
-            {timeSlots.map((timeSlot) => (
-              <View key={timeSlot} style={styles.row}>
-                <View style={styles.timeCell}>
-                  <Text style={styles.timeText}>{timeSlot}</Text>
-                </View>
-
-                {timetableDays.map((day) => {
-                  const cellSchedules = getScheduleForCell(
-                    schedules,
-                    day,
-                    timeSlot,
-                  );
-
-                  return (
-                    <View
-                      key={`${timeSlot}-${day}`}
-                      style={styles.dayCell}
-                    >
-                      {cellSchedules.length > 0 ? (
-                        cellSchedules.map((schedule) => (
-                          <View
-                            key={schedule.id}
-                            style={styles.scheduleItem}
-                          >
-                            <Text style={styles.subjectText}>
-                              {schedule.subject}
-                            </Text>
-
-                            {schedule.room ? (
-                              <Text style={styles.roomText}>
-                                {schedule.room}
-                              </Text>
-                            ) : null}
-                          </View>
-                        ))
-                      ) : (
-                        <Text style={styles.emptyText}>—</Text>
-                      )}
-                    </View>
-                  );
-                })}
-              </View>
-            ))}
-          </View>
+          </ScrollView>
         </ScrollView>
       )}
     </View>
@@ -238,8 +273,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#6B7280",
   },
+  verticalScroll: {
+    flex: 1,
+  },
+  verticalContent: {
+    paddingVertical: 16,
+  },
   horizontalContent: {
-    padding: 24,
+    paddingHorizontal: 16,
   },
   table: {
     borderWidth: 1,
@@ -255,18 +296,16 @@ const styles = StyleSheet.create({
     backgroundColor: "#F3F4F6",
   },
   timeCell: {
-    width: 112,
     minHeight: 68,
-    padding: 10,
+    padding: 8,
     justifyContent: "center",
     borderRightWidth: 1,
     borderBottomWidth: 1,
     borderColor: "#E5E7EB",
   },
   dayCell: {
-    width: 132,
     minHeight: 68,
-    padding: 10,
+    padding: 8,
     justifyContent: "center",
     alignItems: "center",
     borderRightWidth: 1,
@@ -274,33 +313,35 @@ const styles = StyleSheet.create({
     borderColor: "#E5E7EB",
   },
   headerText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "700",
     color: "#374151",
+    textAlign: "center",
   },
   timeText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "600",
     color: "#4B5563",
+    textAlign: "center",
   },
   scheduleItem: {
     width: "100%",
     alignItems: "center",
   },
   subjectText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "700",
     color: "#111827",
     textAlign: "center",
   },
   roomText: {
     marginTop: 4,
-    fontSize: 11,
+    fontSize: 10,
     color: "#6B7280",
     textAlign: "center",
   },
   emptyText: {
-    fontSize: 18,
+    fontSize: 16,
     color: "#9CA3AF",
   },
   stateContainer: {
