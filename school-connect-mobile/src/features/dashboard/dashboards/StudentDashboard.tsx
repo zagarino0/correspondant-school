@@ -6,6 +6,7 @@ import { DashboardSection } from "../components/DashboardSection";
 import type { DashboardSectionData } from "../dashboard.types";
 import { getMyAssignments } from "../../../services/assignments/assignment.service";
 import { getMyNextSchedule } from "../../../services/schedule/schedule.service";
+import { getMyAnnouncements } from "../../announcements/announcement.service";
 import type { StudentSchedule } from "../../schedule/schedule.types";
 import { normalizeApiError } from "../../../services/api/errors";
 
@@ -32,6 +33,8 @@ export function StudentDashboard({
   const [nextSchedule, setNextSchedule] = useState<StudentSchedule | null>(null);
   const [nextScheduleLoading, setNextScheduleLoading] = useState(true);
   const [nextScheduleError, setNextScheduleError] = useState(false);
+  const [announcementCount, setAnnouncementCount] = useState<number | null>(null);
+  const [announcementsError, setAnnouncementsError] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -97,6 +100,33 @@ export function StudentDashboard({
     };
   }, []);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadAnnouncements() {
+      try {
+        setAnnouncementsError(false);
+        const response = await getMyAnnouncements();
+
+        if (isMounted) {
+          setAnnouncementCount(
+            response.announcements.filter((announcement) => !announcement.isRead).length,
+          );
+        }
+      } catch {
+        if (isMounted) {
+          setAnnouncementsError(true);
+        }
+      }
+    }
+
+    void loadAnnouncements();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const nextScheduleValue = nextScheduleLoading
     ? "…"
     : nextScheduleError
@@ -142,6 +172,16 @@ export function StudentDashboard({
           title: "Emploi du temps",
           description: "Consulter vos cours et horaires.",
           onPress: () => router.push("/(app)/schedule"),
+        },
+        {
+          id: "announcements",
+          title: "Annonces",
+          value: announcementsError
+            ? "—"
+            : announcementCount === null
+              ? "…"
+              : String(announcementCount),
+          description: "Vos annonces non lues.",
         },
         {
           id: "messages",
