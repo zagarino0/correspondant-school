@@ -52,6 +52,7 @@ export function StudentDashboard({
           title: "Devoirs",
           value: assignmentsError ? "—" : assignmentCount === null ? "…" : String(assignmentCount),
           description: "Vos devoirs à venir.",
+          onPress: () => router.push("/(app)/assignments"),
         },
         {
           id: "next-class",
