@@ -105,7 +105,7 @@ export default function AssignmentsScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <Pressable
-          onPress={() => router.back()}
+          onPress={() => router.replace("/(app)")}
           accessibilityRole="button"
           accessibilityLabel="Retour"
         >
