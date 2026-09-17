@@ -1,8 +1,10 @@
+import { useEffect, useState } from "react";
 import { ScrollView, StyleSheet, Text } from "react-native";
 import { useRouter } from "expo-router";
 
 import { DashboardSection } from "../components/DashboardSection";
 import type { DashboardSectionData } from "../dashboard.types";
+import { getMyAssignments } from "../../../services/assignments/assignment.service";
 
 type StudentDashboardProps = {
   firstName: string;
@@ -12,6 +14,33 @@ export function StudentDashboard({
   firstName,
 }: StudentDashboardProps) {
   const router = useRouter();
+  const [assignmentCount, setAssignmentCount] = useState<number | null>(null);
+  const [assignmentsError, setAssignmentsError] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadAssignments() {
+      try {
+        setAssignmentsError(false);
+        const response = await getMyAssignments();
+
+        if (isMounted) {
+          setAssignmentCount(response.count);
+        }
+      } catch {
+        if (isMounted) {
+          setAssignmentsError(true);
+        }
+      }
+    }
+
+    void loadAssignments();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const sections: DashboardSectionData[] = [
     {
@@ -21,7 +50,7 @@ export function StudentDashboard({
         {
           id: "assignments",
           title: "Devoirs",
-          value: "—",
+          value: assignmentsError ? "—" : assignmentCount === null ? "…" : String(assignmentCount),
           description: "Vos devoirs à venir.",
         },
         {
