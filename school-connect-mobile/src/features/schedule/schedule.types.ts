@@ -52,3 +52,9 @@ export type StudentScheduleResponse = {
   enrollment: StudentScheduleEnrollment;
   schedules: StudentSchedule[];
 };
+
+export type StudentNextScheduleResponse = {
+  student: StudentScheduleStudent;
+  enrollment: StudentScheduleEnrollment;
+  schedule: StudentSchedule;
+};
