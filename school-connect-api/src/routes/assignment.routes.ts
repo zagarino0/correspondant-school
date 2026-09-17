@@ -8,6 +8,154 @@ export async function assignmentRoutes(
   app: FastifyInstance,
 ): Promise<void> {
   /**
+   * GET /api/v1/assignments/me
+   *
+   * Retourne :
+   * - les devoirs individuels de l'élève connecté
+   * - les devoirs attribués à toute sa classe
+   *
+   * L'élève est résolu depuis le JWT via User.id -> Student.userId.
+   */
+  app.get(
+    "/me",
+    {
+      onRequest: [authenticate],
+      preHandler: [
+        authorizeResource("assignment.read", async () => true),
+      ],
+    },
+    async (request, reply) => {
+      const student = await app.prisma.student.findUnique({
+        where: {
+          userId: request.user.sub,
+        },
+        select: {
+          id: true,
+          studentNumber: true,
+          firstName: true,
+          lastName: true,
+
+          enrollments: {
+            where: {
+              status: "ACTIVE",
+            },
+            orderBy: {
+              enrolledAt: "desc",
+            },
+            take: 1,
+            select: {
+              id: true,
+              academicYearId: true,
+              classId: true,
+
+              class: {
+                select: {
+                  id: true,
+                  name: true,
+                  level: true,
+                },
+              },
+
+              academicYear: {
+                select: {
+                  id: true,
+                  name: true,
+                  status: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (!student) {
+        return reply.code(404).send({
+          error: "STUDENT_NOT_FOUND",
+          message: "Élève introuvable pour l'utilisateur connecté.",
+        });
+      }
+
+      const enrollment = student.enrollments[0];
+
+      if (!enrollment) {
+        return reply.code(404).send({
+          error: "ACTIVE_ENROLLMENT_NOT_FOUND",
+          message:
+            "Aucune inscription active trouvée pour cet élève.",
+        });
+      }
+
+      const assignments =
+        await app.prisma.assignment.findMany({
+          where: {
+            classId: enrollment.classId,
+            OR: [
+              {
+                studentId: student.id,
+              },
+              {
+                studentId: null,
+              },
+            ],
+          },
+          orderBy: [
+            {
+              dueDate: "asc",
+            },
+            {
+              assignedAt: "desc",
+            },
+          ],
+          select: {
+            id: true,
+            studentId: true,
+            classId: true,
+            subject: true,
+            title: true,
+            description: true,
+            assignedAt: true,
+            dueDate: true,
+            status: true,
+            createdBy: true,
+            createdAt: true,
+            updatedAt: true,
+            class: {
+              select: {
+                id: true,
+                name: true,
+                level: true,
+              },
+            },
+            creator: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                role: true,
+              },
+            },
+          },
+        });
+
+      return reply.code(200).send({
+        student: {
+          id: student.id,
+          studentNumber: student.studentNumber,
+          firstName: student.firstName,
+          lastName: student.lastName,
+        },
+        enrollment: {
+          id: enrollment.id,
+          academicYear: enrollment.academicYear,
+          class: enrollment.class,
+        },
+        count: assignments.length,
+        assignments,
+      });
+    },
+  );
+
+  /**
    * GET /api/v1/assignments/student/:studentId
    *
    * Retourne :
@@ -211,9 +359,6 @@ export async function assignmentRoutes(
 
       const user = request.user;
 
-      /**
-       * Validation minimale des champs obligatoires.
-       */
       if (!body.classId) {
         return reply.code(400).send({
           error: "CLASS_ID_REQUIRED",
@@ -242,9 +387,6 @@ export async function assignmentRoutes(
         });
       }
 
-      /**
-       * Vérification de la classe.
-       */
       const schoolClass =
         await app.prisma.schoolClass.findUnique({
           where: {
@@ -265,10 +407,6 @@ export async function assignmentRoutes(
         });
       }
 
-      /**
-       * Vérification de l'appartenance de l'utilisateur
-       * à l'établissement.
-       */
       if (
         user.schoolId !== null &&
         schoolClass.schoolId !== user.schoolId
@@ -280,12 +418,6 @@ export async function assignmentRoutes(
         });
       }
 
-      /**
-       * ABAC TEACHER :
-       *
-       * Un enseignant ne peut créer un devoir que dans
-       * une classe qui lui est explicitement assignée.
-       */
       if (user.role === "TEACHER") {
         const teacherClass =
           await app.prisma.teacherClass.findUnique({
@@ -309,14 +441,6 @@ export async function assignmentRoutes(
         }
       }
 
-      /**
-       * Vérification du studentId lorsqu'il est fourni.
-       *
-       * Le student doit :
-       * - exister
-       * - appartenir à la même école
-       * - être inscrit dans cette classe
-       */
       if (body.studentId) {
         const student =
           await app.prisma.student.findUnique({
@@ -364,11 +488,6 @@ export async function assignmentRoutes(
         }
       }
 
-      /**
-       * Vérification de assignedAt.
-       *
-       * assignedAt doit être une date valide.
-       */
       const assignedAt = new Date(body.assignedAt);
 
       if (Number.isNaN(assignedAt.getTime())) {
@@ -379,11 +498,6 @@ export async function assignmentRoutes(
         });
       }
 
-      /**
-       * dueDate est facultative.
-       *
-       * Si elle est fournie, elle doit être une date valide.
-       */
       let dueDate: Date | null = null;
 
       if (body.dueDate) {
@@ -398,14 +512,6 @@ export async function assignmentRoutes(
         }
       }
 
-      /**
-       * Vérification de la cohérence des dates.
-       *
-       * dueDate ne peut pas être antérieure à assignedAt.
-       */
-
-      console.log("assignedAt:", assignedAt.toISOString());
-console.log("dueDate:", dueDate?.toISOString());
       if (dueDate && dueDate < assignedAt) {
         return reply.code(400).send({
           error: "INVALID_DUE_DATE_RANGE",
@@ -414,9 +520,6 @@ console.log("dueDate:", dueDate?.toISOString());
         });
       }
 
-      /**
-       * Création du devoir.
-       */
       const assignment =
         await app.prisma.assignment.create({
           data: {
