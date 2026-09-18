@@ -18,6 +18,7 @@ import { assignmentRoutes } from "../routes/assignment.routes.js";
 import { scheduleRoutes } from "../routes/schedule.routes.js";
 import { studentScheduleRoutes } from "../routes/student-schedule.routes.js";
 import { announcementRoutes } from "../routes/announcement.routes.js";
+import { messageRoutes } from "../routes/message.routes.js";
 import { aiRoutes } from "../routes/ai.routes.js";
 
 import jwtPlugin from "../plugins/jwt.js";
@@ -82,6 +83,9 @@ export async function buildApp() {
   });
   await app.register(announcementRoutes, {
     prefix: "/api/v1/announcements",
+  });
+  await app.register(messageRoutes, {
+    prefix: "/api/v1/messages",
   });
   await app.register(aiRoutes, {
     prefix: "/api/v1/ai",
