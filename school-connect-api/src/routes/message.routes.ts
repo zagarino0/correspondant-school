@@ -8,6 +8,81 @@ export async function messageRoutes(
   app: FastifyInstance,
 ): Promise<void> {
   /**
+   * GET /api/v1/messages/conversations
+   *
+   * Retourne uniquement les conversations auxquelles
+   * l'utilisateur connecté participe.
+   */
+  app.get(
+    "/conversations",
+    {
+      onRequest: [authenticate],
+      preHandler: [
+        authorizeResource(
+          "message.read",
+          async () => true,
+        ),
+      ],
+    },
+    async (request, reply) => {
+      const userId = request.user.sub;
+
+      const conversations =
+        await app.prisma.conversation.findMany({
+          where: {
+            participants: {
+              some: {
+                userId,
+              },
+            },
+          },
+          orderBy: {
+            updatedAt: "desc",
+          },
+          select: {
+            id: true,
+            schoolId: true,
+            createdAt: true,
+            updatedAt: true,
+            participants: {
+              select: {
+                id: true,
+                userId: true,
+                createdAt: true,
+                user: {
+                  select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                    role: true,
+                    schoolId: true,
+                  },
+                },
+              },
+            },
+            messages: {
+              orderBy: {
+                createdAt: "desc",
+              },
+              take: 1,
+              select: {
+                id: true,
+                senderId: true,
+                content: true,
+                createdAt: true,
+                updatedAt: true,
+              },
+            },
+          },
+        });
+
+      return reply.send({
+        conversations,
+      });
+    },
+  );
+
+  /**
    * POST /api/v1/messages/conversations
    *
    * Crée ou retourne une conversation privée entre
