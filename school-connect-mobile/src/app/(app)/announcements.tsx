@@ -10,7 +10,10 @@ import {
 import { useRouter } from "expo-router";
 
 import type { StudentAnnouncement } from "../../features/announcements/announcement.types";
-import { getMyAnnouncements } from "../../features/announcements/announcement.service";
+import {
+  getMyAnnouncements,
+  markAnnouncementAsRead,
+} from "../../features/announcements/announcement.service";
 
 function formatDate(value: string): string {
   const date = new Date(value);
@@ -28,37 +31,45 @@ function formatDate(value: string): string {
 
 function AnnouncementCard({
   announcement,
+  onOpen,
 }: {
   announcement: StudentAnnouncement;
+  onOpen: (announcementId: string) => void;
 }) {
   return (
-    <View style={[styles.card, !announcement.isRead ? styles.unreadCard : null]}>
-      <View style={styles.cardHeader}>
-        <View style={styles.cardTitleContainer}>
-          <Text style={styles.title}>{announcement.title}</Text>
-          <Text style={styles.date}>
-            {formatDate(announcement.createdAt)}
-          </Text>
+    <Pressable
+      onPress={() => onOpen(announcement.id)}
+      accessibilityRole="button"
+      accessibilityLabel={"Ouvrir l'annonce " + announcement.title}
+    >
+      <View style={[styles.card, !announcement.isRead ? styles.unreadCard : null]}>
+        <View style={styles.cardHeader}>
+          <View style={styles.cardTitleContainer}>
+            <Text style={styles.title}>{announcement.title}</Text>
+            <Text style={styles.date}>
+              {formatDate(announcement.createdAt)}
+            </Text>
+          </View>
+
+          {!announcement.isRead ? (
+            <Text style={styles.unreadLabel}>Non lue</Text>
+          ) : null}
         </View>
 
-        {!announcement.isRead ? (
-          <Text style={styles.unreadLabel}>Non lue</Text>
+        <Text style={styles.content}>{announcement.content}</Text>
+
+        <Text style={styles.creator}>
+          Publiée par {announcement.creator.firstName}{" "}
+          {announcement.creator.lastName}
+        </Text>
+
+        {announcement.classes.length > 0 ? (
+          <Text style={styles.classes}>
+            Classes : {announcement.classes.map((schoolClass) => schoolClass.name).join(", ")}
+          </Text>
         ) : null}
       </View>
-
-      <Text style={styles.content}>{announcement.content}</Text>
-
-      <Text style={styles.creator}>
-        Publiée par {announcement.creator.firstName}{" "}
-        {announcement.creator.lastName}
-      </Text>
-
-      {announcement.classes.length > 0 ? (
-        <Text style={styles.classes}>
-          Classes : {announcement.classes.map((schoolClass) => schoolClass.name).join(", ")}
-        </Text>
-      ) : null}
-    </View>
+    </Pressable>
   );
 }
 
@@ -98,6 +109,35 @@ export default function AnnouncementsScreen() {
       isMounted = false;
     };
   }, []);
+
+  async function handleOpenAnnouncement(announcementId: string) {
+    const announcement = announcements.find(
+      (item) => item.id === announcementId,
+    );
+
+    if (!announcement || announcement.isRead) {
+      return;
+    }
+
+    setAnnouncements((currentAnnouncements) =>
+      currentAnnouncements.map((item) =>
+        item.id === announcementId
+          ? {
+              ...item,
+              isRead: true,
+              readAt: new Date().toISOString(),
+            }
+          : item,
+      ),
+    );
+
+    try {
+      await markAnnouncementAsRead(announcementId);
+    } catch {
+      const response = await getMyAnnouncements();
+      setAnnouncements(response.announcements);
+    }
+  }
 
   return (
     <View style={styles.container}>
@@ -142,6 +182,7 @@ export default function AnnouncementsScreen() {
             <AnnouncementCard
               key={announcement.id}
               announcement={announcement}
+              onOpen={handleOpenAnnouncement}
             />
           ))}
         </ScrollView>
