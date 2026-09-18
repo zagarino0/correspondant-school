@@ -8,3 +8,11 @@ export async function getMyAnnouncements(): Promise<StudentAnnouncementsResponse
 
   return response.data;
 }
+
+export async function markAnnouncementAsRead(
+  announcementId: string,
+): Promise<void> {
+  await apiClient.patch(
+    `/api/v1/announcements/${announcementId}/read`,
+  );
+}
