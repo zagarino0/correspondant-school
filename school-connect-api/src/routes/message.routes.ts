@@ -178,6 +178,126 @@ export async function messageRoutes(
   );
 
   /**
+   * POST /api/v1/messages/conversations/:conversationId/messages
+   *
+   * Envoie un message dans une conversation à laquelle
+   * l'utilisateur connecté participe.
+   */
+  app.post(
+    "/conversations/:conversationId/messages",
+    {
+      onRequest: [authenticate],
+      preHandler: [
+        authorizeResource(
+          "message.send",
+          async () => true,
+        ),
+      ],
+    },
+    async (request, reply) => {
+      const params = request.params as {
+        conversationId?: unknown;
+      };
+
+      if (
+        typeof params.conversationId !== "string" ||
+        params.conversationId.trim().length === 0
+      ) {
+        return reply.code(400).send({
+          error: {
+            code: "CONVERSATION_ID_REQUIRED",
+            message: "conversationId est obligatoire.",
+          },
+        });
+      }
+
+      const body = request.body as {
+        content?: unknown;
+      };
+
+      if (
+        typeof body.content !== "string" ||
+        body.content.trim().length === 0
+      ) {
+        return reply.code(400).send({
+          error: {
+            code: "MESSAGE_CONTENT_REQUIRED",
+            message: "Le contenu du message est obligatoire.",
+          },
+        });
+      }
+
+      const content = body.content.trim();
+
+      if (content.length > 5000) {
+        return reply.code(400).send({
+          error: {
+            code: "MESSAGE_CONTENT_TOO_LONG",
+            message: "Le contenu du message ne doit pas dépasser 5000 caractères.",
+          },
+        });
+      }
+
+      const conversationId = params.conversationId.trim();
+      const senderId = request.user.sub;
+
+      const conversation =
+        await app.prisma.conversation.findFirst({
+          where: {
+            id: conversationId,
+            participants: {
+              some: {
+                userId: senderId,
+              },
+            },
+          },
+          select: {
+            id: true,
+            schoolId: true,
+          },
+        });
+
+      if (!conversation) {
+        return reply.code(403).send({
+          error: {
+            code: "MESSAGE_ACCESS_DENIED",
+            message:
+              "Vous n'êtes pas autorisé à envoyer un message dans cette conversation.",
+          },
+        });
+      }
+
+      const message = await app.prisma.message.create({
+        data: {
+          conversationId: conversation.id,
+          senderId,
+          content,
+        },
+        select: {
+          id: true,
+          conversationId: true,
+          senderId: true,
+          content: true,
+          createdAt: true,
+          updatedAt: true,
+          sender: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              role: true,
+            },
+          },
+        },
+      });
+
+      return reply.code(201).send({
+        message,
+      });
+    },
+  );
+
+  /**
    * POST /api/v1/messages/conversations
    *
    * Crée ou retourne une conversation privée entre
