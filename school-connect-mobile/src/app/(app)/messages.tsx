@@ -116,7 +116,18 @@ export default function MessagesScreen() {
               const lastMessage = conversation.messages?.[0]?.content;
 
               return (
-                <View key={conversation.id} style={styles.conversationCard}>
+                <Pressable
+                  key={conversation.id}
+                  style={styles.conversationCard}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/(app)/messages/[conversationId]",
+                      params: { conversationId: conversation.id },
+                    })
+                  }
+                  accessibilityRole="button"
+                  accessibilityLabel={`Ouvrir la conversation avec ${participantName}`}
+                >
                   <View style={styles.avatar}>
                     <Text style={styles.avatarText}>
                       {participant?.firstName?.charAt(0) ?? "?"}
@@ -128,14 +139,11 @@ export default function MessagesScreen() {
                       {participantName}
                     </Text>
 
-                    <Text
-                      style={styles.lastMessage}
-                      numberOfLines={1}
-                    >
+                    <Text style={styles.lastMessage} numberOfLines={1}>
                       {lastMessage ?? "Aucun message"}
                     </Text>
                   </View>
-                </View>
+                </Pressable>
               );
             })}
           </View>
