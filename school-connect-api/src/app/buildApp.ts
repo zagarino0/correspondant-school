@@ -38,6 +38,7 @@ export async function buildApp() {
         : env.CORS_ORIGIN
             .split(",")
             .map((origin) => origin.trim()),
+    methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   });
 
   await app.register(rateLimit, {
