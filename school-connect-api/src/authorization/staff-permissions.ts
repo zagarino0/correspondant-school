@@ -70,6 +70,8 @@ const staffPermissions: Record<StaffFunction, readonly Permission[]> = {
     "message.read",
     "message.send",
 
+    "announcement.create",
+
     "ticket.read",
     "ticket.create",
     "ticket.update",
@@ -160,6 +162,3 @@ export function getStaffPermissions(
 ): readonly Permission[] {
   return staffPermissions[staffFunction];
 }
-
-
-
