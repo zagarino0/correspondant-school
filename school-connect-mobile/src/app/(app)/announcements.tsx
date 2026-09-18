@@ -134,8 +134,17 @@ export default function AnnouncementsScreen() {
     try {
       await markAnnouncementAsRead(announcementId);
     } catch {
-      const response = await getMyAnnouncements();
-      setAnnouncements(response.announcements);
+      setAnnouncements((currentAnnouncements) =>
+        currentAnnouncements.map((item) =>
+          item.id === announcementId
+            ? {
+                ...item,
+                isRead: false,
+                readAt: null,
+              }
+            : item,
+        ),
+      );
     }
   }
 
