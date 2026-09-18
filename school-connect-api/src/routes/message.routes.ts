@@ -83,6 +83,101 @@ export async function messageRoutes(
   );
 
   /**
+   * GET /api/v1/messages/conversations/:conversationId/messages
+   *
+   * Retourne les messages d'une conversation à laquelle
+   * l'utilisateur connecté participe.
+   */
+  app.get(
+    "/conversations/:conversationId/messages",
+    {
+      onRequest: [authenticate],
+      preHandler: [
+        authorizeResource(
+          "message.read",
+          async () => true,
+        ),
+      ],
+    },
+    async (request, reply) => {
+      const params = request.params as {
+        conversationId?: unknown;
+      };
+
+      if (
+        typeof params.conversationId !== "string" ||
+        params.conversationId.trim().length === 0
+      ) {
+        return reply.code(400).send({
+          error: {
+            code: "CONVERSATION_ID_REQUIRED",
+            message: "conversationId est obligatoire.",
+          },
+        });
+      }
+
+      const conversationId = params.conversationId.trim();
+      const userId = request.user.sub;
+
+      const conversation =
+        await app.prisma.conversation.findFirst({
+          where: {
+            id: conversationId,
+            participants: {
+              some: {
+                userId,
+              },
+            },
+          },
+          select: {
+            id: true,
+            schoolId: true,
+          },
+        });
+
+      if (!conversation) {
+        return reply.code(403).send({
+          error: {
+            code: "MESSAGE_ACCESS_DENIED",
+            message:
+              "Vous n'êtes pas autorisé à consulter cette conversation.",
+          },
+        });
+      }
+
+      const messages = await app.prisma.message.findMany({
+        where: {
+          conversationId: conversation.id,
+        },
+        orderBy: {
+          createdAt: "asc",
+        },
+        select: {
+          id: true,
+          conversationId: true,
+          senderId: true,
+          content: true,
+          createdAt: true,
+          updatedAt: true,
+          sender: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              role: true,
+            },
+          },
+        },
+      });
+
+      return reply.send({
+        conversation,
+        messages,
+      });
+    },
+  );
+
+  /**
    * POST /api/v1/messages/conversations
    *
    * Crée ou retourne une conversation privée entre
