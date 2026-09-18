@@ -269,6 +269,74 @@ export async function announcementRoutes(
           },
         });
 
+        const recipientUserIds = new Set<string>();
+
+        if (audiences.includes("STUDENTS") || audiences.includes("PARENTS")) {
+          const enrollments = await tx.studentEnrollment.findMany({
+            where: {
+              academicYearId: activeAcademicYear.id,
+              classId: {
+                in: uniqueClassIds,
+              },
+              status: "ACTIVE",
+            },
+            select: {
+              student: {
+                select: {
+                  userId: true,
+                  parents: {
+                    select: {
+                      parentId: true,
+                    },
+                  },
+                },
+              },
+            },
+          });
+
+          for (const enrollment of enrollments) {
+            if (audiences.includes("STUDENTS")) {
+              recipientUserIds.add(enrollment.student.userId);
+            }
+
+            if (audiences.includes("PARENTS")) {
+              for (const parentLink of enrollment.student.parents) {
+                recipientUserIds.add(parentLink.parentId);
+              }
+            }
+          }
+        }
+
+        if (audiences.includes("TEACHERS")) {
+          const teacherAssignments = await tx.teacherClass.findMany({
+            where: {
+              classId: {
+                in: uniqueClassIds,
+              },
+              teacher: {
+                role: "TEACHER",
+              },
+            },
+            select: {
+              teacherId: true,
+            },
+          });
+
+          for (const assignment of teacherAssignments) {
+            recipientUserIds.add(assignment.teacherId);
+          }
+        }
+
+        if (recipientUserIds.size > 0) {
+          await tx.announcementRecipient.createMany({
+            data: [...recipientUserIds].map((userId) => ({
+              announcementId: createdAnnouncement.id,
+              userId,
+            })),
+            skipDuplicates: true,
+          });
+        }
+
         return createdAnnouncement;
       });
 
