@@ -20,6 +20,8 @@ export type Message = {
   content: string;
   createdAt: string;
   updatedAt: string;
+  deliveredAt: string | null;
+  readAt: string | null;
   sender: MessageUser;
 };
 
