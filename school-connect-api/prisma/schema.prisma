@@ -451,6 +451,7 @@ model Announcement {
 
   title   String
   content String
+  audiences AnnouncementAudience[]
 
   deletedAt DateTime?
 
