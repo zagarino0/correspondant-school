@@ -346,6 +346,154 @@ export async function announcementRoutes(
     },
   );
 
+  app.patch(
+    "/:announcementId/read",
+    {
+      onRequest: [authenticate],
+      preHandler: [
+        authorizeResource(
+          "announcement.read",
+          async () => true,
+        ),
+      ],
+    },
+    async (request, reply) => {
+      const params = request.params as {
+        announcementId?: unknown;
+      };
+
+      if (
+        typeof params.announcementId !== "string" ||
+        params.announcementId.trim().length === 0
+      ) {
+        return reply.code(400).send({
+          error: {
+            code: "ANNOUNCEMENT_ID_REQUIRED",
+            message: "announcementId est obligatoire.",
+          },
+        });
+      }
+
+      const userId = request.user.sub;
+      const userSchoolId = request.user.schoolId;
+
+      const user = await app.prisma.user.findUnique({
+        where: {
+          id: userId,
+        },
+        select: {
+          id: true,
+          schoolId: true,
+        },
+      });
+
+      if (!user) {
+        return reply.code(404).send({
+          error: {
+            code: "USER_NOT_FOUND",
+            message: "User not found.",
+          },
+        });
+      }
+
+      if (
+        userSchoolId &&
+        user.schoolId !== userSchoolId
+      ) {
+        return reply.code(403).send({
+          error: {
+            code: "RESOURCE_ACCESS_DENIED",
+            message:
+              "You do not have access to this resource.",
+          },
+        });
+      }
+
+      if (!user.schoolId) {
+        return reply.code(404).send({
+          error: {
+            code: "SCHOOL_NOT_FOUND",
+            message: "No school is associated with this user.",
+          },
+        });
+      }
+
+      const activeAcademicYear =
+        await app.prisma.academicYear.findFirst({
+          where: {
+            schoolId: user.schoolId,
+            status: "ACTIVE",
+          },
+          orderBy: {
+            startDate: "desc",
+          },
+          select: {
+            id: true,
+          },
+        });
+
+      if (!activeAcademicYear) {
+        return reply.code(404).send({
+          error: {
+            code: "ACTIVE_ACADEMIC_YEAR_NOT_FOUND",
+            message:
+              "No active academic year was found for this school.",
+          },
+        });
+      }
+
+      const recipient =
+        await app.prisma.announcementRecipient.findFirst({
+          where: {
+            announcementId: params.announcementId,
+            userId,
+            announcement: {
+              schoolId: user.schoolId,
+              academicYearId: activeAcademicYear.id,
+              deletedAt: null,
+            },
+          },
+          select: {
+            id: true,
+            announcementId: true,
+            isRead: true,
+            readAt: true,
+          },
+        });
+
+      if (!recipient) {
+        return reply.code(404).send({
+          error: {
+            code: "ANNOUNCEMENT_RECIPIENT_NOT_FOUND",
+            message:
+              "Cette annonce n'est pas accessible pour cet utilisateur.",
+          },
+        });
+      }
+
+      const updatedRecipient =
+        await app.prisma.announcementRecipient.update({
+          where: {
+            id: recipient.id,
+          },
+          data: {
+            isRead: true,
+            readAt: new Date(),
+          },
+          select: {
+            id: true,
+            announcementId: true,
+            isRead: true,
+            readAt: true,
+          },
+        });
+
+      return reply.code(200).send({
+        recipient: updatedRecipient,
+      });
+    },
+  );
+
   app.get(
     "/me",
     {
