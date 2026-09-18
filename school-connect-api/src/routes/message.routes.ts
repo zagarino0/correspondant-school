@@ -27,6 +27,25 @@ export async function messageRoutes(
     async (request, reply) => {
       const userId = request.user.sub;
 
+      await app.prisma.message.updateMany({
+        where: {
+          conversation: {
+            participants: {
+              some: {
+                userId,
+              },
+            },
+          },
+          senderId: {
+            not: userId,
+          },
+          deliveredAt: null,
+        },
+        data: {
+          deliveredAt: new Date(),
+        },
+      });
+
       const conversations =
         await app.prisma.conversation.findMany({
           where: {
