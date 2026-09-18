@@ -236,8 +236,8 @@ export async function announcementRoutes(
             schoolId: user.schoolId!,
             academicYearId: activeAcademicYear.id,
             createdBy: user.id,
-            title: body.title!.trim(),
-            content: body.content!.trim(),
+            title: (body.title as string).trim(),
+            content: (body.content as string).trim(),
             audiences,
             classTargets: {
               create: uniqueClassIds.map((classId) => ({
