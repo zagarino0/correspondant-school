@@ -145,6 +145,33 @@ export async function messageRoutes(
         });
       }
 
+      await app.prisma.message.updateMany({
+        where: {
+          conversationId: conversation.id,
+          senderId: {
+            not: userId,
+          },
+          deliveredAt: null,
+        },
+        data: {
+          deliveredAt: new Date(),
+        },
+      });
+
+      await app.prisma.message.updateMany({
+        where: {
+          conversationId: conversation.id,
+          senderId: {
+            not: userId,
+          },
+          readAt: null,
+        },
+        data: {
+          deliveredAt: new Date(),
+          readAt: new Date(),
+        },
+      });
+
       const messages = await app.prisma.message.findMany({
         where: {
           conversationId: conversation.id,
@@ -159,6 +186,8 @@ export async function messageRoutes(
           content: true,
           createdAt: true,
           updatedAt: true,
+          deliveredAt: true,
+          readAt: true,
           sender: {
             select: {
               id: true,
@@ -280,6 +309,8 @@ export async function messageRoutes(
           content: true,
           createdAt: true,
           updatedAt: true,
+          deliveredAt: true,
+          readAt: true,
           sender: {
             select: {
               id: true,
