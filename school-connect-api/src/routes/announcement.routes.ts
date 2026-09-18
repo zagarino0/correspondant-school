@@ -276,6 +276,7 @@ export async function announcementRoutes(
         announcement,
       });
     },
+  );
 
   app.get(
     "/me",
