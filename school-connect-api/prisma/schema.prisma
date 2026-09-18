@@ -543,6 +543,9 @@ model Message {
 
   content String
 
+  deliveredAt DateTime?
+  readAt      DateTime?
+
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   sender       User         @relation("MessageSender", fields: [senderId], references: [id], onDelete: Restrict)
 
