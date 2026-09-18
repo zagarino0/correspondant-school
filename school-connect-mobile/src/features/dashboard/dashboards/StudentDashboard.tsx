@@ -182,6 +182,7 @@ export function StudentDashboard({
               ? "…"
               : String(announcementCount),
           description: "Vos annonces non lues.",
+          onPress: () => router.push("/(app)/announcements"),
         },
         {
           id: "messages",
