@@ -91,6 +91,7 @@ model School {
   staffAssignments StaffAssignment[]
   schedules        Schedule[]
   announcements   Announcement[]
+  conversations   Conversation[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -127,6 +128,8 @@ model User {
   recordedAttendances Attendance[]   @relation("AttendanceRecordedBy")
   createdAnnouncements Announcement[] @relation("AnnouncementCreatedBy")
   announcementRecipients AnnouncementRecipient[]
+  conversationParticipants ConversationParticipant[]
+  sentMessages              Message[] @relation("MessageSender")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -503,6 +506,52 @@ model AnnouncementRecipient {
   @@index([announcementId])
   @@index([userId])
   @@index([isRead])
+}
+
+model Conversation {
+  id       String @id @default(cuid())
+  schoolId String
+
+  school       School                   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  participants ConversationParticipant[]
+  messages     Message[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([schoolId])
+}
+
+model ConversationParticipant {
+  id             String @id @default(cuid())
+  conversationId String
+  userId         String
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([conversationId, userId])
+  @@index([userId])
+}
+
+model Message {
+  id             String @id @default(cuid())
+  conversationId String
+  senderId       String
+
+  content String
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation("MessageSender", fields: [senderId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([conversationId])
+  @@index([senderId])
+  @@index([createdAt])
 }
 
 model RefreshToken {
