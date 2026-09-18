@@ -203,6 +203,19 @@ export default function ConversationScreen() {
                     >
                       {message.content}
                     </Text>
+
+                    {isOwnMessage && (
+                      <Text
+                        style={[
+                          styles.messageStatus,
+                          message.readAt
+                            ? styles.messageRead
+                            : styles.messageDelivered,
+                        ]}
+                      >
+                        {message.readAt || message.deliveredAt ? "✓✓" : "✓"}
+                      </Text>
+                    )}
                   </View>
                 );
               })
@@ -363,6 +376,21 @@ const styles = StyleSheet.create({
 
   ownMessageText: {
     color: "#FFFFFF",
+  },
+
+  messageStatus: {
+    alignSelf: "flex-end",
+    marginTop: 3,
+    fontSize: 12,
+    fontWeight: "700",
+  },
+
+  messageDelivered: {
+    color: "#D1D5DB",
+  },
+
+  messageRead: {
+    color: "#60A5FA",
   },
 
   composer: {
