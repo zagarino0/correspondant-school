@@ -1,10 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
-import { ScrollView, StyleSheet, Text } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 
 import { DashboardSection } from "../components/DashboardSection";
 import type { DashboardCardData, DashboardSectionData } from "../dashboard.types";
-import { getMyChildren, type ParentChild } from "../../../services/parents/parent.service";
+import {
+  getChildSchedule,
+  getMyChildren,
+  type ParentChild,
+  type ParentChildSchedule,
+  type ParentScheduleDay,
+} from "../../../services/parents/parent.service";
 import {
   getStudentAttendance,
   type ParentAttendanceRecord,
@@ -18,6 +24,145 @@ type ParentDashboardProps = {
   firstName: string;
 };
 
+const SCHEDULE_DAYS: {
+  key: ParentScheduleDay;
+  label: string;
+}[] = [
+  { key: "MONDAY", label: "Lundi" },
+  { key: "TUESDAY", label: "Mardi" },
+  { key: "WEDNESDAY", label: "Mercredi" },
+  { key: "THURSDAY", label: "Jeudi" },
+  { key: "FRIDAY", label: "Vendredi" },
+  { key: "SATURDAY", label: "Samedi" },
+  { key: "SUNDAY", label: "Dimanche" },
+];
+
+function getTodayScheduleDay(): ParentScheduleDay {
+  const days: ParentScheduleDay[] = [
+    "SUNDAY",
+    "MONDAY",
+    "TUESDAY",
+    "WEDNESDAY",
+    "THURSDAY",
+    "FRIDAY",
+    "SATURDAY",
+  ];
+
+  return days[new Date().getDay()];
+}
+
+function ScheduleGrid({
+  schedules,
+  loading,
+  error,
+}: {
+  schedules: ParentChildSchedule[];
+  loading: boolean;
+  error: boolean;
+}) {
+  if (loading) {
+    return (
+      <View style={styles.scheduleState}>
+        <Text style={styles.scheduleStateText}>
+          Chargement de l’emploi du temps…
+        </Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.scheduleState}>
+        <Text style={styles.scheduleStateText}>
+          Impossible de charger l’emploi du temps.
+        </Text>
+      </View>
+    );
+  }
+
+  if (schedules.length === 0) {
+    return (
+      <View style={styles.scheduleState}>
+        <Text style={styles.scheduleStateText}>
+          Aucun créneau n’est enregistré pour cette classe.
+        </Text>
+      </View>
+    );
+  }
+
+  const today = getTodayScheduleDay();
+
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.scheduleGrid}
+    >
+      {SCHEDULE_DAYS.map((day) => {
+        const daySchedules = schedules
+          .filter((schedule) => schedule.dayOfWeek === day.key)
+          .sort((a, b) => a.startTime.localeCompare(b.startTime));
+
+        const isToday = day.key === today;
+
+        return (
+          <View
+            key={day.key}
+            style={[
+              styles.scheduleDay,
+              isToday ? styles.scheduleDayToday : null,
+            ]}
+          >
+            <View
+              style={[
+                styles.scheduleDayHeader,
+                isToday ? styles.scheduleDayHeaderToday : null,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.scheduleDayLabel,
+                  isToday ? styles.scheduleDayLabelToday : null,
+                ]}
+              >
+                {day.label}
+              </Text>
+              {isToday ? (
+                <Text style={styles.todayLabel}>Aujourd’hui</Text>
+              ) : null}
+            </View>
+
+            {daySchedules.length > 0 ? (
+              daySchedules.map((schedule) => (
+                <View key={schedule.id} style={styles.scheduleLesson}>
+                  <Text style={styles.scheduleTime}>
+                    {schedule.startTime} – {schedule.endTime}
+                  </Text>
+                  <Text style={styles.scheduleSubject} numberOfLines={2}>
+                    {schedule.subject}
+                  </Text>
+                  <Text style={styles.scheduleTeacher} numberOfLines={1}>
+                    {schedule.teacher.firstName} {schedule.teacher.lastName}
+                  </Text>
+                  {schedule.room ? (
+                    <Text style={styles.scheduleRoom}>
+                      Salle {schedule.room}
+                    </Text>
+                  ) : null}
+                </View>
+              ))
+            ) : (
+              <View style={styles.scheduleEmpty}>
+                <Text style={styles.scheduleEmptyText}>Aucun cours</Text>
+              </View>
+            )}
+          </View>
+        );
+      })}
+    </ScrollView>
+  );
+}
+
 export function ParentDashboard({ firstName }: ParentDashboardProps) {
   const router = useRouter();
   const [children, setChildren] = useState<ParentChild[]>([]);
@@ -28,6 +173,9 @@ export function ParentDashboard({ firstName }: ParentDashboardProps) {
   const [grades, setGrades] = useState<ParentGrade[]>([]);
   const [gradesLoading, setGradesLoading] = useState(false);
   const [gradesError, setGradesError] = useState(false);
+  const [schedule, setSchedule] = useState<ParentChildSchedule[]>([]);
+  const [scheduleLoading, setScheduleLoading] = useState(false);
+  const [scheduleError, setScheduleError] = useState(false);
   const [childrenLoading, setChildrenLoading] = useState(true);
   const [childrenError, setChildrenError] = useState(false);
 
@@ -44,7 +192,10 @@ export function ParentDashboard({ firstName }: ParentDashboardProps) {
         if (isMounted) {
           setChildren(response.children);
           setSelectedChildId((current) => {
-            if (current && response.children.some((child) => child.id === current)) {
+            if (
+              current &&
+              response.children.some((child) => child.id === current)
+            ) {
               return current;
             }
 
@@ -143,6 +294,45 @@ export function ParentDashboard({ firstName }: ParentDashboardProps) {
     }
 
     void loadGrades();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedChildId]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadSchedule() {
+      if (!selectedChildId) {
+        setSchedule([]);
+        setScheduleLoading(false);
+        setScheduleError(false);
+        return;
+      }
+
+      try {
+        setScheduleLoading(true);
+        setScheduleError(false);
+
+        const response = await getChildSchedule(selectedChildId);
+
+        if (isMounted) {
+          setSchedule(response.schedules);
+        }
+      } catch {
+        if (isMounted) {
+          setSchedule([]);
+          setScheduleError(true);
+        }
+      } finally {
+        if (isMounted) {
+          setScheduleLoading(false);
+        }
+      }
+    }
+
+    void loadSchedule();
 
     return () => {
       isMounted = false;
@@ -269,7 +459,13 @@ export function ParentDashboard({ firstName }: ParentDashboardProps) {
         {
           id: "attendance",
           title: "Présences",
-          value: attendanceLoading ? "…" : attendanceError ? "—" : selectedChild ? String(attendance.length) : "—",
+          value: attendanceLoading
+            ? "…"
+            : attendanceError
+              ? "—"
+              : selectedChild
+                ? String(attendance.length)
+                : "—",
           description: attendanceDescription,
         },
         {
@@ -301,19 +497,35 @@ export function ParentDashboard({ firstName }: ParentDashboardProps) {
             ? `Suivre les devoirs de ${selectedChild.firstName}.`
             : "Sélectionnez un enfant pour suivre ses devoirs.",
         },
+        {
+          id: "schedule",
+          title: "Emploi du temps",
+          value: selectedChild?.enrollment?.class.name ?? "—",
+          badge: scheduleLoading
+            ? "Chargement"
+            : scheduleError
+              ? "Erreur"
+              : schedule.length > 0
+                ? `${schedule.length} cours`
+                : undefined,
+          description: selectedChild
+            ? `Planning réel de ${selectedChild.firstName} · semaine scolaire`
+            : "Sélectionnez un enfant pour afficher son emploi du temps.",
+          fullWidth: true,
+          content: (
+            <ScheduleGrid
+              schedules={schedule}
+              loading={scheduleLoading}
+              error={scheduleError}
+            />
+          ),
+        },
       ],
     },
     {
       id: "parent-communication",
       title: "Communication",
       cards: [
-        {
-          id: "schedule",
-          title: "Emploi du temps",
-          description: selectedChild
-            ? `Consulter l’emploi du temps de ${selectedChild.firstName}.`
-            : "Consulter l’emploi du temps scolaire.",
-        },
         {
           id: "announcements",
           title: "Annonces",
@@ -375,5 +587,95 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     color: "#374151",
+  },
+  scheduleGrid: {
+    gap: 10,
+    paddingRight: 8,
+  },
+  scheduleDay: {
+    width: 158,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    backgroundColor: "#F9FAFB",
+    overflow: "hidden",
+  },
+  scheduleDayToday: {
+    borderColor: "#2563EB",
+    backgroundColor: "#EFF6FF",
+  },
+  scheduleDayHeader: {
+    minHeight: 52,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    justifyContent: "center",
+    backgroundColor: "#F3F4F6",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
+  },
+  scheduleDayHeaderToday: {
+    backgroundColor: "#2563EB",
+    borderBottomColor: "#2563EB",
+  },
+  scheduleDayLabel: {
+    fontSize: 13,
+    fontWeight: "800",
+    color: "#374151",
+  },
+  scheduleDayLabelToday: {
+    color: "#FFFFFF",
+  },
+  todayLabel: {
+    marginTop: 2,
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#DBEAFE",
+  },
+  scheduleLesson: {
+    margin: 8,
+    padding: 10,
+    borderRadius: 10,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  scheduleTime: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#2563EB",
+  },
+  scheduleSubject: {
+    marginTop: 5,
+    fontSize: 13,
+    fontWeight: "800",
+    color: "#111827",
+  },
+  scheduleTeacher: {
+    marginTop: 5,
+    fontSize: 11,
+    color: "#4B5563",
+  },
+  scheduleRoom: {
+    marginTop: 3,
+    fontSize: 10,
+    color: "#6B7280",
+  },
+  scheduleEmpty: {
+    minHeight: 72,
+    padding: 12,
+    justifyContent: "center",
+  },
+  scheduleEmptyText: {
+    fontSize: 11,
+    color: "#9CA3AF",
+    textAlign: "center",
+  },
+  scheduleState: {
+    paddingVertical: 16,
+    paddingHorizontal: 4,
+  },
+  scheduleStateText: {
+    fontSize: 13,
+    color: "#6B7280",
   },
 });
