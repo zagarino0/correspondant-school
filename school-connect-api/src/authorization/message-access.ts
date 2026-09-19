@@ -1,4 +1,4 @@
-import type { PrismaClient, UserRole } from "@prisma/client";
+import type { PrismaClient } from "@prisma/client";
 
 export async function canMessageUser(
   prisma: PrismaClient,
