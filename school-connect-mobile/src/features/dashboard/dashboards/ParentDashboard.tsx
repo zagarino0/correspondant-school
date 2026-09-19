@@ -95,7 +95,8 @@ function ScheduleGrid({
   return (
     <ScrollView
       horizontal
-      showsHorizontalScrollIndicator={false}
+      nestedScrollEnabled
+      showsHorizontalScrollIndicator={true}
       contentContainerStyle={styles.scheduleGrid}
     >
       {SCHEDULE_DAYS.map((day) => {
@@ -590,10 +591,11 @@ const styles = StyleSheet.create({
   },
   scheduleGrid: {
     gap: 10,
-    paddingRight: 8,
+    paddingRight: 12,
+    paddingBottom: 4,
   },
   scheduleDay: {
-    width: 158,
+    width: 150,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "#E5E7EB",
