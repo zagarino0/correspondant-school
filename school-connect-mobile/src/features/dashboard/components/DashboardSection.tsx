@@ -14,14 +14,16 @@ export function DashboardSection({
       <Text style={styles.title}>{title}</Text>
 
       <View style={styles.cards}>
-        {cards.map((card) => (
+        {cards.map((card, index) => (
           <View
             key={card.id}
             style={[
               styles.cardWrapper,
               cards.length === 1 || card.fullWidth ? styles.fullWidth : null,
               cards.some((item) => item.fullWidth) && !card.fullWidth
-                ? styles.thirdWidth
+                ? index < 2
+                  ? styles.compactWidth
+                  : styles.longWidth
                 : null,
             ]}
           >
@@ -51,8 +53,11 @@ const styles = StyleSheet.create({
   cardWrapper: {
     width: "48%",
   },
-  thirdWidth: {
-    width: "31.5%",
+  compactWidth: {
+    width: "24%",
+  },
+  longWidth: {
+    width: "47%",
   },
   fullWidth: {
     width: "100%",
