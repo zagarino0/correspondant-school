@@ -230,4 +230,72 @@ export const parentRoutes: FastifyPluginAsync = async (fastify) => {
       });
     },
   );
+
+  fastify.get(
+    "/parents/me/children/:studentId/medical-record",
+    {
+      onRequest: [authenticate],
+    },
+    async (request, reply) => {
+      if (request.user.role !== "PARENT") {
+        return reply.status(403).send({
+          error: {
+            code: "FORBIDDEN",
+            message: "Parent access required.",
+          },
+        });
+      }
+
+      const { studentId } = request.params as { studentId: string };
+
+      const parentStudent = await fastify.prisma.parentStudent.findFirst({
+        where: {
+          parentId: request.user.sub,
+          studentId,
+          student: { status: "ACTIVE" },
+        },
+        select: {
+          student: {
+            select: {
+              id: true,
+              studentNumber: true,
+              firstName: true,
+              lastName: true,
+              dateOfBirth: true,
+              medicalRecord: {
+                select: {
+                  id: true,
+                  bloodGroup: true,
+                  allergies: true,
+                  medicalConditions: true,
+                  medications: true,
+                  emergencyContactName: true,
+                  emergencyContactPhone: true,
+                  doctorName: true,
+                  doctorPhone: true,
+                  notes: true,
+                  updatedAt: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (!parentStudent) {
+        return reply.status(404).send({
+          error: {
+            code: "CHILD_NOT_FOUND",
+            message: "Child not found for this parent.",
+          },
+        });
+      }
+
+      return reply.send({
+        student: parentStudent.student,
+        medicalRecord: parentStudent.student.medicalRecord,
+      });
+    },
+  );
+
 };
