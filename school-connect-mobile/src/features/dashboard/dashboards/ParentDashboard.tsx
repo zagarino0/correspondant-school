@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { ScrollView, StyleSheet, Text } from "react-native";
+import { useRouter } from "expo-router";
 
 import { DashboardSection } from "../components/DashboardSection";
 import type { DashboardCardData, DashboardSectionData } from "../dashboard.types";
@@ -18,6 +19,7 @@ type ParentDashboardProps = {
 };
 
 export function ParentDashboard({ firstName }: ParentDashboardProps) {
+  const router = useRouter();
   const [children, setChildren] = useState<ParentChild[]>([]);
   const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
   const [attendance, setAttendance] = useState<ParentAttendanceRecord[]>([]);
@@ -273,6 +275,14 @@ export function ParentDashboard({ firstName }: ParentDashboardProps) {
         {
           id: "results",
           title: "Résultats",
+          onPress:
+            selectedChild && !gradesLoading && !gradesError
+              ? () =>
+                  router.push({
+                    pathname: "/(app)/results",
+                    params: { studentId: selectedChild.id },
+                  })
+              : undefined,
           value: gradesLoading
             ? "…"
             : gradesError
