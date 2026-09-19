@@ -97,6 +97,125 @@ export async function scheduleRoutes(
 
   /**
    * ==================================================
+   * GET /api/v1/schedules/me
+   * ==================================================
+   *
+   * Emploi du temps de l'élève connecté.
+   */
+  app.get(
+    "/me",
+    {
+      onRequest: [authenticate],
+      preHandler: [
+        authorizeResource(
+          "schedule.read",
+          async () => true,
+        ),
+      ],
+    },
+    async (request, reply) => {
+      const student = await app.prisma.student.findUnique({
+        where: { userId: request.user.sub },
+        select: {
+          id: true,
+          studentNumber: true,
+          firstName: true,
+          lastName: true,
+          enrollments: {
+            where: {
+              status: "ACTIVE",
+              academicYear: { status: "ACTIVE" },
+            },
+            orderBy: { enrolledAt: "desc" },
+            take: 1,
+            select: {
+              id: true,
+              academicYearId: true,
+              classId: true,
+              class: {
+                select: { id: true, name: true, level: true },
+              },
+              academicYear: {
+                select: { id: true, name: true, status: true },
+              },
+            },
+          },
+        },
+      });
+
+      if (!student) {
+        return reply.code(404).send({
+          error: {
+            code: "STUDENT_NOT_FOUND",
+            message: "Student profile not found.",
+          },
+        });
+      }
+
+      const enrollment = student.enrollments[0];
+
+      if (!enrollment) {
+        return reply.code(404).send({
+          error: {
+            code: "ACTIVE_ENROLLMENT_NOT_FOUND",
+            message: "No active enrollment found.",
+          },
+        });
+      }
+
+      const schedules = await app.prisma.schedule.findMany({
+        where: {
+          classId: enrollment.classId,
+          academicYearId: enrollment.academicYearId,
+          ...(request.user.schoolId
+            ? { schoolId: request.user.schoolId }
+            : {}),
+        },
+        orderBy: [
+          { dayOfWeek: "asc" },
+          { startTime: "asc" },
+          { endTime: "asc" },
+        ],
+        select: {
+          id: true,
+          schoolId: true,
+          academicYearId: true,
+          classId: true,
+          teacherId: true,
+          subject: true,
+          dayOfWeek: true,
+          startTime: true,
+          endTime: true,
+          room: true,
+          teacher: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
+      });
+
+      return reply.code(200).send({
+        student: {
+          id: student.id,
+          studentNumber: student.studentNumber,
+          firstName: student.firstName,
+          lastName: student.lastName,
+        },
+        enrollment: {
+          id: enrollment.id,
+          academicYear: enrollment.academicYear,
+          class: enrollment.class,
+        },
+        schedules,
+      });
+    },
+  );
+
+  /**
+   * ==================================================
    * GET /api/v1/schedules
    * ==================================================
    *
