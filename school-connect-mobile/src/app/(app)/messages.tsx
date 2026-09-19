@@ -76,7 +76,14 @@ export default function MessagesScreen() {
 
         <Text style={styles.headerTitle}>Messages</Text>
 
-        <View style={styles.headerSpacer} />
+        <Pressable
+          style={styles.newButton}
+          onPress={() => router.push("/(app)/messages/new")}
+          accessibilityRole="button"
+          accessibilityLabel="Nouveau message"
+        >
+          <Text style={styles.newButtonText}>Nouveau</Text>
+        </Pressable>
       </View>
 
       <View style={styles.content}>
@@ -192,8 +199,20 @@ const styles = StyleSheet.create({
     color: "#111827",
   },
 
-  headerSpacer: {
-    width: 44,
+  newButton: {
+    minWidth: 82,
+    height: 40,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#111827",
+  },
+
+  newButtonText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#FFFFFF",
   },
 
   content: {
