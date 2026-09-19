@@ -2,6 +2,20 @@ import websocket from "@fastify/websocket";
 import type { FastifyInstance } from "fastify";
 
 import { authenticate } from "../middleware/authenticate.js";
+
+async function authenticateWebSocket(request: Parameters<typeof authenticate>[0], reply: Parameters<typeof authenticate>[1]): Promise<void> {
+  const query = request.query as { accessToken?: unknown };
+
+  if (
+    !request.headers.authorization &&
+    typeof query.accessToken === "string" &&
+    query.accessToken.trim()
+  ) {
+    request.headers.authorization = `Bearer ${query.accessToken.trim()}`;
+  }
+
+  await authenticate(request, reply);
+}
 import {
   markConversationRead,
   markMessagesDeliveredForUser,
@@ -26,7 +40,7 @@ export default async function websocketPlugin(
     "/ws",
     {
       websocket: true,
-      onRequest: [authenticate],
+      onRequest: [authenticateWebSocket],
     },
     (socket, request) => {
       const realtimeSocket = socket as RealtimeSocket;
