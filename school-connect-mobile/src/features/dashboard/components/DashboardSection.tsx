@@ -15,7 +15,15 @@ export function DashboardSection({
 
       <View style={styles.cards}>
         {cards.map((card) => (
-          <DashboardCard key={card.id} {...card} />
+          <View
+            key={card.id}
+            style={[
+              styles.cardWrapper,
+              cards.length === 1 ? styles.fullWidth : null,
+            ]}
+          >
+            <DashboardCard {...card} />
+          </View>
         ))}
       </View>
     </View>
@@ -34,6 +42,13 @@ const styles = StyleSheet.create({
   },
   cards: {
     flexDirection: "row",
+    flexWrap: "wrap",
     gap: 12,
+  },
+  cardWrapper: {
+    width: "48%",
+  },
+  fullWidth: {
+    width: "100%",
   },
 });
