@@ -80,7 +80,10 @@ export async function canMessageUser(
       return false;
     }
 
-    if (recipient.role === "SCHOOL_ADMIN") {
+    if (
+      recipient.role === "SCHOOL_ADMIN" ||
+      recipient.role === "STAFF"
+    ) {
       return true;
     }
 
@@ -96,7 +99,10 @@ export async function canMessageUser(
       return false;
     }
 
-    if (recipient.role === "SCHOOL_ADMIN") {
+    if (
+      recipient.role === "SCHOOL_ADMIN" ||
+      recipient.role === "STAFF"
+    ) {
       return true;
     }
 
