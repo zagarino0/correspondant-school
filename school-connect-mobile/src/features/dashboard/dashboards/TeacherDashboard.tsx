@@ -212,6 +212,24 @@ export function TeacherDashboard({ firstName }: TeacherDashboardProps) {
     [activityClasses, nowMinutes],
   );
 
+  const sortedActivityClasses = useMemo(() => {
+    const stateOrder: Record<SlotState, number> = {
+      ACTIVE: 0,
+      UPCOMING: 1,
+      COMPLETED: 2,
+    };
+
+    return [...activityClasses].sort((a, b) => {
+      const stateDifference =
+        stateOrder[getSlotState(a.schedule, nowMinutes)] -
+        stateOrder[getSlotState(b.schedule, nowMinutes)];
+
+      if (stateDifference !== 0) return stateDifference;
+
+      return timeToMinutes(a.schedule.startTime) - timeToMinutes(b.schedule.startTime);
+    });
+  }, [activityClasses, nowMinutes]);
+
   const handleAttendance = useCallback(
     async (
       activity: ActivityClass,
@@ -483,7 +501,7 @@ export function TeacherDashboard({ firstName }: TeacherDashboardProps) {
             <Text style={styles.muted}>{activityEmptyText}</Text>
           ) : (
             <View style={styles.activityList}>
-              {activityClasses.map((activity) => {
+              {sortedActivityClasses.map((activity) => {
                 const slotState = getSlotState(activity.schedule, nowMinutes);
                 const isActive = slotState === "ACTIVE";
                 const stateLabel =
@@ -547,7 +565,7 @@ export function TeacherDashboard({ firstName }: TeacherDashboardProps) {
                         <View style={styles.observationHeader}>
                           <Text style={styles.observationTitle}>Observation du cours</Text>
                           {activity.observation ? (
-                            <Text style={styles.observationSaved}>Enregistrée</Text>
+                            <Text style={styles.observationSaved}>Enregistrée · Fermée</Text>
                           ) : null}
                         </View>
                         <TextInput
@@ -561,13 +579,17 @@ export function TeacherDashboard({ firstName }: TeacherDashboardProps) {
                           placeholder="Ex. Nouvelle leçon avec TD"
                           placeholderTextColor="#9CA3AF"
                           multiline
-                          editable={isActive && savingObservation !== activity.schedule.id}
+                          editable={
+                            isActive &&
+                            !activity.observation &&
+                            savingObservation !== activity.schedule.id
+                          }
                           style={[
                             styles.observationInput,
                             !isActive ? styles.observationInputLocked : null,
                           ]}
                         />
-                        {isActive ? (
+                        {isActive && !activity.observation ? (
                           <Pressable
                             disabled={
                               savingObservation === activity.schedule.id ||
