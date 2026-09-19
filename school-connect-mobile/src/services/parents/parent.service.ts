@@ -95,3 +95,39 @@ export async function getChildSchedule(
 
   return response.data;
 }
+
+
+export type ParentMedicalRecord = {
+  id: string;
+  bloodGroup: string | null;
+  allergies: string | null;
+  medicalConditions: string | null;
+  medications: string | null;
+  emergencyContactName: string | null;
+  emergencyContactPhone: string | null;
+  doctorName: string | null;
+  doctorPhone: string | null;
+  notes: string | null;
+  updatedAt: string;
+};
+
+export type ParentMedicalRecordResponse = {
+  student: {
+    id: string;
+    studentNumber: string;
+    firstName: string;
+    lastName: string;
+    dateOfBirth: string | null;
+  };
+  medicalRecord: ParentMedicalRecord | null;
+};
+
+export async function getChildMedicalRecord(
+  studentId: string,
+): Promise<ParentMedicalRecordResponse> {
+  const response = await apiClient.get<ParentMedicalRecordResponse>(
+    `/api/v1/parents/me/children/${studentId}/medical-record`,
+  );
+
+  return response.data;
+}
