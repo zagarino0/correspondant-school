@@ -159,8 +159,99 @@ const studentRoutes: FastifyPluginAsync = async (fastify) => {
         fastify.prisma.student.count({ where }),
       ]);
 
+      const classIds = [
+        ...new Set(
+          students.flatMap((student) =>
+            student.enrollments.map((enrollment) => enrollment.class.id),
+          ),
+        ),
+      ];
+
+      const classStudents =
+        classIds.length > 0
+          ? await fastify.prisma.student.findMany({
+              where: {
+                schoolId,
+                status: "ACTIVE",
+                enrollments: {
+                  some: {
+                    classId: { in: classIds },
+                    status: "ACTIVE",
+                    academicYear: { status: "ACTIVE" },
+                  },
+                },
+              },
+              orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+              select: {
+                id: true,
+                gender: true,
+                firstName: true,
+                lastName: true,
+                enrollments: {
+                  where: {
+                    classId: { in: classIds },
+                    status: "ACTIVE",
+                    academicYear: { status: "ACTIVE" },
+                  },
+                  select: { classId: true },
+                },
+              },
+            })
+          : [];
+
+      const classPositionByStudentId = new Map<
+        string,
+        { label: string | null; number: number | null }
+      >();
+
+      for (const classId of classIds) {
+        const boys = classStudents
+          .filter(
+            (student) =>
+              student.gender === "MALE" &&
+              student.enrollments.some((enrollment) => enrollment.classId === classId),
+          )
+          .sort((a, b) =>
+            `${a.lastName} ${a.firstName}`.localeCompare(
+              `${b.lastName} ${b.firstName}`,
+            ),
+          );
+
+        const girls = classStudents
+          .filter(
+            (student) =>
+              student.gender === "FEMALE" &&
+              student.enrollments.some((enrollment) => enrollment.classId === classId),
+          )
+          .sort((a, b) =>
+            `${a.lastName} ${a.firstName}`.localeCompare(
+              `${b.lastName} ${b.firstName}`,
+            ),
+          );
+
+        boys.forEach((student, index) =>
+          classPositionByStudentId.set(student.id, {
+            label: `G-${index + 1}`,
+            number: index + 1,
+          }),
+        );
+
+        girls.forEach((student, index) =>
+          classPositionByStudentId.set(student.id, {
+            label: `F-${index + 1}`,
+            number: index + 1,
+          }),
+        );
+      }
+
+      const studentsWithClassPosition = students.map((student) => ({
+        ...student,
+        classPosition:
+          classPositionByStudentId.get(student.id)?.label ?? null,
+      }));
+
       return reply.send({
-        students,
+        students: studentsWithClassPosition,
         pagination: {
           page,
           pageSize,
