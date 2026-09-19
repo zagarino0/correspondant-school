@@ -35,7 +35,9 @@ export default async function websocketPlugin(
       registerRealtimeSocket(userId, realtimeSocket);
 
       socket.on("message", (rawMessage) => {
-        if (rawMessage.length > MAX_MESSAGE_LENGTH) {
+        const messageText = rawMessage.toString();
+
+        if (Buffer.byteLength(messageText, "utf8") > MAX_MESSAGE_LENGTH) {
           socket.close(1009, "Message too large");
           return;
         }
@@ -43,7 +45,7 @@ export default async function websocketPlugin(
         let command: ReadConversationCommand;
 
         try {
-          const parsed: unknown = JSON.parse(rawMessage.toString());
+          const parsed: unknown = JSON.parse(messageText);
 
           if (
             typeof parsed !== "object" ||
