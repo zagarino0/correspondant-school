@@ -139,14 +139,12 @@ export default function StudentsScreen() {
   const groupedCategories = useMemo(() => {
     const categoryMap = new Map<
       StudentCategory,
-      Map<
-        string,
-        {
-          className: string;
-          level: string | null;
-          students: StudentListItem[];
-        }
-      >
+      Array<{
+        classId: string;
+        className: string;
+        level: string | null;
+        students: StudentListItem[];
+      }>
     >();
 
     for (const student of students) {
@@ -156,97 +154,28 @@ export default function StudentsScreen() {
       const className = enrollment?.class.name ?? "Sans classe";
       const level = enrollment?.class.level ?? null;
 
-      if (!categoryMap.has(category)) {
-        categoryMap.set(category, new Map());
+      if (!categoryMap.has(category)) categoryMap.set(category, []);
+
+      const classes = categoryMap.get(category)!;
+      let classGroup = classes.find((item) => item.classId === classId);
+
+      if (!classGroup) {
+        classGroup = { classId, className, level, students: [] };
+        classes.push(classGroup);
       }
 
-      const classMap = categoryMap.get(category)!;
-
-      if (!classMap.has(classId)) {
-        classMap.set(classId, { className, level, students: [] });
-      }
-
-      classMap.get(classId)!.students.push(student);
+      classGroup.students.push(student);
     }
 
     return CATEGORY_ORDER.filter((category) => categoryMap.has(category)).map(
       (category) => ({
         category,
-        classes: Array.from(categoryMap.get(category)!.values()).sort((a, b) =>
-          a.className.localeCompare(b.className),
-        ),
+        classes: categoryMap
+          .get(category)!
+          .sort((a, b) => a.className.localeCompare(b.className)),
       }),
     );
-  }, [students]);
-
-  return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.eyebrow}>ADMINISTRATION</Text>
-          <Text style={styles.title}>Élèves</Text>
-          <Text style={styles.subtitle}>
-            {total} élève{total > 1 ? "s" : ""} dans l'établissement
-          </Text>
-        </View>
-      </View>
-
-      <TextInput
-        value={search}
-        onChangeText={setSearch}
-        placeholder="Rechercher un élève, matricule ou email"
-        placeholderTextColor="#9CA3AF"
-        style={styles.searchInput}
-        autoCapitalize="none"
-        returnKeyType="search"
-      />
-
-      <View style={styles.filters}>
-        {STATUS_FILTERS.map((filter) => {
-          const selected = status === filter.value;
-
-          return (
-            <Pressable
-              key={filter.label}
-              style={[
-                styles.filterChip,
-                selected ? styles.filterChipSelected : null,
-              ]}
-              onPress={() => setStatus(filter.value)}
-              accessibilityRole="button"
-              accessibilityState={{ selected }}
-            >
-              <Text
-                style={[
-                  styles.filterText,
-                  selected ? styles.filterTextSelected : null,
-                ]}
-              >
-                {filter.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-
-      {loading && students.length === 0 ? (
-        <View style={styles.stateContainer}>
-          <ActivityIndicator size="large" color="#111827" />
-          <Text style={styles.stateText}>Chargement des élèves...</Text>
-        </View>
-      ) : error && students.length === 0 ? (
-        <View style={styles.stateContainer}>
-          <Text style={styles.errorTitle}>Liste indisponible</Text>
-          <Text style={styles.stateText}>{error}</Text>
-          <Pressable style={styles.retryButton} onPress={handleRefresh}>
-            <Text style={styles.retryText}>Réessayer</Text>
-          </Pressable>
-        </View>
-      ) : (
-        <FlatList
-          data={groupedCategories}
-          keyExtractor={(item) => item.category}
-          renderItem={({ item: categoryGroup }) => (
+  }, [students]);          renderItem={({ item: categoryGroup }) => (
             <View style={styles.categorySection}>
               <View style={styles.categoryHeader}>
                 <View>
@@ -269,8 +198,8 @@ export default function StudentsScreen() {
               </View>
 
               {categoryGroup.classes.map((classGroup) => (
-                <View key={classGroup.className} style={styles.classSection}>
-                  <View style={styles.classHeader}>
+                <View key={classGroup.classId} style={styles.classColumn}>
+                  <View style={styles.classColumnHeader}>
                     <View style={styles.classHeaderIdentity}>
                       <Text style={styles.classTitle}>
                         {classGroup.className}
@@ -284,340 +213,155 @@ export default function StudentsScreen() {
                     </Text>
                   </View>
 
-                  {classGroup.students.map((student) => {
-                    const initials =
-                      `${student.firstName[0] ?? ""}${student.lastName[0] ?? ""}`.toUpperCase();
+                  <View style={styles.columnHeadings}>
+                    <Text style={[styles.headingText, styles.positionColumn]}>
+                      N°
+                    </Text>
+                    <Text style={styles.headingText}>Nom et prénom</Text>
+                    <Text style={[styles.headingText, styles.genderColumn]}>
+                      Sexe
+                    </Text>
+                    <Text style={[styles.headingText, styles.matriculeColumn]}>
+                      Matricule
+                    </Text>
+                  </View>
 
-                    return (
-                      <View key={student.id} style={styles.studentRow}>
-                        <View style={styles.avatar}>
-                          <Text style={styles.avatarText}>{initials}</Text>
-                        </View>
-
-                        <View style={styles.identity}>
-                          <Text style={styles.studentName}>
-                            {student.firstName} {student.lastName}
-                          </Text>
-                          <Text style={styles.studentNumber}>
-                            Matricule : {student.studentNumber}
-                          </Text>
-                        </View>
-
-                        <View
-                          style={[
-                            styles.statusBadge,
-                            student.status === "ACTIVE"
-                              ? styles.statusActive
-                              : student.status === "SUSPENDED"
-                                ? styles.statusSuspended
-                                : styles.statusInactive,
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.statusText,
-                              student.status === "ACTIVE"
-                                ? styles.statusTextActive
-                                : student.status === "SUSPENDED"
-                                  ? styles.statusTextSuspended
-                                  : styles.statusTextInactive,
-                            ]}
-                          >
-                            {student.status === "ACTIVE"
-                              ? "Actif"
-                              : student.status === "SUSPENDED"
-                                ? "Suspendu"
-                                : "Inactif"}
-                          </Text>
-                        </View>
+                  {classGroup.students.map((student, index) => (
+                    <View key={student.id} style={styles.studentRow}>
+                      <View style={styles.positionCell}>
+                        <Text style={styles.positionText}>
+                          {student.classPosition ?? `—`}
+                        </Text>
                       </View>
-                    );
-                  })}
+
+                      <View style={styles.identity}>
+                        <Text style={styles.studentName}>
+                          {student.lastName} {student.firstName}
+                        </Text>
+                      </View>
+
+                      <View style={styles.genderCell}>
+                        <Text style={styles.genderText}>
+                          {student.gender === "MALE"
+                            ? "G"
+                            : student.gender === "FEMALE"
+                              ? "F"
+                              : "—"}
+                        </Text>
+                      </View>
+
+                      <View style={styles.matriculeCell}>
+                        <Text style={styles.studentNumber}>
+                          {student.studentNumber}
+                        </Text>
+                      </View>
+                    </View>
+                  ))}
                 </View>
               ))}
             </View>
-          )}
-          contentContainerStyle={
-            groupedCategories.length === 0
-              ? styles.emptyContent
-              : styles.listContent
-          }
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={handleRefresh}
-              tintColor="#111827"
-            />
-          }
-          onEndReached={handleLoadMore}
-          onEndReachedThreshold={0.35}
-          ListEmptyComponent={
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyTitle}>Aucun élève trouvé</Text>
-              <Text style={styles.emptyText}>
-                Modifiez votre recherche ou votre filtre.
-              </Text>
-            </View>
-          }
-          ListFooterComponent={
-            loadingMore ? (
-              <View style={styles.footerLoader}>
-                <ActivityIndicator size="small" color="#111827" />
-              </View>
-            ) : null
-          }
-        />
-      )}
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F5F7FA",
-    paddingHorizontal: 20,
-    paddingTop: 28,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    marginBottom: 18,
-  },
-  eyebrow: {
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 1.2,
-    color: "#6B7280",
-  },
-  title: {
-    marginTop: 4,
-    fontSize: 28,
-    fontWeight: "800",
-    color: "#111827",
-  },
-  subtitle: {
-    marginTop: 4,
-    fontSize: 13,
-    color: "#6B7280",
-  },
-  searchInput: {
-    height: 46,
-    paddingHorizontal: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#D1D5DB",
-    backgroundColor: "#FFFFFF",
-    fontSize: 14,
-    color: "#111827",
-  },
-  filters: {
-    flexDirection: "row",
-    gap: 8,
-    marginTop: 12,
-    marginBottom: 14,
-  },
-  filterChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: "#D1D5DB",
-    backgroundColor: "#FFFFFF",
-  },
-  filterChipSelected: {
-    borderColor: "#111827",
-    backgroundColor: "#111827",
-  },
-  filterText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#4B5563",
-  },
-  filterTextSelected: {
-    color: "#FFFFFF",
-  },
-  listContent: {
-    paddingBottom: 24,
-    gap: 12,
-  },
-  emptyContent: {
-    flexGrow: 1,
-  },
-  categorySection: {
-    gap: 10,
-  },
-  categoryHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 2,
-    paddingVertical: 4,
-  },
-  categoryTitle: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: "#111827",
-  },
-  categoryCount: {
-    marginTop: 3,
-    fontSize: 12,
-    color: "#6B7280",
-  },
-  categoryBadge: {
-    minWidth: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#111827",
-  },
-  categoryBadgeText: {
-    color: "#FFFFFF",
-    fontSize: 12,
-    fontWeight: "800",
-  },
-  classSection: {
+          )}  classColumn: {
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: "#D9DEE5",
     backgroundColor: "#FFFFFF",
     overflow: "hidden",
-    marginBottom: 2,
+    marginBottom: 4,
   },
-  classHeader: {
+  classColumnHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    padding: 13,
-    backgroundColor: "#F1F5F9",
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+    backgroundColor: "#111827",
   },
   classHeaderIdentity: {
     flex: 1,
   },
   classTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: "800",
-    color: "#111827",
+    color: "#FFFFFF",
   },
   classLevel: {
     marginTop: 3,
     fontSize: 11,
-    color: "#6B7280",
+    color: "#D1D5DB",
   },
   classCount: {
     fontSize: 11,
     fontWeight: "700",
+    color: "#E5E7EB",
+  },
+  columnHeadings: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    backgroundColor: "#F1F5F9",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
+  },
+  headingText: {
+    flex: 1,
+    fontSize: 10,
+    fontWeight: "800",
     color: "#6B7280",
+    textTransform: "uppercase",
+  },
+  positionColumn: {
+    flex: 0.75,
+  },
+  genderColumn: {
+    flex: 0.55,
+    textAlign: "center",
+  },
+  matriculeColumn: {
+    flex: 1.35,
+    textAlign: "right",
   },
   studentRow: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 12,
-    borderTopWidth: 1,
-    borderTopColor: "#F3F4F6",
+    minHeight: 52,
+    paddingHorizontal: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
   },
-  avatar: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#E5E7EB",
+  positionCell: {
+    flex: 0.75,
   },
-  avatarText: {
-    fontSize: 13,
+  positionText: {
+    fontSize: 12,
     fontWeight: "800",
-    color: "#374151",
+    color: "#111827",
   },
   identity: {
     flex: 1,
-    marginLeft: 11,
+    paddingRight: 8,
   },
   studentName: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "700",
     color: "#111827",
+  },
+  genderCell: {
+    flex: 0.55,
+    alignItems: "center",
+  },
+  genderText: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#374151",
+  },
+  matriculeCell: {
+    flex: 1.35,
+    alignItems: "flex-end",
   },
   studentNumber: {
-    marginTop: 3,
-    fontSize: 12,
-    color: "#6B7280",
-  },
-  statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderRadius: 999,
-  },
-  statusActive: {
-    backgroundColor: "#DCFCE7",
-  },
-  statusSuspended: {
-    backgroundColor: "#FEF3C7",
-  },
-  statusInactive: {
-    backgroundColor: "#F3F4F6",
-  },
-  statusText: {
     fontSize: 11,
-    fontWeight: "700",
-  },
-  statusTextActive: {
-    color: "#166534",
-  },
-  statusTextSuspended: {
-    color: "#92400E",
-  },
-  statusTextInactive: {
-    color: "#4B5563",
-  },
-  stateContainer: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 24,
-  },
-  stateText: {
-    marginTop: 10,
-    textAlign: "center",
-    fontSize: 14,
-    lineHeight: 20,
+    fontWeight: "600",
     color: "#6B7280",
   },
-  errorTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#111827",
-  },
-  retryButton: {
-    marginTop: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 10,
-    backgroundColor: "#111827",
-  },
-  retryText: {
-    color: "#FFFFFF",
-    fontWeight: "700",
-  },
-  emptyState: {
-    alignItems: "center",
-    paddingTop: 80,
-    paddingHorizontal: 24,
-  },
-  emptyTitle: {
-    fontSize: 17,
-    fontWeight: "700",
-    color: "#111827",
-  },
-  emptyText: {
-    marginTop: 8,
-    textAlign: "center",
-    fontSize: 13,
-    color: "#6B7280",
-  },
-  footerLoader: {
-    paddingVertical: 16,
-  },
-});
+
