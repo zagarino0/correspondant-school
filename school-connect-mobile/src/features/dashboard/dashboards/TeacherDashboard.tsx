@@ -94,6 +94,7 @@ export function TeacherDashboard({ firstName }: TeacherDashboardProps) {
             : hasError
               ? "Impossible de charger vos classes."
               : "Classes qui vous sont affectées.",
+          onPress: () => router.push("/(app)/classes"),
         },
         {
           id: "today",
@@ -163,11 +164,13 @@ export function TeacherDashboard({ firstName }: TeacherDashboardProps) {
           id: "attendance",
           title: "Présences",
           description: "Gérer les présences et absences.",
+          onPress: () => router.push("/(app)/classes"),
         },
         {
           id: "classes",
           title: "Mes classes",
           description: "Accéder à vos classes et élèves.",
+          onPress: () => router.push("/(app)/classes"),
         },
       ],
     },
