@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 import type { UserRole } from "../../../types/auth";
 
@@ -7,27 +7,30 @@ type DashboardHeaderProps = {
   role: UserRole;
 };
 
+const roleLabels: Record<UserRole, string> = {
+  SUPER_ADMIN: "Super administrateur",
+  SCHOOL_ADMIN: "Administrateur scolaire",
+  TEACHER: "Enseignant",
+  PARENT: "Parent",
+  STUDENT: "Élève",
+  STAFF: "Personnel",
+};
+
 export function DashboardHeader({
   firstName,
   role,
 }: DashboardHeaderProps) {
   return (
     <View style={styles.container}>
-      <View>
+      <View style={styles.textContainer}>
         <Text style={styles.brand}>School Connect</Text>
-        <Text style={styles.greeting}>
+        <Text style={styles.greeting} numberOfLines={1}>
           Bonjour {firstName}
         </Text>
-        <Text style={styles.role}>{role}</Text>
+        <Text style={styles.role} numberOfLines={1}>
+          {roleLabels[role]}
+        </Text>
       </View>
-
-      <Pressable
-        style={styles.notificationButton}
-        accessibilityRole="button"
-        accessibilityLabel="Notifications"
-      >
-        <Text style={styles.notificationIcon}>🔔</Text>
-      </Pressable>
     </View>
   );
 }
@@ -38,11 +41,11 @@ const styles = StyleSheet.create({
     paddingTop: 24,
     paddingBottom: 20,
     backgroundColor: "#FFFFFF",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
+  },
+  textContainer: {
+    minWidth: 0,
   },
   brand: {
     fontSize: 22,
@@ -58,16 +61,5 @@ const styles = StyleSheet.create({
     marginTop: 2,
     fontSize: 12,
     color: "#9CA3AF",
-  },
-  notificationButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#F3F4F6",
-  },
-  notificationIcon: {
-    fontSize: 20,
   },
 });
