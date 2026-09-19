@@ -9,11 +9,13 @@ import {
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { useAuthStore } from "../../stores/authStore";
 
-import { getMySchedule } from "../../services/schedule/schedule.service";
+import { getMySchedule, getMyTeacherSchedule } from "../../services/schedule/schedule.service";
 import type {
   ScheduleDay,
   StudentSchedule,
+  TeacherSchedule,
 } from "../../features/schedule/schedule.types";
 
 const dayLabels: Record<ScheduleDay, string> = {
@@ -46,7 +48,7 @@ function getUniqueTimeSlots(schedules: StudentSchedule[]): string[] {
 }
 
 function getScheduleForCell(
-  schedules: StudentSchedule[],
+  schedules: Array<StudentSchedule | TeacherSchedule>,
   day: ScheduleDay,
   timeSlot: string,
 ): StudentSchedule[] {
@@ -59,8 +61,9 @@ function getScheduleForCell(
 
 export default function ScheduleScreen() {
   const router = useRouter();
+  const role = useAuthStore((state) => state.user?.role);
   const { width: screenWidth } = useWindowDimensions();
-  const [schedules, setSchedules] = useState<StudentSchedule[]>([]);
+  const [schedules, setSchedules] = useState<Array<StudentSchedule | TeacherSchedule>>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -72,10 +75,16 @@ export default function ScheduleScreen() {
         setIsLoading(true);
         setErrorMessage(null);
 
-        const response = await getMySchedule();
-
-        if (isMounted) {
-          setSchedules(response.schedules);
+        if (role === "TEACHER") {
+          const response = await getMyTeacherSchedule();
+          if (isMounted) {
+            setSchedules(response.schedules);
+          }
+        } else {
+          const response = await getMySchedule();
+          if (isMounted) {
+            setSchedules(response.schedules);
+          }
         }
       } catch {
         if (isMounted) {
@@ -95,7 +104,7 @@ export default function ScheduleScreen() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [role]);
 
   const timeSlots = useMemo(
     () => getUniqueTimeSlots(schedules),
@@ -122,7 +131,11 @@ export default function ScheduleScreen() {
 
         <View>
           <Text style={styles.title}>Emploi du temps</Text>
-          <Text style={styles.subtitle}>Votre planning de la semaine</Text>
+          <Text style={styles.subtitle}>
+            {role === "TEACHER"
+              ? "Vos cours, classes et horaires de la semaine"
+              : "Votre planning de la semaine"}
+          </Text>
         </View>
       </View>
 
@@ -218,6 +231,12 @@ export default function ScheduleScreen() {
                               >
                                 {schedule.subject}
                               </Text>
+
+                              {"class" in schedule ? (
+                                <Text style={styles.classText} numberOfLines={2}>
+                                  {schedule.class.name}
+                                </Text>
+                              ) : null}
 
                               {schedule.room ? (
                                 <Text style={styles.roomText} numberOfLines={2}>
@@ -332,6 +351,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "700",
     color: "#111827",
+    textAlign: "center",
+  },
+  classText: {
+    marginTop: 3,
+    fontSize: 10,
+    fontWeight: "600",
+    color: "#374151",
     textAlign: "center",
   },
   roomText: {
