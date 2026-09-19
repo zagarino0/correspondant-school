@@ -27,14 +27,21 @@ export type RealtimeConnection = {
   markConversationRead: (conversationId: string) => void;
 };
 
-export function createRealtimeConnection(
-  onEvent: RealtimeEventHandler,
-): RealtimeConnection {
+type RealtimeConnectionOptions = {
+  onEvent: RealtimeEventHandler;
+  onConnected?: () => void;
+};
+
+export function createRealtimeConnection({
+  onEvent,
+  onConnected,
+}: RealtimeConnectionOptions): RealtimeConnection {
   let socket: WebSocket | null = null;
   let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   let reconnectAttempt = 0;
   let isClosed = false;
   let isConnecting = false;
+  const pendingReadConversationIds = new Set<string>();
 
   function clearReconnectTimer() {
     if (reconnectTimer !== null) {
@@ -72,6 +79,7 @@ export function createRealtimeConnection(
       const accessToken = await getAccessToken();
 
       if (!accessToken || isClosed) {
+        isConnecting = false;
         return;
       }
 
@@ -85,6 +93,17 @@ export function createRealtimeConnection(
       nextSocket.onopen = () => {
         isConnecting = false;
         reconnectAttempt = 0;
+
+        for (const conversationId of pendingReadConversationIds) {
+          nextSocket.send(
+            JSON.stringify({
+              type: "conversation:read",
+              conversationId,
+            }),
+          );
+        }
+
+        onConnected?.();
       };
 
       nextSocket.onmessage = (event) => {
@@ -140,11 +159,13 @@ export function createRealtimeConnection(
   }
 
   function markConversationRead(conversationId: string) {
-    if (
-      !conversationId ||
-      !socket ||
-      socket.readyState !== WebSocket.OPEN
-    ) {
+    if (!conversationId) {
+      return;
+    }
+
+    pendingReadConversationIds.add(conversationId);
+
+    if (!socket || socket.readyState !== WebSocket.OPEN) {
       return;
     }
 
