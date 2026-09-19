@@ -4,6 +4,10 @@ import { ScrollView, StyleSheet, Text } from "react-native";
 import { DashboardSection } from "../components/DashboardSection";
 import type { DashboardCardData, DashboardSectionData } from "../dashboard.types";
 import { getMyChildren, type ParentChild } from "../../../services/parents/parent.service";
+import {
+  getStudentAttendance,
+  type ParentAttendanceRecord,
+} from "../../../services/attendance/attendance.service";
 
 type ParentDashboardProps = {
   firstName: string;
@@ -12,6 +16,9 @@ type ParentDashboardProps = {
 export function ParentDashboard({ firstName }: ParentDashboardProps) {
   const [children, setChildren] = useState<ParentChild[]>([]);
   const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
+  const [attendance, setAttendance] = useState<ParentAttendanceRecord[]>([]);
+  const [attendanceLoading, setAttendanceLoading] = useState(false);
+  const [attendanceError, setAttendanceError] = useState(false);
   const [childrenLoading, setChildrenLoading] = useState(true);
   const [childrenError, setChildrenError] = useState(false);
 
@@ -55,6 +62,45 @@ export function ParentDashboard({ firstName }: ParentDashboardProps) {
     };
   }, []);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadAttendance() {
+      if (!selectedChildId) {
+        setAttendance([]);
+        setAttendanceLoading(false);
+        setAttendanceError(false);
+        return;
+      }
+
+      try {
+        setAttendanceLoading(true);
+        setAttendanceError(false);
+
+        const response = await getStudentAttendance(selectedChildId);
+
+        if (isMounted) {
+          setAttendance(response.attendance);
+        }
+      } catch {
+        if (isMounted) {
+          setAttendance([]);
+          setAttendanceError(true);
+        }
+      } finally {
+        if (isMounted) {
+          setAttendanceLoading(false);
+        }
+      }
+    }
+
+    void loadAttendance();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedChildId]);
+
   const selectedChild = useMemo(
     () => children.find((child) => child.id === selectedChildId) ?? null,
     [children, selectedChildId],
@@ -97,6 +143,29 @@ export function ParentDashboard({ firstName }: ParentDashboardProps) {
     });
   }
 
+  const attendanceSummary = useMemo(() => {
+    return attendance.reduce(
+      (summary, record) => {
+        summary[record.status] += 1;
+        return summary;
+      },
+      {
+        PRESENT: 0,
+        ABSENT: 0,
+        LATE: 0,
+        EXCUSED: 0,
+      } as Record<ParentAttendanceRecord["status"], number>,
+    );
+  }, [attendance]);
+
+  const attendanceDescription = !selectedChild
+    ? "Sélectionnez un enfant pour consulter ses présences."
+    : attendanceLoading
+      ? "Chargement des présences."
+      : attendanceError
+        ? "Impossible de charger les présences."
+        : `${attendanceSummary.ABSENT} absence(s) · ${attendanceSummary.LATE} retard(s) · ${attendanceSummary.EXCUSED} justifiée(s)`;
+
   const selectedChildDescription = selectedChild
     ? selectedChild.enrollment
       ? `${selectedChild.enrollment.class.name} · ${selectedChild.enrollment.academicYear.name}`
@@ -116,9 +185,8 @@ export function ParentDashboard({ firstName }: ParentDashboardProps) {
         {
           id: "attendance",
           title: "Présences",
-          description: selectedChild
-            ? `Consulter les absences et retards de ${selectedChild.firstName}.`
-            : "Sélectionnez un enfant pour consulter ses présences.",
+          value: attendanceLoading ? "…" : attendanceError ? "—" : selectedChild ? String(attendance.length) : "—",
+          description: attendanceDescription,
         },
         {
           id: "results",
