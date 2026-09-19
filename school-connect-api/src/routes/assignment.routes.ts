@@ -8,6 +8,147 @@ export async function assignmentRoutes(
   app: FastifyInstance,
 ): Promise<void> {
   /**
+   * GET /api/v1/assignments/teacher
+   *
+   * Contexte pédagogique du professeur :
+   * emploi du temps -> classe + matière -> devoirs.
+   */
+  app.get(
+    "/teacher",
+    {
+      onRequest: [authenticate],
+      preHandler: [
+        authorizeResource("assignment.read", async () => true),
+      ],
+    },
+    async (request, reply) => {
+      if (request.user.role !== "TEACHER") {
+        return reply.code(403).send({
+          error: "FORBIDDEN",
+          message: "Teacher access required.",
+        });
+      }
+
+      const query = request.query as { scheduleId?: string };
+      if (!query.scheduleId) {
+        return reply.code(400).send({
+          error: "SCHEDULE_ID_REQUIRED",
+          message: "scheduleId est obligatoire.",
+        });
+      }
+
+      const schedule = await app.prisma.schedule.findFirst({
+        where: {
+          id: query.scheduleId,
+          teacherId: request.user.sub,
+        },
+        select: {
+          id: true,
+          classId: true,
+          subject: true,
+          dayOfWeek: true,
+          startTime: true,
+          endTime: true,
+          room: true,
+          class: {
+            select: {
+              id: true,
+              name: true,
+              level: true,
+            },
+          },
+        },
+      });
+
+      if (!schedule) {
+        return reply.code(404).send({
+          error: "SCHEDULE_NOT_FOUND",
+          message: "Créneau introuvable ou non affecté à cet enseignant.",
+        });
+      }
+
+      const assignments = await app.prisma.assignment.findMany({
+        where: {
+          classId: schedule.classId,
+          subject: schedule.subject,
+        },
+        orderBy: [
+          { dueDate: "asc" },
+          { assignedAt: "desc" },
+        ],
+        select: {
+          id: true,
+          studentId: true,
+          classId: true,
+          subject: true,
+          title: true,
+          description: true,
+          assignedAt: true,
+          dueDate: true,
+          status: true,
+          createdBy: true,
+          createdAt: true,
+          updatedAt: true,
+          class: {
+            select: {
+              id: true,
+              name: true,
+              level: true,
+            },
+          },
+          creator: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              role: true,
+            },
+          },
+          student: {
+            select: {
+              id: true,
+              studentNumber: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
+      });
+
+      const students = await app.prisma.studentEnrollment.findMany({
+        where: {
+          classId: schedule.classId,
+          status: "ACTIVE",
+        },
+        orderBy: [
+          { student: { lastName: "asc" } },
+          { student: { firstName: "asc" } },
+        ],
+        select: {
+          id: true,
+          student: {
+            select: {
+              id: true,
+              studentNumber: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
+      });
+
+      return reply.send({
+        schedule,
+        assignments,
+        students: students.map((enrollment) => ({
+          enrollmentId: enrollment.id,
+          student: enrollment.student,
+        })),
+      });
+    },
+  );
+
+  /**
    * GET /api/v1/assignments/me
    *
    * Retourne :
