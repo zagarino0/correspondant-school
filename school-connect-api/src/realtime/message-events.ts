@@ -51,6 +51,10 @@ export function unregisterRealtimeSocket(
   }
 }
 
+export function isUserConnected(userId: string): boolean {
+  return (socketsByUserId.get(userId)?.size ?? 0) > 0;
+}
+
 export function publishToUser<T>(
   userId: string,
   type: RealtimeEnvelope<T>["type"],
@@ -98,11 +102,17 @@ export async function publishMessageCreated(
     },
   });
 
-  publishMessageToParticipants(
-    participants.map((participant) => participant.userId),
-    "message:new",
-    message,
-  );
+  for (const participant of participants) {
+    publishToUser(participant.userId, "message:new", message);
+
+    if (isUserConnected(participant.userId)) {
+      await markMessagesDeliveredForUser(
+        prisma,
+        participant.userId,
+        message.conversationId,
+      );
+    }
+  }
 }
 
 export async function markMessagesDeliveredForUser(
