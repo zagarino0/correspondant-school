@@ -10,6 +10,18 @@ const studentClassRoutes: FastifyPluginAsync = async (fastify) => {
       onRequest: [authenticate, authorize("student.read")],
     },
     async (request, reply) => {
+      if (
+        request.user.role !== "SCHOOL_ADMIN" &&
+        request.user.role !== "SUPER_ADMIN"
+      ) {
+        return reply.status(403).send({
+          error: {
+            code: "FORBIDDEN",
+            message: "Only school administrators can access student class options.",
+          },
+        });
+      }
+
       const schoolId = request.user.schoolId;
 
       if (!schoolId && request.user.role !== "SUPER_ADMIN") {
