@@ -90,6 +90,8 @@ export function TeacherDashboard({ firstName }: TeacherDashboardProps) {
   const [savingAttendance, setSavingAttendance] = useState<string | null>(null);
   const [observationDrafts, setObservationDrafts] = useState<Record<string, string>>({});
   const [savingObservation, setSavingObservation] = useState<string | null>(null);
+  const [editingObservation, setEditingObservation] = useState<string | null>(null);
+  const [observationConfirmation, setObservationConfirmation] = useState<string | null>(null);
   const [nowMinutes, setNowMinutes] = useState(() => {
     const date = new Date();
     return date.getHours() * 60 + date.getMinutes();
@@ -307,10 +309,17 @@ export function TeacherDashboard({ firstName }: TeacherDashboardProps) {
         setActivityClasses((current) =>
           current.map((item) =>
             item.schedule.id === activity.schedule.id
-              ? { ...item, observation: { ...item.observation, ...savedObservation } as TeacherObservation }
+              ? { ...item, observation: savedObservation }
               : item,
           ),
         );
+        setEditingObservation(null);
+        setObservationConfirmation(activity.schedule.id);
+        setTimeout(() => {
+          setObservationConfirmation((current) =>
+            current === activity.schedule.id ? null : current,
+          );
+        }, 2500);
       } catch {
         // The next focus refreshes the observation data.
       } finally {
@@ -568,6 +577,15 @@ export function TeacherDashboard({ firstName }: TeacherDashboardProps) {
                             <Text style={styles.observationSaved}>Enregistrée · Fermée</Text>
                           ) : null}
                         </View>
+
+                        {observationConfirmation === activity.schedule.id ? (
+                          <View style={styles.observationConfirmation}>
+                            <Text style={styles.observationConfirmationText}>
+                              ✓ Observation enregistrée
+                            </Text>
+                          </View>
+                        ) : null}
+
                         <TextInput
                           value={observationDrafts[activity.schedule.id] ?? ""}
                           onChangeText={(value) =>
@@ -581,15 +599,31 @@ export function TeacherDashboard({ firstName }: TeacherDashboardProps) {
                           multiline
                           editable={
                             isActive &&
-                            !activity.observation &&
+                            (!activity.observation ||
+                              editingObservation === activity.schedule.id) &&
                             savingObservation !== activity.schedule.id
                           }
                           style={[
                             styles.observationInput,
-                            !isActive ? styles.observationInputLocked : null,
+                            !isActive || (activity.observation && editingObservation !== activity.schedule.id)
+                              ? styles.observationInputLocked
+                              : null,
                           ]}
                         />
-                        {isActive && !activity.observation ? (
+
+                        {isActive && activity.observation && editingObservation !== activity.schedule.id ? (
+                          <Pressable
+                            onPress={() => {
+                              setEditingObservation(activity.schedule.id);
+                              setObservationConfirmation(null);
+                            }}
+                            style={styles.observationEditButton}
+                          >
+                            <Text style={styles.observationEditButtonText}>Modifier</Text>
+                          </Pressable>
+                        ) : null}
+
+                        {isActive && (!activity.observation || editingObservation === activity.schedule.id) ? (
                           <Pressable
                             disabled={
                               savingObservation === activity.schedule.id ||
@@ -740,6 +774,10 @@ const styles = StyleSheet.create({
   observationHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
   observationTitle: { fontSize: 12, fontWeight: "800", color: "#111827" },
   observationSaved: { fontSize: 11, fontWeight: "700", color: "#6B7280" },
+  observationConfirmation: { paddingHorizontal: 11, paddingVertical: 8, borderRadius: 8, backgroundColor: "#F0FDF4", borderWidth: 1, borderColor: "#BBF7D0" },
+  observationConfirmationText: { fontSize: 12, fontWeight: "800", color: "#166534" },
+  observationEditButton: { minHeight: 36, paddingHorizontal: 12, borderRadius: 9, borderWidth: 1, borderColor: "#D1D5DB", backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center" },
+  observationEditButtonText: { color: "#111827", fontSize: 12, fontWeight: "800" },
   observationInput: { minHeight: 74, paddingHorizontal: 11, paddingVertical: 9, borderWidth: 1, borderColor: "#D1D5DB", borderRadius: 9, backgroundColor: "#FFFFFF", color: "#111827", fontSize: 13, textAlignVertical: "top" },
   observationInputLocked: { backgroundColor: "#F8FAFC", color: "#6B7280" },
   observationButton: { minHeight: 38, paddingHorizontal: 12, borderRadius: 9, backgroundColor: "#111827", alignItems: "center", justifyContent: "center" },
