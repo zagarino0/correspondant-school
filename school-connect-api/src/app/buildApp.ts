@@ -19,6 +19,7 @@ import { scheduleRoutes } from "../routes/schedule.routes.js";
 import { studentScheduleRoutes } from "../routes/student-schedule.routes.js";
 import { announcementRoutes } from "../routes/announcement.routes.js";
 import { messageRoutes } from "../routes/message.routes.js";
+import websocketPlugin from "../realtime/websocket.js";
 import { aiRoutes } from "../routes/ai.routes.js";
 
 import jwtPlugin from "../plugins/jwt.js";
@@ -51,6 +52,7 @@ export async function buildApp() {
 
   await app.register(prismaPlugin);
   await app.register(jwtPlugin);
+  await app.register(websocketPlugin);
   await app.register(healthRoutes, {
     prefix: "/api/v1",
   });

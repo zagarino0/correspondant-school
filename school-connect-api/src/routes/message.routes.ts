@@ -3,6 +3,11 @@ import type { FastifyInstance } from "fastify";
 import { canMessageUser } from "../authorization/message-access.js";
 import { authenticate } from "../middleware/authenticate.js";
 import { authorizeResource } from "../middleware/authorize-resource.js";
+import {
+  markConversationRead,
+  markMessagesDeliveredForUser,
+  publishMessageCreated,
+} from "../realtime/message-events.js";
 
 export async function messageRoutes(
   app: FastifyInstance,
@@ -27,24 +32,7 @@ export async function messageRoutes(
     async (request, reply) => {
       const userId = request.user.sub;
 
-      await app.prisma.message.updateMany({
-        where: {
-          conversation: {
-            participants: {
-              some: {
-                userId,
-              },
-            },
-          },
-          senderId: {
-            not: userId,
-          },
-          deliveredAt: null,
-        },
-        data: {
-          deliveredAt: new Date(),
-        },
-      });
+      await markMessagesDeliveredForUser(app.prisma, userId);
 
       const conversations =
         await app.prisma.conversation.findMany({
@@ -164,32 +152,17 @@ export async function messageRoutes(
         });
       }
 
-      await app.prisma.message.updateMany({
-        where: {
-          conversationId: conversation.id,
-          senderId: {
-            not: userId,
-          },
-          deliveredAt: null,
-        },
-        data: {
-          deliveredAt: new Date(),
-        },
-      });
+      await markMessagesDeliveredForUser(
+        app.prisma,
+        userId,
+        conversation.id,
+      );
 
-      await app.prisma.message.updateMany({
-        where: {
-          conversationId: conversation.id,
-          senderId: {
-            not: userId,
-          },
-          readAt: null,
-        },
-        data: {
-          deliveredAt: new Date(),
-          readAt: new Date(),
-        },
-      });
+      await markConversationRead(
+        app.prisma,
+        userId,
+        conversation.id,
+      );
 
       const messages = await app.prisma.message.findMany({
         where: {
@@ -340,6 +313,15 @@ export async function messageRoutes(
           },
         },
       });
+
+      try {
+        await publishMessageCreated(app.prisma, message);
+      } catch (error) {
+        request.log.error(
+          error,
+          "Unable to publish realtime message event",
+        );
+      }
 
       return reply.code(201).send({
         message,
