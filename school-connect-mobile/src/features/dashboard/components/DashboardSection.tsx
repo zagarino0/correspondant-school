@@ -19,7 +19,10 @@ export function DashboardSection({
             key={card.id}
             style={[
               styles.cardWrapper,
-              cards.length === 1 ? styles.fullWidth : null,
+              cards.length === 1 || card.fullWidth ? styles.fullWidth : null,
+              cards.some((item) => item.fullWidth) && !card.fullWidth
+                ? styles.thirdWidth
+                : null,
             ]}
           >
             <DashboardCard {...card} />
@@ -47,6 +50,9 @@ const styles = StyleSheet.create({
   },
   cardWrapper: {
     width: "48%",
+  },
+  thirdWidth: {
+    width: "31.5%",
   },
   fullWidth: {
     width: "100%",
