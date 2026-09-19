@@ -9,8 +9,6 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { useRouter } from "expo-router";
-
 import { getStudents } from "../../services/students/student.service";
 import type {
   StudentListItem,
@@ -25,7 +23,6 @@ const STATUS_FILTERS: Array<{ label: string; value?: StudentStatus }> = [
 ];
 
 export default function StudentsScreen() {
-  const router = useRouter();
   const [students, setStudents] = useState<StudentListItem[]>([]);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<StudentStatus | undefined>();
@@ -107,9 +104,6 @@ export default function StudentsScreen() {
           styles.studentCard,
           pressed ? styles.cardPressed : null,
         ]}
-        onPress={() => router.push(`/(app)/students/${item.id}`)}
-        accessibilityRole="button"
-        accessibilityLabel={`Ouvrir la fiche de ${fullName}`}
       >
         <View style={styles.studentHeader}>
           <View style={styles.avatar}>
@@ -177,17 +171,7 @@ export default function StudentsScreen() {
           </Text>
         </View>
 
-        <Pressable
-          style={({ pressed }) => [
-            styles.addButton,
-            pressed ? styles.buttonPressed : null,
-          ]}
-          onPress={() => router.push("/(app)/students/new")}
-          accessibilityRole="button"
-          accessibilityLabel="Ajouter un élève"
-        >
-          <Text style={styles.addButtonText}>+ Ajouter</Text>
-        </Pressable>
+
       </View>
 
       <TextInput
@@ -290,7 +274,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     justifyContent: "space-between",
-    gap: 16,
     marginBottom: 18,
   },
   eyebrow: {
@@ -309,21 +292,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontSize: 13,
     color: "#6B7280",
-  },
-  addButton: {
-    marginTop: 4,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 10,
-    backgroundColor: "#111827",
-  },
-  addButtonText: {
-    color: "#FFFFFF",
-    fontSize: 13,
-    fontWeight: "700",
-  },
-  buttonPressed: {
-    opacity: 0.75,
   },
   searchInput: {
     height: 46,
@@ -374,9 +342,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E5E7EB",
     backgroundColor: "#FFFFFF",
-  },
-  cardPressed: {
-    opacity: 0.72,
   },
   studentHeader: {
     flexDirection: "row",
