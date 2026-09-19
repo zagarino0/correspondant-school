@@ -139,6 +139,7 @@ export function TeacherDashboard({ firstName }: TeacherDashboardProps) {
               : studentsToRecord === 0
                 ? "Toutes les présences du jour sont enregistrées."
                 : "Élèves sans présence enregistrée aujourd'hui.",
+          onPress: () => router.push("/(app)/attendance"),
         },
       ],
     },
@@ -163,8 +164,8 @@ export function TeacherDashboard({ firstName }: TeacherDashboardProps) {
         {
           id: "attendance",
           title: "Présences",
-          description: "Gérer les présences et absences.",
-          onPress: () => router.push("/(app)/classes"),
+          description: "Gérer les présences et absences selon votre emploi du temps.",
+          onPress: () => router.push("/(app)/attendance"),
         },
         {
           id: "classes",
