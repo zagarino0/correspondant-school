@@ -100,118 +100,62 @@ export default function TeachersScreen() {
   }, [loadTeachers]);
 
   const groupedCategories = useMemo(() => {
-    const normalizedSearch = search.trim().toLowerCase();
-    const categoryMap = new Map<TeacherCategory, SchoolTeacher[]>();
+    const categoryMap = new Map<
+      TeacherCategory,
+      Array<{
+        classId: string;
+        className: string;
+        level: string | null;
+        teachers: SchoolTeacher[];
+      }>
+    >();
 
     for (const teacher of teachers) {
-      const fullName = `${teacher.firstName} ${teacher.lastName} ${teacher.email}`.toLowerCase();
+      const fullName =
+        `${teacher.firstName} ${teacher.lastName} ${teacher.email}`.toLowerCase();
+      const searchValue = search.trim().toLowerCase();
 
-      if (
-        normalizedSearch &&
-        !fullName.includes(normalizedSearch) &&
-        !teacher.classes.some((schoolClass) =>
-          classMatchesSearch(schoolClass, normalizedSearch),
-        )
-      ) {
-        continue;
-      }
-
-      for (const category of CATEGORY_ORDER) {
-        const categoryClasses = teacher.classes.filter(
-          (schoolClass) => getTeacherCategory(schoolClass.level) === category,
-        );
-
-        if (categoryClasses.length === 0) continue;
-
-        const visibleClasses = normalizedSearch
-          ? categoryClasses.filter(
-              (schoolClass) =>
-                fullName.includes(normalizedSearch) ||
-                classMatchesSearch(schoolClass, normalizedSearch),
-            )
-          : categoryClasses;
-
-        if (visibleClasses.length === 0) continue;
-
-        if (!categoryMap.has(category)) {
-          categoryMap.set(category, []);
+      for (const schoolClass of teacher.classes) {
+        if (
+          searchValue &&
+          !fullName.includes(searchValue) &&
+          !classMatchesSearch(schoolClass, searchValue)
+        ) {
+          continue;
         }
 
-        categoryMap.get(category)!.push({
-          ...teacher,
-          classes: visibleClasses,
-        });
+        const category = getTeacherCategory(schoolClass.level);
+
+        if (!categoryMap.has(category)) categoryMap.set(category, []);
+
+        const classes = categoryMap.get(category)!;
+        let classGroup = classes.find((item) => item.classId === schoolClass.id);
+
+        if (!classGroup) {
+          classGroup = {
+            classId: schoolClass.id,
+            className: schoolClass.name,
+            level: schoolClass.level,
+            teachers: [],
+          };
+          classes.push(classGroup);
+        }
+
+        if (!classGroup.teachers.some((item) => item.id === teacher.id)) {
+          classGroup.teachers.push(teacher);
+        }
       }
     }
 
     return CATEGORY_ORDER.filter((category) => categoryMap.has(category)).map(
       (category) => ({
         category,
-        teachers: categoryMap.get(category)!.sort((a, b) =>
-          `${a.lastName} ${a.firstName}`.localeCompare(
-            `${b.lastName} ${b.firstName}`,
-          ),
-        ),
+        classes: categoryMap
+          .get(category)!
+          .sort((a, b) => a.className.localeCompare(b.className)),
       }),
     );
-  }, [search, teachers]);
-
-  if (loading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#111827" />
-        <Text style={styles.muted}>Chargement des enseignants...</Text>
-      </View>
-    );
-  }
-
-  if (error && teachers.length === 0) {
-    return (
-      <View style={styles.center}>
-        <Text style={styles.errorTitle}>Liste indisponible</Text>
-        <Text style={styles.muted}>{error}</Text>
-      </View>
-    );
-  }
-
-  return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.eyebrow}>ADMINISTRATION</Text>
-        <Text style={styles.title}>Enseignants</Text>
-        <Text style={styles.subtitle}>
-          Enseignants classés par catégorie puis par classe.
-        </Text>
-      </View>
-
-      <TextInput
-        value={search}
-        onChangeText={setSearch}
-        placeholder="Rechercher un enseignant ou une classe"
-        placeholderTextColor="#9CA3AF"
-        style={styles.searchInput}
-        autoCapitalize="none"
-      />
-
-      <FlatList
-        data={groupedCategories}
-        keyExtractor={(item) => item.category}
-        contentContainerStyle={
-          groupedCategories.length === 0
-            ? styles.emptyContent
-            : styles.listContent
-        }
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={() => {
-              setRefreshing(true);
-              void loadTeachers();
-            }}
-            tintColor="#111827"
-          />
-        }
-        renderItem={({ item }) => (
+  }, [search, teachers]);        renderItem={({ item }) => (
           <View style={styles.categorySection}>
             <View style={styles.categoryHeader}>
               <View>
@@ -219,222 +163,150 @@ export default function TeachersScreen() {
                   {CATEGORY_LABELS[item.category]}
                 </Text>
                 <Text style={styles.categoryCount}>
-                  {item.teachers.length} enseignant
-                  {item.teachers.length > 1 ? "s" : ""}
+                  {item.classes.length} classe
+                  {item.classes.length > 1 ? "s" : ""}
                 </Text>
               </View>
               <View style={styles.categoryBadge}>
                 <Text style={styles.categoryBadgeText}>
-                  {item.teachers.length}
+                  {item.classes.length}
                 </Text>
               </View>
             </View>
 
-            {item.teachers.map((teacher) => (
-              <View key={teacher.id} style={styles.teacherCard}>
-                <View style={styles.teacherHeader}>
-                  <View style={styles.avatar}>
-                    <Text style={styles.avatarText}>
-                      {`${teacher.firstName[0] ?? ""}${teacher.lastName[0] ?? ""}`.toUpperCase()}
+            {item.classes.map((classGroup) => (
+              <View key={classGroup.classId} style={styles.classColumn}>
+                <View style={styles.classColumnHeader}>
+                  <View style={styles.classHeaderIdentity}>
+                    <Text style={styles.classTitle}>{classGroup.className}</Text>
+                    <Text style={styles.classLevel}>
+                      {classGroup.level ?? "Niveau non renseigné"}
                     </Text>
                   </View>
-                  <View style={styles.identity}>
-                    <Text style={styles.teacherName}>
-                      {teacher.firstName} {teacher.lastName}
-                    </Text>
-                    <Text style={styles.email}>{teacher.email}</Text>
-                  </View>
+                  <Text style={styles.classCount}>
+                    {classGroup.teachers.length} enseignant
+                    {classGroup.teachers.length > 1 ? "s" : ""}
+                  </Text>
                 </View>
 
-                <View style={styles.classList}>
-                  {teacher.classes.map((schoolClass) => (
-                    <View key={schoolClass.id} style={styles.classChip}>
-                      <Text style={styles.className}>{schoolClass.name}</Text>
-                      <Text style={styles.classLevel}>
-                        {schoolClass.level ?? "Niveau non renseigné"}
+                <View style={styles.columnHeadings}>
+                  <Text style={[styles.headingText, styles.numberColumn]}>
+                    N°
+                  </Text>
+                  <Text style={styles.headingText}>Nom et prénom</Text>
+                  <Text style={[styles.headingText, styles.emailColumn]}>
+                    Contact
+                  </Text>
+                </View>
+
+                {classGroup.teachers.map((teacher, index) => (
+                  <View key={`${classGroup.classId}-${teacher.id}`} style={styles.teacherRow}>
+                    <View style={styles.numberCell}>
+                      <Text style={styles.numberText}>{index + 1}</Text>
+                    </View>
+                    <View style={styles.identity}>
+                      <Text style={styles.teacherName}>
+                        {teacher.lastName} {teacher.firstName}
                       </Text>
                     </View>
-                  ))}
-                </View>
+                    <View style={styles.emailCell}>
+                      <Text style={styles.email} numberOfLines={1}>
+                        {teacher.email}
+                      </Text>
+                    </View>
+                  </View>
+                ))}
               </View>
             ))}
           </View>
-        )}
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyTitle}>Aucun enseignant trouvé</Text>
-            <Text style={styles.muted}>Modifiez votre recherche.</Text>
-          </View>
-        }
-      />
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F5F7FA",
-    paddingHorizontal: 20,
-    paddingTop: 28,
-  },
-  center: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 24,
-    gap: 10,
-  },
-  header: {
-    marginBottom: 18,
-  },
-  eyebrow: {
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 1.2,
-    color: "#6B7280",
-  },
-  title: {
-    marginTop: 4,
-    fontSize: 28,
-    fontWeight: "800",
-    color: "#111827",
-  },
-  subtitle: {
-    marginTop: 4,
-    fontSize: 13,
-    lineHeight: 19,
-    color: "#6B7280",
-  },
-  searchInput: {
-    height: 46,
-    paddingHorizontal: 14,
-    borderRadius: 12,
+        )}  classColumn: {
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#D1D5DB",
+    borderColor: "#D9DEE5",
     backgroundColor: "#FFFFFF",
-    fontSize: 14,
-    color: "#111827",
-    marginBottom: 14,
+    overflow: "hidden",
+    marginBottom: 4,
   },
-  listContent: {
-    paddingBottom: 28,
-    gap: 12,
-  },
-  emptyContent: {
-    flexGrow: 1,
-  },
-  categorySection: {
-    gap: 10,
-  },
-  categoryHeader: {
+  classColumnHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 2,
-    paddingVertical: 4,
-  },
-  categoryTitle: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: "#111827",
-  },
-  categoryCount: {
-    marginTop: 3,
-    fontSize: 12,
-    color: "#6B7280",
-  },
-  categoryBadge: {
-    minWidth: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
+    paddingHorizontal: 14,
+    paddingVertical: 13,
     backgroundColor: "#111827",
   },
-  categoryBadgeText: {
-    color: "#FFFFFF",
-    fontSize: 12,
+  classHeaderIdentity: {
+    flex: 1,
+  },
+  classTitle: {
+    fontSize: 16,
     fontWeight: "800",
+    color: "#FFFFFF",
   },
-  teacherCard: {
-    padding: 14,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    backgroundColor: "#FFFFFF",
+  classLevel: {
+    marginTop: 3,
+    fontSize: 11,
+    color: "#D1D5DB",
   },
-  teacherHeader: {
+  classCount: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#E5E7EB",
+  },
+  columnHeadings: {
     flexDirection: "row",
     alignItems: "center",
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    backgroundColor: "#F1F5F9",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
   },
-  avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#E5E7EB",
-  },
-  avatarText: {
-    fontSize: 13,
+  headingText: {
+    flex: 1,
+    fontSize: 10,
     fontWeight: "800",
-    color: "#374151",
+    color: "#6B7280",
+    textTransform: "uppercase",
+  },
+  numberColumn: {
+    flex: 0.6,
+  },
+  emailColumn: {
+    flex: 1.35,
+    textAlign: "right",
+  },
+  teacherRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    minHeight: 52,
+    paddingHorizontal: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
+  },
+  numberCell: {
+    flex: 0.6,
+  },
+  numberText: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#111827",
   },
   identity: {
     flex: 1,
-    marginLeft: 11,
+    paddingRight: 8,
   },
   teacherName: {
-    fontSize: 15,
-    fontWeight: "800",
-    color: "#111827",
-  },
-  email: {
-    marginTop: 3,
-    fontSize: 12,
-    color: "#6B7280",
-  },
-  classList: {
-    marginTop: 12,
-    gap: 8,
-  },
-  classChip: {
-    padding: 10,
-    borderRadius: 10,
-    backgroundColor: "#F8FAFC",
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-  },
-  className: {
     fontSize: 13,
     fontWeight: "700",
     color: "#111827",
   },
-  classLevel: {
-    marginTop: 2,
+  emailCell: {
+    flex: 1.35,
+    alignItems: "flex-end",
+  },
+  email: {
     fontSize: 11,
     color: "#6B7280",
   },
-  emptyState: {
-    alignItems: "center",
-    paddingTop: 80,
-    paddingHorizontal: 24,
-  },
-  emptyTitle: {
-    fontSize: 17,
-    fontWeight: "700",
-    color: "#111827",
-  },
-  errorTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#111827",
-  },
-  muted: {
-    fontSize: 13,
-    lineHeight: 20,
-    color: "#6B7280",
-    textAlign: "center",
-  },
-});
+
