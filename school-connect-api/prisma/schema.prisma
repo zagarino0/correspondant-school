@@ -24,7 +24,12 @@ enum StaffFunction {
   INFIRMIER
 }
 
-enum StudentGender {\n  MALE\n  FEMALE\n}\n\nenum UserStatus {
+enum StudentGender {
+  MALE
+  FEMALE
+}
+
+enum UserStatus {
   ACTIVE
   INACTIVE
   SUSPENDED
