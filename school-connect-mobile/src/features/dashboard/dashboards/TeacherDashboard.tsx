@@ -94,7 +94,7 @@ export function TeacherDashboard({ firstName }: TeacherDashboardProps) {
             : hasError
               ? "Impossible de charger vos classes."
               : "Classes qui vous sont affectées.",
-          onPress: () => router.push("/(app)/classes"),
+          onPress: () => router.push("./classes"),
         },
         {
           id: "today",
@@ -139,7 +139,7 @@ export function TeacherDashboard({ firstName }: TeacherDashboardProps) {
               : studentsToRecord === 0
                 ? "Toutes les présences du jour sont enregistrées."
                 : "Élèves sans présence enregistrée aujourd'hui.",
-          onPress: () => router.push("/(app)/attendance"),
+          onPress: () => router.push("./attendance"),
         },
       ],
     },
@@ -165,13 +165,13 @@ export function TeacherDashboard({ firstName }: TeacherDashboardProps) {
           id: "attendance",
           title: "Présences",
           description: "Gérer les présences et absences selon votre emploi du temps.",
-          onPress: () => router.push("/(app)/attendance"),
+          onPress: () => router.push("./attendance"),
         },
         {
           id: "classes",
           title: "Mes classes",
           description: "Accéder à vos classes et élèves.",
-          onPress: () => router.push("/(app)/classes"),
+          onPress: () => router.push("./classes"),
         },
       ],
     },
