@@ -102,7 +102,6 @@ export default function StudentsScreen() {
       <Pressable
         style={({ pressed }) => [
           styles.studentCard,
-          pressed ? styles.cardPressed : null,
         ]}
       >
         <View style={styles.studentHeader}>
