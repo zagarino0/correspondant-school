@@ -19,6 +19,12 @@ import {
   getStudentGrades,
   type ParentGrade,
 } from "../../../services/grades/grade.service";
+import { getMyAnnouncements, type StudentAnnouncement } from "../../../features/announcements/announcement.service";
+import {
+  getMyConversations,
+  getUnreadMessageCount,
+  type Conversation,
+} from "../../../services/messages/message.service";
 
 type ParentDashboardProps = {
   firstName: string;
