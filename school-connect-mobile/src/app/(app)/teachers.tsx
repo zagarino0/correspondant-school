@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
   categorySection: { marginBottom: 14 },
   categoryTitle: { fontSize: 17, fontWeight: "800", color: "#111827", marginBottom: 8 },
   classColumn: { borderRadius: 14, borderWidth: 1, borderColor: "#D9DEE5", backgroundColor: "#FFFFFF", overflow: "hidden", marginBottom: 10 },
-  classColumnHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 14, paddingVertical: 13, backgroundColor: "#111827" },
+  classColumnHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 14, paddingVertical: 13, backgroundColor: "#344976" },
   classHeaderIdentity: { flex: 1 },
   classTitle: { fontSize: 16, fontWeight: "800", color: "#FFFFFF" },
   classLevel: { marginTop: 3, fontSize: 11, color: "#D1D5DB" },
