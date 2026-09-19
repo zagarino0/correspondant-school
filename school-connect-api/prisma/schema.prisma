@@ -223,6 +223,7 @@ model Student {
   lastName  String
 
   dateOfBirth DateTime?
+  gender      StudentGender?
   status      UserStatus @default(ACTIVE)
 
   school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
