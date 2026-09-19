@@ -314,7 +314,14 @@ export async function messageRoutes(
         },
       });
 
-      await publishMessageCreated(app.prisma, message);
+      try {
+        await publishMessageCreated(app.prisma, message);
+      } catch (error) {
+        request.log.error(
+          error,
+          "Unable to publish realtime message event",
+        );
+      }
 
       return reply.code(201).send({
         message,
