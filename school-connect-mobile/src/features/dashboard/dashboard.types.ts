@@ -10,6 +10,7 @@ export type DashboardCardData = {
   id: string;
   title: string;
   value?: string;
+  badge?: string;
   description?: string;
   onPress?: () => void;
 };
