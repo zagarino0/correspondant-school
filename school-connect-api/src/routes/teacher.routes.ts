@@ -33,6 +33,358 @@ function getDateRange(date: string): { start: Date; end: Date } {
 export async function teacherRoutes(
   app: FastifyInstance,
 ): Promise<void> {
+
+  app.get(
+    "/me/classes",
+    {
+      onRequest: [authenticate],
+      preHandler: [
+        authorizeResource("student.read", async () => true),
+      ],
+    },
+    async (request, reply) => {
+      if (request.user.role !== "TEACHER") {
+        return reply.code(403).send({
+          error: { code: "FORBIDDEN", message: "Teacher access required." },
+        });
+      }
+
+      const classes = await app.prisma.teacherClass.findMany({
+        where: { teacherId: request.user.sub },
+        orderBy: { class: { name: "asc" } },
+        select: {
+          class: {
+            select: {
+              id: true,
+              name: true,
+              level: true,
+              academicYearId: true,
+              academicYear: {
+                select: { id: true, name: true, status: true },
+              },
+              _count: {
+                select: {
+                  enrollments: {
+                    where: { status: "ACTIVE" },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+
+      return reply.send({
+        classes: classes.map(({ class: schoolClass }) => ({
+          id: schoolClass.id,
+          name: schoolClass.name,
+          level: schoolClass.level,
+          academicYearId: schoolClass.academicYearId,
+          academicYear: schoolClass.academicYear,
+          studentCount: schoolClass._count.enrollments,
+        })),
+      });
+    },
+  );
+
+  app.get(
+    "/me/classes/:classId",
+    {
+      onRequest: [authenticate],
+      preHandler: [
+        authorizeResource("student.read", async () => true),
+      ],
+    },
+    async (request, reply) => {
+      if (request.user.role !== "TEACHER") {
+        return reply.code(403).send({
+          error: { code: "FORBIDDEN", message: "Teacher access required." },
+        });
+      }
+
+      const { classId } = request.params as { classId: string };
+
+      const teacherClass = await app.prisma.teacherClass.findUnique({
+        where: {
+          teacherId_classId: {
+            teacherId: request.user.sub,
+            classId,
+          },
+        },
+        select: {
+          class: {
+            select: {
+              id: true,
+              name: true,
+              level: true,
+              academicYearId: true,
+              academicYear: {
+                select: { id: true, name: true, status: true },
+              },
+            },
+          },
+        },
+      });
+
+      if (!teacherClass) {
+        return reply.code(403).send({
+          error: {
+            code: "CLASS_ACCESS_DENIED",
+            message: "Vous n'êtes pas assigné à cette classe.",
+          },
+        });
+      }
+
+      const enrollments = await app.prisma.studentEnrollment.findMany({
+        where: {
+          classId,
+          status: "ACTIVE",
+        },
+        orderBy: [
+          { student: { lastName: "asc" } },
+          { student: { firstName: "asc" } },
+        ],
+        select: {
+          id: true,
+          studentId: true,
+          student: {
+            select: {
+              id: true,
+              studentNumber: true,
+              firstName: true,
+              lastName: true,
+              status: true,
+            },
+          },
+        },
+      });
+
+      return reply.send({
+        class: teacherClass.class,
+        students: enrollments,
+      });
+    },
+  );
+
+  app.get(
+    "/me/classes/:classId/attendance",
+    {
+      onRequest: [authenticate],
+      preHandler: [
+        authorizeResource("attendance.read", async () => true),
+      ],
+    },
+    async (request, reply) => {
+      if (request.user.role !== "TEACHER") {
+        return reply.code(403).send({
+          error: { code: "FORBIDDEN", message: "Teacher access required." },
+        });
+      }
+
+      const { classId } = request.params as { classId: string };
+      const query = request.query as { date?: string };
+      const date = query.date ?? new Date().toISOString().slice(0, 10);
+      const start = new Date(date + "T00:00:00.000Z");
+      const end = new Date(date + "T00:00:00.000Z");
+      end.setUTCDate(end.getUTCDate() + 1);
+
+      if (Number.isNaN(start.getTime())) {
+        return reply.code(400).send({
+          error: { code: "INVALID_DATE", message: "Date invalide." },
+        });
+      }
+
+      const teacherClass = await app.prisma.teacherClass.findUnique({
+        where: {
+          teacherId_classId: {
+            teacherId: request.user.sub,
+            classId,
+          },
+        },
+        select: { classId: true },
+      });
+
+      if (!teacherClass) {
+        return reply.code(403).send({
+          error: {
+            code: "CLASS_ACCESS_DENIED",
+            message: "Vous n'êtes pas assigné à cette classe.",
+          },
+        });
+      }
+
+      const enrollments = await app.prisma.studentEnrollment.findMany({
+        where: { classId, status: "ACTIVE" },
+        orderBy: [
+          { student: { lastName: "asc" } },
+          { student: { firstName: "asc" } },
+        ],
+        select: {
+          id: true,
+          studentId: true,
+          student: {
+            select: {
+              id: true,
+              studentNumber: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+          attendances: {
+            where: { date: { gte: start, lt: end } },
+            take: 1,
+            select: {
+              id: true,
+              date: true,
+              status: true,
+              arrivalTime: true,
+              reason: true,
+              note: true,
+              recordedBy: true,
+            },
+          },
+        },
+      });
+
+      return reply.send({
+        date,
+        classId,
+        students: enrollments.map((enrollment) => ({
+          enrollmentId: enrollment.id,
+          student: enrollment.student,
+          attendance: enrollment.attendances[0] ?? null,
+        })),
+      });
+    },
+  );
+
+  app.post(
+    "/me/classes/:classId/attendance",
+    {
+      onRequest: [authenticate],
+      preHandler: [
+        authorizeResource("attendance.create", async () => true),
+      ],
+    },
+    async (request, reply) => {
+      if (request.user.role !== "TEACHER") {
+        return reply.code(403).send({
+          error: { code: "FORBIDDEN", message: "Teacher access required." },
+        });
+      }
+
+      const { classId } = request.params as { classId: string };
+      const body = request.body as {
+        enrollmentId?: string;
+        date?: string;
+        status?: "PRESENT" | "ABSENT" | "LATE" | "EXCUSED";
+        arrivalTime?: string | null;
+        reason?: string | null;
+        note?: string | null;
+      };
+
+      if (!body.enrollmentId || !body.date || !body.status) {
+        return reply.code(400).send({
+          error: {
+            code: "INVALID_ATTENDANCE_DATA",
+            message: "enrollmentId, date et status sont obligatoires.",
+          },
+        });
+      }
+
+      const validStatuses = [
+        "PRESENT",
+        "ABSENT",
+        "LATE",
+        "EXCUSED",
+      ] as const;
+
+      if (!validStatuses.includes(body.status)) {
+        return reply.code(400).send({
+          error: {
+            code: "INVALID_ATTENDANCE_STATUS",
+            message: "Le statut de présence est invalide.",
+          },
+        });
+      }
+
+      const date = new Date(body.date + "T00:00:00.000Z");
+      if (Number.isNaN(date.getTime())) {
+        return reply.code(400).send({
+          error: { code: "INVALID_DATE", message: "Date invalide." },
+        });
+      }
+
+      const teacherClass = await app.prisma.teacherClass.findUnique({
+        where: {
+          teacherId_classId: {
+            teacherId: request.user.sub,
+            classId,
+          },
+        },
+        select: { classId: true },
+      });
+
+      if (!teacherClass) {
+        return reply.code(403).send({
+          error: {
+            code: "CLASS_ACCESS_DENIED",
+            message: "Vous n'êtes pas assigné à cette classe.",
+          },
+        });
+      }
+
+      const enrollment = await app.prisma.studentEnrollment.findFirst({
+        where: {
+          id: body.enrollmentId,
+          classId,
+          status: "ACTIVE",
+        },
+        select: {
+          id: true,
+          studentId: true,
+        },
+      });
+
+      if (!enrollment) {
+        return reply.code(404).send({
+          error: {
+            code: "ENROLLMENT_NOT_FOUND",
+            message: "Inscription élève introuvable.",
+          },
+        });
+      }
+
+      const attendance = await app.prisma.attendance.upsert({
+        where: {
+          enrollmentId_date: {
+            enrollmentId: enrollment.id,
+            date,
+          },
+        },
+        update: {
+          status: body.status,
+          arrivalTime: body.arrivalTime ? new Date(body.arrivalTime) : null,
+          reason: body.reason ?? null,
+          note: body.note ?? null,
+          recordedBy: request.user.sub,
+        },
+        create: {
+          studentId: enrollment.studentId,
+          enrollmentId: enrollment.id,
+          date,
+          status: body.status,
+          arrivalTime: body.arrivalTime ? new Date(body.arrivalTime) : null,
+          reason: body.reason ?? null,
+          note: body.note ?? null,
+          recordedBy: request.user.sub,
+        },
+      });
+
+      return reply.code(200).send({ attendance });
+    },
+  );
+
   app.get(
     "/me/dashboard",
     {
