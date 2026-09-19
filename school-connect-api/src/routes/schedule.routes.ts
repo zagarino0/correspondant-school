@@ -9,6 +9,94 @@ export async function scheduleRoutes(
 ): Promise<void> {
   /**
    * ==================================================
+   * GET /api/v1/schedules/teacher/me
+   * ==================================================
+   *
+   * Emploi du temps hebdomadaire de l'enseignant connecté.
+   * Le teacherId provient du JWT : un enseignant ne peut
+   * consulter que ses propres créneaux.
+   */
+  app.get(
+    "/teacher/me",
+    {
+      onRequest: [authenticate],
+      preHandler: [
+        authorizeResource(
+          "schedule.read",
+          async () => true,
+        ),
+      ],
+    },
+    async (request, reply) => {
+      const teacherId = request.user.sub;
+      const userSchoolId = request.user.schoolId;
+
+      const teacher = await app.prisma.user.findFirst({
+        where: {
+          id: teacherId,
+          role: "TEACHER",
+          status: "ACTIVE",
+          ...(userSchoolId ? { schoolId: userSchoolId } : {}),
+        },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          schoolId: true,
+        },
+      });
+
+      if (!teacher) {
+        return reply.code(404).send({
+          error: {
+            code: "TEACHER_NOT_FOUND",
+            message: "Teacher profile not found.",
+          },
+        });
+      }
+
+      const schedules = await app.prisma.schedule.findMany({
+        where: {
+          teacherId: teacher.id,
+          ...(teacher.schoolId ? { schoolId: teacher.schoolId } : {}),
+        },
+        orderBy: [
+          { dayOfWeek: "asc" },
+          { startTime: "asc" },
+          { endTime: "asc" },
+        ],
+        select: {
+          id: true,
+          schoolId: true,
+          academicYearId: true,
+          classId: true,
+          teacherId: true,
+          subject: true,
+          dayOfWeek: true,
+          startTime: true,
+          endTime: true,
+          room: true,
+          createdAt: true,
+          updatedAt: true,
+          class: {
+            select: {
+              id: true,
+              name: true,
+              level: true,
+            },
+          },
+        },
+      });
+
+      return reply.code(200).send({
+        teacher,
+        schedules,
+      });
+    },
+  );
+
+  /**
+   * ==================================================
    * GET /api/v1/schedules
    * ==================================================
    *
