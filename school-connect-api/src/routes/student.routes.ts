@@ -14,6 +14,7 @@ const studentCreateSchema = z.object({
   studentNumber: z.string().trim().min(1).max(50),
   dateOfBirth: z.string().datetime().nullable().optional(),
   classId: z.string().min(1),
+  gender: z.enum(["MALE", "FEMALE"]),
 });
 
 const studentUpdateSchema = z.object({
@@ -25,6 +26,7 @@ const studentUpdateSchema = z.object({
   dateOfBirth: z.string().datetime().nullable().optional(),
   status: z.enum(["ACTIVE", "INACTIVE", "SUSPENDED"]).optional(),
   classId: z.string().min(1).nullable().optional(),
+  gender: z.enum(["MALE", "FEMALE"]).optional(),
 });
 
 const listStudentsQuerySchema = z.object({
@@ -112,6 +114,7 @@ const studentRoutes: FastifyPluginAsync = async (fastify) => {
             firstName: true,
             lastName: true,
             dateOfBirth: true,
+            gender: true,
             status: true,
             user: {
               select: {
@@ -168,7 +171,7 @@ const studentRoutes: FastifyPluginAsync = async (fastify) => {
       ];
 
       const classStudents =
-        classIds.length > 0
+        classIds.length > 0 && schoolId
           ? await fastify.prisma.student.findMany({
               where: {
                 schoolId,
@@ -283,6 +286,7 @@ const studentRoutes: FastifyPluginAsync = async (fastify) => {
           firstName: true,
           lastName: true,
           dateOfBirth: true,
+          gender: true,
           status: true,
           user: {
             select: {
@@ -403,6 +407,7 @@ const studentRoutes: FastifyPluginAsync = async (fastify) => {
         studentNumber,
         dateOfBirth,
         classId,
+        gender,
       } = parsed.data;
 
       const normalizedEmail = email.toLowerCase();
@@ -490,6 +495,7 @@ const studentRoutes: FastifyPluginAsync = async (fastify) => {
             firstName,
             lastName,
             dateOfBirth: parsedDateOfBirth,
+            gender,
             status: "ACTIVE",
           },
         });
@@ -515,6 +521,7 @@ const studentRoutes: FastifyPluginAsync = async (fastify) => {
           firstName: result.student.firstName,
           lastName: result.student.lastName,
           dateOfBirth: result.student.dateOfBirth,
+          gender: result.student.gender,
           status: result.student.status,
           email: result.user.email,
           enrollment: {
