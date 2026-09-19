@@ -9,30 +9,45 @@ export function DashboardSection({
   title,
   cards,
 }: DashboardSectionProps) {
+  const fullWidthCards = cards.filter((card) => card.fullWidth);
+  const compactCards = cards.filter((card) => !card.fullWidth);
+  const firstRowCards = compactCards.slice(0, 2);
+  const secondRowCards = compactCards.slice(2);
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>{title}</Text>
 
       {cards.some((card) => card.fullWidth) ? (
         <>
-          <View style={styles.cards}>
-            {cards.filter((card) => !card.fullWidth).map((card) => (
-              <View key={card.id} style={styles.equalCardWrapper}>
+          <View style={styles.row}>
+            {firstRowCards.map((card) => (
+              <View key={card.id} style={styles.halfCardWrapper}>
                 <DashboardCard {...card} />
               </View>
             ))}
           </View>
 
-          {cards.filter((card) => card.fullWidth).map((card) => (
+          {secondRowCards.length > 0 ? (
+            <View style={styles.row}>
+              {secondRowCards.map((card) => (
+                <View key={card.id} style={styles.halfCardWrapper}>
+                  <DashboardCard {...card} />
+                </View>
+              ))}
+            </View>
+          ) : null}
+
+          {fullWidthCards.map((card) => (
             <View key={card.id} style={styles.fullWidth}>
               <DashboardCard {...card} />
             </View>
           ))}
         </>
       ) : (
-        <View style={styles.cards}>
+        <View style={styles.row}>
           {cards.map((card) => (
-            <View key={card.id} style={styles.cardWrapper}>
+            <View key={card.id} style={styles.halfCardWrapper}>
               <DashboardCard {...card} />
             </View>
           ))}
@@ -52,16 +67,14 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#111827",
   },
-  cards: {
+  row: {
     flexDirection: "row",
-    flexWrap: "wrap",
     gap: 12,
+    marginBottom: 12,
   },
-  cardWrapper: {
-    width: "48%",
-  },
-  equalCardWrapper: {
-    width: "24%",
+  halfCardWrapper: {
+    flex: 1,
+    minWidth: 0,
   },
   fullWidth: {
     width: "100%",
