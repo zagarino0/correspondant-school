@@ -66,6 +66,20 @@ export async function teacherRoutes(
         });
       }
 
+      const teacher = await app.prisma.user.findUnique({
+        where: { id: request.user.sub },
+        select: { id: true, firstName: true, lastName: true },
+      });
+
+      if (!teacher) {
+        return reply.code(404).send({
+          error: {
+            code: "TEACHER_NOT_FOUND",
+            message: "Teacher not found.",
+          },
+        });
+      }
+
       const teacherClasses =
         await app.prisma.teacherClass.findMany({
           where: {
@@ -173,11 +187,7 @@ export async function teacherRoutes(
 
       return reply.code(200).send({
         date,
-        teacher: {
-          id: request.user.sub,
-          firstName: request.user.firstName,
-          lastName: request.user.lastName,
-        },
+        teacher,
         classes: teacherClasses.map(({ class: schoolClass }) => ({
           id: schoolClass.id,
           name: schoolClass.name,
