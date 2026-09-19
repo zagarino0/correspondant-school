@@ -12,6 +12,7 @@ import healthRoutes from "../routes/health.routes.js";
 import userRoutes from "../routes/user.routes.js";
 import schoolRoutes from "../routes/school.routes.js";
 import studentRoutes from "../routes/student.routes.js";
+import studentClassRoutes from "../routes/student-class.routes.js";
 import { attendanceRoutes } from "../routes/attendance.routes.js";
 import { gradeRoutes } from "../routes/grade.routes.js";
 import { assignmentRoutes } from "../routes/assignment.routes.js";
@@ -69,6 +70,9 @@ export async function buildApp() {
     prefix: "/api/v1",
   });
   await app.register(studentRoutes, {
+    prefix: "/api/v1",
+  });
+  await app.register(studentClassRoutes, {
     prefix: "/api/v1",
   });
   await app.register(parentRoutes, {
