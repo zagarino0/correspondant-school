@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -15,6 +15,11 @@ import {
   getConversationMessages,
   sendMessage,
 } from "../../../services/messages/message.service";
+import {
+  createRealtimeConnection,
+  type RealtimeConnection,
+} from "../../../services/realtime/websocket.service";
+import type { RealtimeEvent } from "../../../services/realtime/websocket.types";
 import { useAuthStore } from "../../../stores/authStore";
 
 export default function ConversationScreen() {
@@ -29,7 +34,7 @@ export default function ConversationScreen() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [participantName, setParticipantName] = useState("Conversation");
 
-  async function loadMessages() {
+  const loadMessages = useCallback(async () => {
     if (!conversationId) {
       setErrorMessage("Conversation introuvable.");
       setIsLoading(false);
@@ -59,60 +64,98 @@ export default function ConversationScreen() {
     } finally {
       setIsLoading(false);
     }
-  }
+  }, [conversationId, currentUserId]);
 
   useEffect(() => {
-    let isMounted = true;
+    void loadMessages();
+  }, [loadMessages]);
 
-    async function load() {
-      if (!conversationId) {
-        if (isMounted) {
-          setErrorMessage("Conversation introuvable.");
-          setIsLoading(false);
-        }
-        return;
-      }
+  useEffect(() => {
+    if (!conversationId) {
+      return;
+    }
 
-      try {
-        setIsLoading(true);
-        setErrorMessage(null);
+    let realtime: RealtimeConnection;
 
-        const response = await getConversationMessages(conversationId);
+    function handleRealtimeEvent(event: RealtimeEvent) {
+      if (event.type === "message:new") {
+        const message = event.payload;
 
-        if (!isMounted) {
+        if (message.conversationId !== conversationId) {
           return;
         }
 
-        setMessages(response.messages);
+        setMessages((currentMessages) => {
+          if (currentMessages.some((current) => current.id === message.id)) {
+            return currentMessages;
+          }
 
-        const otherMessage = response.messages.find(
-          (message) => message.senderId !== currentUserId,
+          return [...currentMessages, message];
+        });
+
+        if (message.senderId !== currentUserId) {
+          setParticipantName(
+            `${message.sender.firstName} ${message.sender.lastName}`.trim(),
+          );
+          realtime.markConversationRead(conversationId);
+        }
+
+        return;
+      }
+
+      if (event.type === "message:delivered") {
+        if (event.payload.conversationId !== conversationId) {
+          return;
+        }
+
+        setMessages((currentMessages) =>
+          currentMessages.map((message) =>
+            message.id === event.payload.messageId
+              ? {
+                  ...message,
+                  deliveredAt: event.payload.deliveredAt,
+                }
+              : message,
+          ),
         );
 
-        if (otherMessage) {
-          setParticipantName(
-            `${otherMessage.sender.firstName} ${otherMessage.sender.lastName}`.trim(),
-          );
+        return;
+      }
+
+      if (event.type === "message:read") {
+        if (event.payload.conversationId !== conversationId) {
+          return;
         }
-      } catch {
-        if (isMounted) {
-          setErrorMessage(
-            "Impossible de charger cette conversation pour le moment.",
-          );
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+
+        setMessages((currentMessages) =>
+          currentMessages.map((message) =>
+            message.id === event.payload.messageId
+              ? {
+                  ...message,
+                  deliveredAt: message.deliveredAt ?? event.payload.readAt,
+                  readAt: event.payload.readAt,
+                }
+              : message,
+          ),
+        );
       }
     }
 
-    void load();
+    realtime = createRealtimeConnection({
+      onEvent: handleRealtimeEvent,
+      onConnected: () => {
+        realtime.markConversationRead(conversationId);
+        void loadMessages();
+      },
+    });
+
+    realtime.connect();
+    realtime.markConversationRead(conversationId);
 
     return () => {
-      isMounted = false;
+      realtime.close();
     };
-  }, [conversationId, currentUserId]);
+  }, [conversationId, currentUserId, loadMessages]);
 
   async function handleSend() {
     const trimmedContent = content.trim();
@@ -127,7 +170,14 @@ export default function ConversationScreen() {
 
       const response = await sendMessage(conversationId, trimmedContent);
 
-      setMessages((currentMessages) => [...currentMessages, response.message]);
+      setMessages((currentMessages) => {
+        if (currentMessages.some((message) => message.id === response.message.id)) {
+          return currentMessages;
+        }
+
+        return [...currentMessages, response.message];
+      });
+
       setContent("");
     } catch {
       setErrorMessage("Impossible d’envoyer le message.");
