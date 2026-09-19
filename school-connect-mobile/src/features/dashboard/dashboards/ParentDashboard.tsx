@@ -1,5 +1,169 @@
 import { useEffect, useMemo, useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { useRouter } from "expo-router";
+
+import { DashboardSection } from "../components/DashboardSection";
+import type { DashboardCardData, DashboardSectionData } from "../dashboard.types";
+import {
+  getChildSchedule,
+  getMyChildren,
+  type ParentChild,
+  type ParentChildSchedule,
+  type ParentScheduleDay,
+} from "../../../services/parents/parent.service";
+import {
+  getStudentAttendance,
+  type ParentAttendanceRecord,
+} from "../../../services/attendance/attendance.service";
+import {
+  getStudentGrades,
+  type ParentGrade,
+} from "../../../services/grades/grade.service";
+
+type ParentDashboardProps = {
+  firstName: string;
+};
+
+const SCHEDULE_DAYS: {
+  key: ParentScheduleDay;
+  label: string;
+}[] = [
+  { key: "MONDAY", label: "Lundi" },
+  { key: "TUESDAY", label: "Mardi" },
+  { key: "WEDNESDAY", label: "Mercredi" },
+  { key: "THURSDAY", label: "Jeudi" },
+  { key: "FRIDAY", label: "Vendredi" },
+  { key: "SATURDAY", label: "Samedi" },
+  { key: "SUNDAY", label: "Dimanche" },
+];
+
+function getTodayScheduleDay(): ParentScheduleDay {
+  const days: ParentScheduleDay[] = [
+    "SUNDAY",
+    "MONDAY",
+    "TUESDAY",
+    "WEDNESDAY",
+    "THURSDAY",
+    "FRIDAY",
+    "SATURDAY",
+  ];
+
+  return days[new Date().getDay()];
+}
+
+function ScheduleGrid({
+  schedules,
+  loading,
+  error,
+}: {
+  schedules: ParentChildSchedule[];
+  loading: boolean;
+  error: boolean;
+}) {
+  const { width } = useWindowDimensions();
+  const isCompact = width < 600;
+
+  if (loading) {
+    return (
+      <View style={styles.scheduleState}>
+        <Text style={styles.scheduleStateText}>
+          Chargement de l’emploi du temps…
+        </Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.scheduleState}>
+        <Text style={styles.scheduleStateText}>
+          Impossible de charger l’emploi du temps.
+        </Text>
+      </View>
+    );
+  }
+
+  if (schedules.length === 0) {
+    return (
+      <View style={styles.scheduleState}>
+        <Text style={styles.scheduleStateText}>
+          Aucun créneau n’est enregistré pour cette classe.
+        </Text>
+      </View>
+    );
+  }
+
+  const today = getTodayScheduleDay();
+
+  return (
+    <View style={styles.scheduleGrid}>
+      {SCHEDULE_DAYS.map((day) => {
+        const daySchedules = schedules
+          .filter((schedule) => schedule.dayOfWeek === day.key)
+          .sort((a, b) => a.startTime.localeCompare(b.startTime));
+
+        const isToday = day.key === today;
+
+        return (
+          <View
+            key={day.key}
+            style={[
+              styles.scheduleDay,
+              isCompact ? styles.scheduleDayCompact : null,
+              !isCompact ? styles.scheduleDayWide : null,
+              isToday ? styles.scheduleDayToday : null,
+            ]}
+          >
+            <View
+              style={[
+                styles.scheduleDayHeader,
+                isToday ? styles.scheduleDayHeaderToday : null,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.scheduleDayLabel,
+                  isToday ? styles.scheduleDayLabelToday : null,
+                ]}
+              >
+                {day.label}
+              </Text>
+              {isToday ? (
+                <Text style={styles.todayLabel}>Aujourd’hui</Text>
+              ) : null}
+            </View>
+
+            {daySchedules.length > 0 ? (
+              daySchedules.map((schedule) => (
+                <View key={schedule.id} style={styles.scheduleLesson}>
+                  <Text style={styles.scheduleTime}>
+                    {schedule.startTime} – {schedule.endTime}
+                  </Text>
+                  <Text style={styles.scheduleSubject} numberOfLines={2}>
+                    {schedule.subject}
+                  </Text>
+                  <Text style={styles.scheduleTeacher} numberOfLines={1}>
+                    {schedule.teacher.firstName} {schedule.teacher.lastName}
+                  </Text>
+                  {schedule.room ? (
+                    <Text style={styles.scheduleRoom}>
+                      Salle {schedule.room}
+                    </Text>
+                  ) : null}
+                </View>
+              ))
+            ) : (
+              <View style={styles.scheduleEmpty}>
+                <Text style={styles.scheduleEmptyText}>Aucun cours</Text>
+              </View>
+            )}
+          </View>
+        );
+      })}
+    </View>
+  );
+}mport { useEffect, useMemo, useState } from "react";
+import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { useRouter } from "expo-router";
 
 import { DashboardSection } from "../components/DashboardSection";
@@ -179,6 +343,11 @@ export function ParentDashboard({ firstName }: ParentDashboardProps) {
   const [scheduleError, setScheduleError] = useState(false);
   const [childrenLoading, setChildrenLoading] = useState(true);
   const [childrenError, setChildrenError] = useState(false);
+  const [announcements, setAnnouncements] = useState<StudentAnnouncement[]>([]);
+  const [messages, setMessages] = useState<Conversation[]>([]);
+  const [unreadMessages, setUnreadMessages] = useState(0);
+  const [communicationLoading, setCommunicationLoading] = useState(true);
+  const [communicationError, setCommunicationError] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -339,6 +508,47 @@ export function ParentDashboard({ firstName }: ParentDashboardProps) {
       isMounted = false;
     };
   }, [selectedChildId]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadCommunication() {
+      try {
+        setCommunicationLoading(true);
+        setCommunicationError(false);
+
+        const [announcementResponse, conversationResponse, unreadCount] =
+          await Promise.all([
+            getMyAnnouncements(),
+            getMyConversations(),
+            getUnreadMessageCount(),
+          ]);
+
+        if (isMounted) {
+          setAnnouncements(announcementResponse.announcements);
+          setMessages(conversationResponse.conversations);
+          setUnreadMessages(unreadCount);
+        }
+      } catch {
+        if (isMounted) {
+          setAnnouncements([]);
+          setMessages([]);
+          setUnreadMessages(0);
+          setCommunicationError(true);
+        }
+      } finally {
+        if (isMounted) {
+          setCommunicationLoading(false);
+        }
+      }
+    }
+
+    void loadCommunication();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const selectedChild = useMemo(
     () => children.find((child) => child.id === selectedChildId) ?? null,
@@ -530,12 +740,48 @@ export function ParentDashboard({ firstName }: ParentDashboardProps) {
         {
           id: "announcements",
           title: "Annonces",
-          description: "Retrouver les informations de l'établissement.",
+          value: communicationLoading
+            ? "…"
+            : communicationError
+              ? "—"
+              : String(announcements.length),
+          badge:
+            !communicationLoading && !communicationError && announcements.some(
+              (announcement) => !announcement.isRead,
+            )
+              ? "Nouveau"
+              : undefined,
+          description:
+            communicationLoading
+              ? "Chargement des annonces."
+              : communicationError
+                ? "Impossible de charger les annonces."
+                : announcements.length > 0
+                  ? announcements[0].title
+                  : "Aucune annonce reçue.",
+          onPress: () => router.push("/(app)/announcements"),
         },
         {
           id: "messages",
           title: "Messages",
-          description: "Échanger avec l'établissement.",
+          value: communicationLoading
+            ? "…"
+            : communicationError
+              ? "—"
+              : String(messages.length),
+          badge:
+            !communicationLoading && !communicationError && unreadMessages > 0
+              ? String(unreadMessages)
+              : undefined,
+          description:
+            communicationLoading
+              ? "Chargement des conversations."
+              : communicationError
+                ? "Impossible de charger les messages."
+                : messages.length > 0
+                  ? "Dernières conversations disponibles."
+                  : "Aucune conversation.",
+          onPress: () => router.push("/(app)/messages"),
         },
       ],
     },
@@ -590,17 +836,23 @@ const styles = StyleSheet.create({
     color: "#374151",
   },
   scheduleGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 10,
-    paddingRight: 12,
-    paddingBottom: 4,
   },
   scheduleDay: {
-    width: 150,
+    borderRadius: 12,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "#E5E7EB",
     backgroundColor: "#F9FAFB",
     overflow: "hidden",
+  },
+  scheduleDayCompact: {
+    width: "100%",
+  },
+  scheduleDayWide: {
+    width: "48%",
   },
   scheduleDayToday: {
     borderColor: "#2563EB",
