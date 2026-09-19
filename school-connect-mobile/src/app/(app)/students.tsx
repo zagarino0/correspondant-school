@@ -522,7 +522,7 @@ export default function StudentsScreen() {
                   })}
                 </View>
               ) : null}
-            </View>            </View>
+            </View>
           );
         }}
       />
