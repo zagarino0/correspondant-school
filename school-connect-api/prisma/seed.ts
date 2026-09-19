@@ -19,6 +19,9 @@ async function main() {
     { email: "admin@school-connect.local", firstName: "School", lastName: "Admin", role: UserRole.SCHOOL_ADMIN, schoolId: school.id },
     { email: "teacher@school-connect.local", firstName: "Demo", lastName: "Teacher", role: UserRole.TEACHER, schoolId: school.id },
     { email: "parent@school-connect.local", firstName: "Demo", lastName: "Parent", role: UserRole.PARENT, schoolId: school.id },
+    { email: "parent2@school-connect.local", firstName: "Marie", lastName: "Rakoto", role: UserRole.PARENT, schoolId: school.id },
+    { email: "parent3@school-connect.local", firstName: "Paul", lastName: "Andria", role: UserRole.PARENT, schoolId: school.id },
+    { email: "parent4@school-connect.local", firstName: "Sophie", lastName: "Rabe", role: UserRole.PARENT, schoolId: school.id },
     { email: "staff@school-connect.local", firstName: "Demo", lastName: "Staff", role: UserRole.STAFF, schoolId: school.id },
   ];
 
@@ -183,6 +186,47 @@ async function main() {
     });
   }
 
+  const parentLinks = [
+    { parentEmail: "parent@school-connect.local", studentNumber: "A001", relationship: "Père", isPrimary: true },
+    { parentEmail: "parent@school-connect.local", studentNumber: "A002", relationship: "Père", isPrimary: false },
+    { parentEmail: "parent2@school-connect.local", studentNumber: "B001", relationship: "Mère", isPrimary: true },
+    { parentEmail: "parent3@school-connect.local", studentNumber: "B002", relationship: "Père", isPrimary: true },
+    { parentEmail: "parent3@school-connect.local", studentNumber: "C001", relationship: "Père", isPrimary: false },
+    { parentEmail: "parent4@school-connect.local", studentNumber: "C002", relationship: "Mère", isPrimary: true },
+  ];
+
+  for (const link of parentLinks) {
+    const parent = await prisma.user.findUniqueOrThrow({
+      where: { email: link.parentEmail },
+    });
+
+    const student = await prisma.student.findFirstOrThrow({
+      where: {
+        schoolId: school.id,
+        studentNumber: link.studentNumber,
+      },
+    });
+
+    await prisma.parentStudent.upsert({
+      where: {
+        parentId_studentId: {
+          parentId: parent.id,
+          studentId: student.id,
+        },
+      },
+      update: {
+        relationship: link.relationship,
+        isPrimary: link.isPrimary,
+      },
+      create: {
+        parentId: parent.id,
+        studentId: student.id,
+        relationship: link.relationship,
+        isPrimary: link.isPrimary,
+      },
+    });
+  }
+
   const saturdaySchedules = [
     { classIndex: 0, subject: "Mathématiques", startTime: "09:00", endTime: "10:00", room: "Salle A1" },
     { classIndex: 1, subject: "Français", startTime: "10:15", endTime: "11:15", room: "Salle B1" },
@@ -230,6 +274,7 @@ async function main() {
   console.log("Seed completed successfully.");
   console.log("School: SC-DEMO - Demo School Connect");
   console.log("Teacher: teacher@school-connect.local");
+  console.log("Parents: parent@school-connect.local (2 enfants), parent2@school-connect.local (1 enfant), parent3@school-connect.local (2 enfants), parent4@school-connect.local (1 enfant)");
   console.log("Today's test timetable: Saturday / Classe A, B, C");
   console.log(`Development password: ${PASSWORD}`);
 }
