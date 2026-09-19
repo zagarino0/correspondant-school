@@ -533,7 +533,7 @@ export default function StudentsScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: "#F8FAFC" },
   header: { paddingHorizontal: 18, paddingTop: 18, paddingBottom: 10 },
-  title: { fontSize: 24, fontWeight: "800", color: "#111827" },
+  title: { fontSize: 24, fontWeight: "800", color: "#344976" },
   subtitle: { marginTop: 3, fontSize: 12, color: "#6B7280" },
   controls: { paddingHorizontal: 14, paddingBottom: 8 },
   searchInput: {
@@ -543,7 +543,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 13,
     backgroundColor: "#FFFFFF",
-    color: "#111827",
+    color: "#344976",
     fontSize: 13,
   },
   filters: { gap: 8, paddingVertical: 10 },
@@ -559,8 +559,8 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   filterActive: {
-    borderColor: "#111827",
-    backgroundColor: "#111827",
+    borderColor: "#344976",
+    backgroundColor: "#344976",
     color: "#FFFFFF",
   },
   listContent: { paddingHorizontal: 14, paddingBottom: 28 },
@@ -586,11 +586,11 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   categoryHeaderText: { flex: 1 },
-  categoryTitle: { fontSize: 19, fontWeight: "900", color: "#111827" },
+  categoryTitle: { fontSize: 19, fontWeight: "900", color: "#344976" },
   expandIcon: {
     fontSize: 11,
     fontWeight: "900",
-    color: "#111827",
+    color: "#344976",
   },
   categoryCount: { marginTop: 3, fontSize: 11, color: "#6B7280" },
   categoryBadge: {
@@ -600,7 +600,7 @@ const styles = StyleSheet.create({
     borderRadius: 17,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#111827",
+    backgroundColor: "#344976",
   },
   categoryBadgeText: { fontSize: 11, fontWeight: "900", color: "#FFFFFF" },
   levelGrid: {
@@ -625,7 +625,7 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   levelHeaderText: { flex: 1 },
-  levelTitle: { fontSize: 15, fontWeight: "900", color: "#111827" },
+  levelTitle: { fontSize: 15, fontWeight: "900", color: "#344976" },
   levelCount: { marginTop: 2, fontSize: 10, fontWeight: "700", color: "#6B7280" },
   classGrid: {
     flexDirection: "row",
@@ -647,7 +647,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 9,
     paddingVertical: 9,
-    backgroundColor: "#111827",
+    backgroundColor: "#344976",
   },
   classHeaderIdentity: {
     flexDirection: "row",
@@ -691,8 +691,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#E2E8F0",
   },
-  positionText: { fontSize: 9, fontWeight: "900", color: "#111827" },
-  studentName: { fontSize: 10, fontWeight: "700", color: "#111827" },
+  positionText: { fontSize: 9, fontWeight: "900", color: "#344976" },
+  studentName: { fontSize: 10, fontWeight: "700", color: "#344976" },
   genderText: { fontSize: 9, fontWeight: "900", color: "#374151" },
   studentNumber: {
     fontSize: 8,
@@ -704,7 +704,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 7,
     paddingVertical: 6,
     borderRadius: 7,
-    backgroundColor: "#111827",
+    backgroundColor: "#344976",
   },
   editButtonText: {
     fontSize: 8,
@@ -723,7 +723,7 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 16,
     fontWeight: "800",
-    color: "#111827",
+    color: "#344976",
     marginBottom: 4,
   },
   stateText: { marginTop: 8, fontSize: 12, color: "#6B7280" },
