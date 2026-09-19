@@ -1,4 +1,4 @@
-export type StudentStatus = "ACTIVE" | "INACTIVE" | "SUSPENDED";
+export type StudentStatus = "ACTIVE" | "INACTIVE" | "SUSPENDED";\nexport type StudentGender = "MALE" | "FEMALE";
 
 export type StudentListItem = {
   id: string;
