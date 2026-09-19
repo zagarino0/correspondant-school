@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { router } from "expo-router";
 import {
   ActivityIndicator,
   FlatList,
@@ -290,6 +291,9 @@ export default function StudentsScreen() {
                   <Text style={[styles.headingText, styles.matriculeColumn]}>
                     Matricule
                   </Text>
+                  <Text style={[styles.headingText, styles.actionColumn]}>
+                    Action
+                  </Text>
                 </View>
 
                 {classGroup.students.map((student) => (
@@ -317,6 +321,19 @@ export default function StudentsScreen() {
                       <Text style={styles.studentNumber}>
                         {student.studentNumber}
                       </Text>
+                    </View>
+                    <View style={styles.actionCell}>
+                      <Pressable
+                        onPress={() =>
+                          router.push({
+                            pathname: "/(app)/students/[studentId]",
+                            params: { studentId: student.id },
+                          })
+                        }
+                        style={styles.editButton}
+                      >
+                        <Text style={styles.editButtonText}>Modifier</Text>
+                      </Pressable>
                     </View>
                   </View>
                 ))}
@@ -420,7 +437,8 @@ const styles = StyleSheet.create({
   },
   positionColumn: { flex: 0.75 },
   genderColumn: { flex: 0.55, textAlign: "center" },
-  matriculeColumn: { flex: 1.35, textAlign: "right" },
+  matriculeColumn: { flex: 1.15, textAlign: "right" },
+  actionColumn: { flex: 0.9, textAlign: "right" },
   studentRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -435,7 +453,19 @@ const styles = StyleSheet.create({
   studentName: { fontSize: 13, fontWeight: "700", color: "#111827" },
   genderCell: { flex: 0.55, alignItems: "center" },
   genderText: { fontSize: 12, fontWeight: "800", color: "#374151" },
-  matriculeCell: { flex: 1.35, alignItems: "flex-end" },
+  matriculeCell: { flex: 1.15, alignItems: "flex-end" },
+  actionCell: { flex: 0.9, alignItems: "flex-end" },
+  editButton: {
+    paddingHorizontal: 9,
+    paddingVertical: 7,
+    borderRadius: 8,
+    backgroundColor: "#111827",
+  },
+  editButtonText: {
+    fontSize: 10,
+    fontWeight: "800",
+    color: "#FFFFFF",
+  },
   studentNumber: { fontSize: 11, fontWeight: "600", color: "#6B7280" },
   errorBox: {
     marginHorizontal: 14,
