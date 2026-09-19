@@ -2,31 +2,39 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 
 import { DashboardHeader } from "../../features/dashboard/components/DashboardHeader";
+import { ParentDashboard } from "../../features/dashboard/dashboards/ParentDashboard";
+import { SchoolAdminDashboard } from "../../features/dashboard/dashboards/SchoolAdminDashboard";
+import { StaffDashboard } from "../../features/dashboard/dashboards/StaffDashboard";
 import { StudentDashboard } from "../../features/dashboard/dashboards/StudentDashboard";
+import { SuperAdminDashboard } from "../../features/dashboard/dashboards/SuperAdminDashboard";
+import { TeacherDashboard } from "../../features/dashboard/dashboards/TeacherDashboard";
 import { useAuthStore } from "../../stores/authStore";
 
 export default function AppHomeScreen() {
   const router = useRouter();
 
   const user = useAuthStore((state) => state.user);
-  const logout = useAuthStore((state) => state.logout);
-
-  const handleLogout = async () => {
-    await logout();
-    router.replace("/(auth)/login");
-  };
 
   const renderDashboard = () => {
-    switch (user?.role) {
-      case "STUDENT":
-        return (
-          <StudentDashboard
-            firstName={user.firstName}
-          />
-        );
+    if (!user) {
+      return null;
+    }
 
+    switch (user.role) {
+      case "STUDENT":
+        return <StudentDashboard firstName={user.firstName} />;
+      case "PARENT":
+        return <ParentDashboard firstName={user.firstName} />;
+      case "TEACHER":
+        return <TeacherDashboard firstName={user.firstName} />;
+      case "STAFF":
+        return <StaffDashboard firstName={user.firstName} />;
+      case "SCHOOL_ADMIN":
+        return <SchoolAdminDashboard firstName={user.firstName} />;
+      case "SUPER_ADMIN":
+        return <SuperAdminDashboard firstName={user.firstName} />;
       default:
-        return <StudentDashboard firstName={user?.firstName ?? ""} />;
+        return null;
     }
   };
 
@@ -75,15 +83,6 @@ export default function AppHomeScreen() {
           <Text style={styles.navLabel}>Profil</Text>
         </Pressable>
       </View>
-
-      <Pressable
-        style={styles.logoutButton}
-        onPress={() => {
-          void handleLogout();
-        }}
-      >
-        <Text style={styles.logoutText}>Se déconnecter</Text>
-      </Pressable>
     </View>
   );
 }
@@ -97,7 +96,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-around",
-    paddingTop: 12,
+    paddingTop: 10,
     paddingBottom: 12,
     backgroundColor: "#FFFFFF",
     borderTopWidth: 1,
@@ -116,18 +115,5 @@ const styles = StyleSheet.create({
   navLabel: {
     fontSize: 12,
     color: "#374151",
-  },
-  logoutButton: {
-    marginHorizontal: 24,
-    marginBottom: 16,
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: "center",
-    backgroundColor: "#111827",
-  },
-  logoutText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#FFFFFF",
   },
 });
