@@ -557,155 +557,148 @@ export function TeacherDashboard({ firstName }: TeacherDashboardProps) {
                       </View>
                     </View>
 
-                    <View style={styles.studentHeader}>
-                      <Text style={[styles.studentHeaderText, styles.studentNameColumn]}>
-                        Élève
-                      </Text>
-                      <Text style={[styles.studentHeaderText, styles.studentNumberColumn]}>
-                        N°
-                      </Text>
-                      <Text style={[styles.studentHeaderText, styles.attendanceColumn]}>
-                        A / P / R
-                      </Text>
-                    </View>
-
-                    {isActive || activity.observation ? (
-                      <View style={styles.observationBlock}>
-                        <View style={styles.observationHeader}>
-                          <Text style={styles.observationTitle}>Observation du cours</Text>
-                          {activity.observation ? (
-                            <Text style={styles.observationSaved}>Enregistrée · Fermée</Text>
-                          ) : null}
+                    {isActive ? (
+                      <>
+                        <View style={styles.studentHeader}>
+                          <Text style={[styles.studentHeaderText, styles.studentNameColumn]}>
+                            Élève
+                          </Text>
+                          <Text style={[styles.studentHeaderText, styles.studentNumberColumn]}>
+                            N°
+                          </Text>
+                          <Text style={[styles.studentHeaderText, styles.attendanceColumn]}>
+                            A / P / R
+                          </Text>
                         </View>
 
-                        {observationConfirmation === activity.schedule.id ? (
-                          <View style={styles.observationConfirmation}>
-                            <Text style={styles.observationConfirmationText}>
-                              ✓ Observation enregistrée
-                            </Text>
+                        <View style={styles.observationBlock}>
+                          <View style={styles.observationHeader}>
+                            <Text style={styles.observationTitle}>Observation du cours</Text>
+                            {activity.observation ? (
+                              <Text style={styles.observationSaved}>Enregistrée · Fermée</Text>
+                            ) : null}
                           </View>
-                        ) : null}
 
-                        <TextInput
-                          value={observationDrafts[activity.schedule.id] ?? ""}
-                          onChangeText={(value) =>
-                            setObservationDrafts((current) => ({
-                              ...current,
-                              [activity.schedule.id]: value,
-                            }))
-                          }
-                          placeholder="Ex. Nouvelle leçon avec TD"
-                          placeholderTextColor="#9CA3AF"
-                          multiline
-                          editable={
-                            isActive &&
-                            (!activity.observation ||
-                              editingObservation === activity.schedule.id) &&
-                            savingObservation !== activity.schedule.id
-                          }
-                          style={[
-                            styles.observationInput,
-                            !isActive || (activity.observation && editingObservation !== activity.schedule.id)
-                              ? styles.observationInputLocked
-                              : null,
-                          ]}
-                        />
+                          {observationConfirmation === activity.schedule.id ? (
+                            <View style={styles.observationConfirmation}>
+                              <Text style={styles.observationConfirmationText}>
+                                ✓ Observation enregistrée
+                              </Text>
+                            </View>
+                          ) : null}
 
-                        {isActive && activity.observation && editingObservation !== activity.schedule.id ? (
-                          <Pressable
-                            onPress={() => {
-                              setEditingObservation(activity.schedule.id);
-                              setObservationConfirmation(null);
-                            }}
-                            style={styles.observationEditButton}
-                          >
-                            <Text style={styles.observationEditButtonText}>Modifier</Text>
-                          </Pressable>
-                        ) : null}
-
-                        {isActive && (!activity.observation || editingObservation === activity.schedule.id) ? (
-                          <Pressable
-                            disabled={
-                              savingObservation === activity.schedule.id ||
-                              !(observationDrafts[activity.schedule.id] ?? "").trim()
+                          <TextInput
+                            value={observationDrafts[activity.schedule.id] ?? ""}
+                            onChangeText={(value) =>
+                              setObservationDrafts((current) => ({
+                                ...current,
+                                [activity.schedule.id]: value,
+                              }))
                             }
-                            onPress={() => void handleObservationSave(activity)}
+                            placeholder="Ex. Nouvelle leçon avec TD"
+                            placeholderTextColor="#9CA3AF"
+                            multiline
+                            editable={
+                              !activity.observation ||
+                              editingObservation === activity.schedule.id
+                            }
                             style={[
-                              styles.observationButton,
-                              (savingObservation === activity.schedule.id ||
-                                !(observationDrafts[activity.schedule.id] ?? "").trim())
-                                ? styles.observationButtonDisabled
+                              styles.observationInput,
+                              activity.observation &&
+                              editingObservation !== activity.schedule.id
+                                ? styles.observationInputLocked
                                 : null,
                             ]}
-                          >
-                            {savingObservation === activity.schedule.id ? (
-                              <ActivityIndicator color="#FFFFFF" />
-                            ) : (
-                              <Text style={styles.observationButtonText}>Enregistrer l'observation</Text>
-                            )}
-                          </Pressable>
-                        ) : null}
-                      </View>
-                    ) : null}
+                          />
 
-                    {activity.students.map((student) => {
-                      const currentStatus = student.attendance?.status ?? null;
-                      const isSaving = savingAttendance === student.enrollmentId;
-                      const buttonsDisabled = !isActive || isSaving;
-
-                      return (
-                        <View
-                          key={student.enrollmentId}
-                          style={[
-                            styles.studentRow,
-                            !isActive ? styles.studentRowLocked : null,
-                          ]}
-                        >
-                          <Text style={[styles.studentNameText, styles.studentNameColumn]}>
-                            {student.student.firstName} {student.student.lastName}
-                          </Text>
-                          <Text style={[styles.studentNumberText, styles.studentNumberColumn]}>
-                            {student.student.studentNumber}
-                          </Text>
-
-                          <View style={styles.attendanceColumn}>
-                            <View style={styles.attendanceButtons}>
-                              {(Object.keys(attendanceLabels) as Array<
-                                keyof typeof attendanceLabels
-                              >).map((status) => (
-                                <Pressable
-                                  key={status}
-                                  disabled={buttonsDisabled}
-                                  onPress={() =>
-                                    void handleAttendance(activity, student, status)
-                                  }
-                                  style={[
-                                    styles.attendanceButton,
-                                    currentStatus === status
-                                      ? styles.attendanceButtonActive
-                                      : null,
-                                    buttonsDisabled
-                                      ? styles.attendanceButtonDisabled
-                                      : null,
-                                  ]}
-                                >
-                                  <Text
-                                    style={[
-                                      styles.attendanceButtonText,
-                                      currentStatus === status
-                                        ? styles.attendanceButtonTextActive
-                                        : null,
-                                    ]}
-                                  >
-                                    {attendanceLabels[status]}
-                                  </Text>
-                                </Pressable>
-                              ))}
-                            </View>
-                          </View>
+                          {activity.observation &&
+                          editingObservation !== activity.schedule.id ? (
+                            <Pressable
+                              onPress={() => {
+                                setEditingObservation(activity.schedule.id);
+                                setObservationConfirmation(null);
+                              }}
+                              style={styles.observationEditButton}
+                            >
+                              <Text style={styles.observationEditButtonText}>Modifier</Text>
+                            </Pressable>
+                          ) : (
+                            <Pressable
+                              disabled={
+                                savingObservation === activity.schedule.id ||
+                                !(observationDrafts[activity.schedule.id] ?? "").trim()
+                              }
+                              onPress={() => void handleObservationSave(activity)}
+                              style={[
+                                styles.observationButton,
+                                (savingObservation === activity.schedule.id ||
+                                  !(observationDrafts[activity.schedule.id] ?? "").trim())
+                                  ? styles.observationButtonDisabled
+                                  : null,
+                              ]}
+                            >
+                              {savingObservation === activity.schedule.id ? (
+                                <ActivityIndicator color="#FFFFFF" />
+                              ) : (
+                                <Text style={styles.observationButtonText}>
+                                  Enregistrer l'observation
+                                </Text>
+                              )}
+                            </Pressable>
+                          )}
                         </View>
-                      );
-                    })}
+
+                        {activity.students.map((student) => {
+                          const currentStatus = student.attendance?.status ?? null;
+                          const isSaving = savingAttendance === student.enrollmentId;
+
+                          return (
+                            <View key={student.enrollmentId} style={styles.studentRow}>
+                              <Text style={[styles.studentNameText, styles.studentNameColumn]}>
+                                {student.student.firstName} {student.student.lastName}
+                              </Text>
+                              <Text style={[styles.studentNumberText, styles.studentNumberColumn]}>
+                                {student.student.studentNumber}
+                              </Text>
+
+                              <View style={styles.attendanceColumn}>
+                                <View style={styles.attendanceButtons}>
+                                  {(Object.keys(attendanceLabels) as Array<
+                                    keyof typeof attendanceLabels
+                                  >).map((status) => (
+                                    <Pressable
+                                      key={status}
+                                      disabled={isSaving}
+                                      onPress={() =>
+                                        void handleAttendance(activity, student, status)
+                                      }
+                                      style={[
+                                        styles.attendanceButton,
+                                        currentStatus === status
+                                          ? styles.attendanceButtonActive
+                                          : null,
+                                        isSaving ? styles.attendanceButtonDisabled : null,
+                                      ]}
+                                    >
+                                      <Text
+                                        style={[
+                                          styles.attendanceButtonText,
+                                          currentStatus === status
+                                            ? styles.attendanceButtonTextActive
+                                            : null,
+                                        ]}
+                                      >
+                                        {attendanceLabels[status]}
+                                      </Text>
+                                    </Pressable>
+                                  ))}
+                                </View>
+                              </View>
+                            </View>
+                          );
+                        })}
+                      </>
+                    ) : null}
                   </View>
                 );
               })}
