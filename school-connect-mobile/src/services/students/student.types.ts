@@ -9,6 +9,8 @@ export type StudentListItem = {
   firstName: string;
   lastName: string;
   dateOfBirth: string | null;
+  gender: StudentGender | null;
+  classPosition: string | null;
   status: StudentStatus;
   user: {
     email: string;
