@@ -21,6 +21,7 @@ import { announcementRoutes } from "../routes/announcement.routes.js";
 import { messageRoutes } from "../routes/message.routes.js";
 import websocketPlugin from "../realtime/websocket.js";
 import { aiRoutes } from "../routes/ai.routes.js";
+import { teacherRoutes } from "../routes/teacher.routes.js";
 
 import jwtPlugin from "../plugins/jwt.js";
 
@@ -91,6 +92,9 @@ export async function buildApp() {
   });
   await app.register(aiRoutes, {
     prefix: "/api/v1/ai",
+  });
+  await app.register(teacherRoutes, {
+    prefix: "/api/v1/teachers",
   });
 
   app.setErrorHandler(
