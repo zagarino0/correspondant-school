@@ -4,6 +4,7 @@ import type {
   ConversationsResponse,
   CreateConversationResponse,
   SendMessageResponse,
+  MessageRecipientsResponse,
   UnreadMessageCountResponse,
 } from "../../features/messages/message.types";
 
@@ -12,6 +13,13 @@ export async function getUnreadMessageCount(): Promise<number> {
     "/api/v1/messages/conversations/unread-count",
   );
   return response.data.count;
+}
+
+export async function getMessageRecipients(): Promise<MessageRecipientsResponse> {
+  const response = await apiClient.get<MessageRecipientsResponse>(
+    "/api/v1/messages/recipients",
+  );
+  return response.data;
 }
 
 export async function getMyConversations(): Promise<ConversationsResponse> {
