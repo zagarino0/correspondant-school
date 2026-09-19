@@ -23,6 +23,7 @@ import websocketPlugin from "../realtime/websocket.js";
 import { aiRoutes } from "../routes/ai.routes.js";
 import { teacherRoutes } from "../routes/teacher.routes.js";
 import { parentRoutes } from "../routes/parent.routes.js";
+import { schoolAdminDashboardRoutes } from "../routes/school-admin-dashboard.routes.js";
 
 import jwtPlugin from "../plugins/jwt.js";
 
@@ -72,6 +73,9 @@ export async function buildApp() {
   });
   await app.register(parentRoutes, {
     prefix: "/api/v1",
+  });
+  await app.register(schoolAdminDashboardRoutes, {
+    prefix: "/api/v1/school-admin",
   });
   await app.register(attendanceRoutes, {
     prefix: "/api/v1",
