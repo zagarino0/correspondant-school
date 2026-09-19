@@ -103,6 +103,7 @@ export function SchoolAdminDashboard({
               title: "Enseignants",
               value: String(counts.teachers),
               description: "Enseignants actifs.",
+              onPress: () => router.push("/(app)/teachers"),
             },
             {
               id: "classes",
