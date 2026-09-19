@@ -155,158 +155,82 @@ export default function TeachersScreen() {
           .sort((a, b) => a.className.localeCompare(b.className)),
       }),
     );
-  }, [search, teachers]);        renderItem={({ item }) => (
+  }, [search, teachers]);
+  return (
+    <View style={styles.screen}>
+      <View style={styles.header}>
+        <Text style={styles.title}>Enseignants</Text>
+        <Text style={styles.subtitle}>{teachers.length} enseignant(s)</Text>
+      </View>
+      <TextInput value={search} onChangeText={setSearch} placeholder="Rechercher un enseignant ou une classe…" placeholderTextColor="#9CA3AF" style={styles.searchInput} />
+      {error ? <View style={styles.errorBox}><Text style={styles.errorText}>{error}</Text></View> : null}
+      <FlatList
+        data={groupedCategories}
+        keyExtractor={(item) => item.category}
+        contentContainerStyle={styles.listContent}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void loadTeachers(); }} />}
+        ListEmptyComponent={<View style={styles.empty}><Text style={styles.emptyTitle}>Aucun enseignant</Text><Text style={styles.stateText}>Aucun résultat ne correspond à la recherche.</Text></View>}
+        renderItem={({ item }) => (
           <View style={styles.categorySection}>
-            <View style={styles.categoryHeader}>
-              <View>
-                <Text style={styles.categoryTitle}>
-                  {CATEGORY_LABELS[item.category]}
-                </Text>
-                <Text style={styles.categoryCount}>
-                  {item.classes.length} classe
-                  {item.classes.length > 1 ? "s" : ""}
-                </Text>
-              </View>
-              <View style={styles.categoryBadge}>
-                <Text style={styles.categoryBadgeText}>
-                  {item.classes.length}
-                </Text>
-              </View>
-            </View>
-
+            <Text style={styles.categoryTitle}>{CATEGORY_LABELS[item.category]}</Text>
             {item.classes.map((classGroup) => (
               <View key={classGroup.classId} style={styles.classColumn}>
                 <View style={styles.classColumnHeader}>
                   <View style={styles.classHeaderIdentity}>
                     <Text style={styles.classTitle}>{classGroup.className}</Text>
-                    <Text style={styles.classLevel}>
-                      {classGroup.level ?? "Niveau non renseigné"}
-                    </Text>
+                    <Text style={styles.classLevel}>{classGroup.level ?? "Niveau non renseigné"}</Text>
                   </View>
-                  <Text style={styles.classCount}>
-                    {classGroup.teachers.length} enseignant
-                    {classGroup.teachers.length > 1 ? "s" : ""}
-                  </Text>
+                  <Text style={styles.classCount}>{classGroup.teachers.length} enseignant(s)</Text>
                 </View>
-
                 <View style={styles.columnHeadings}>
-                  <Text style={[styles.headingText, styles.numberColumn]}>
-                    N°
-                  </Text>
+                  <Text style={[styles.headingText, styles.numberColumn]}>N°</Text>
                   <Text style={styles.headingText}>Nom et prénom</Text>
-                  <Text style={[styles.headingText, styles.emailColumn]}>
-                    Contact
-                  </Text>
+                  <Text style={[styles.headingText, styles.emailColumn]}>Contact</Text>
                 </View>
-
                 {classGroup.teachers.map((teacher, index) => (
                   <View key={`${classGroup.classId}-${teacher.id}`} style={styles.teacherRow}>
-                    <View style={styles.numberCell}>
-                      <Text style={styles.numberText}>{index + 1}</Text>
-                    </View>
-                    <View style={styles.identity}>
-                      <Text style={styles.teacherName}>
-                        {teacher.lastName} {teacher.firstName}
-                      </Text>
-                    </View>
-                    <View style={styles.emailCell}>
-                      <Text style={styles.email} numberOfLines={1}>
-                        {teacher.email}
-                      </Text>
-                    </View>
+                    <Text style={styles.numberText}>{index + 1}</Text>
+                    <View style={styles.identity}><Text style={styles.teacherName}>{teacher.lastName} {teacher.firstName}</Text></View>
+                    <View style={styles.emailCell}><Text style={styles.email} numberOfLines={1}>{teacher.email}</Text></View>
                   </View>
                 ))}
               </View>
             ))}
           </View>
-        )}  classColumn: {
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#D9DEE5",
-    backgroundColor: "#FFFFFF",
-    overflow: "hidden",
-    marginBottom: 4,
-  },
-  classColumnHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-    backgroundColor: "#111827",
-  },
-  classHeaderIdentity: {
-    flex: 1,
-  },
-  classTitle: {
-    fontSize: 16,
-    fontWeight: "800",
-    color: "#FFFFFF",
-  },
-  classLevel: {
-    marginTop: 3,
-    fontSize: 11,
-    color: "#D1D5DB",
-  },
-  classCount: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: "#E5E7EB",
-  },
-  columnHeadings: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    backgroundColor: "#F1F5F9",
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
-  },
-  headingText: {
-    flex: 1,
-    fontSize: 10,
-    fontWeight: "800",
-    color: "#6B7280",
-    textTransform: "uppercase",
-  },
-  numberColumn: {
-    flex: 0.6,
-  },
-  emailColumn: {
-    flex: 1.35,
-    textAlign: "right",
-  },
-  teacherRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    minHeight: 52,
-    paddingHorizontal: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F1F5F9",
-  },
-  numberCell: {
-    flex: 0.6,
-  },
-  numberText: {
-    fontSize: 12,
-    fontWeight: "800",
-    color: "#111827",
-  },
-  identity: {
-    flex: 1,
-    paddingRight: 8,
-  },
-  teacherName: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: "#111827",
-  },
-  emailCell: {
-    flex: 1.35,
-    alignItems: "flex-end",
-  },
-  email: {
-    fontSize: 11,
-    color: "#6B7280",
-  },
+        )}
+      />
+    </View>
+  );
+}
 
+const styles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: "#F8FAFC" },
+  header: { paddingHorizontal: 18, paddingTop: 18, paddingBottom: 10 },
+  title: { fontSize: 24, fontWeight: "800", color: "#111827" },
+  subtitle: { marginTop: 3, fontSize: 12, color: "#6B7280" },
+  searchInput: { marginHorizontal: 14, height: 44, borderWidth: 1, borderColor: "#D9DEE5", borderRadius: 12, paddingHorizontal: 13, backgroundColor: "#FFFFFF", color: "#111827", fontSize: 13, marginBottom: 10 },
+  listContent: { paddingHorizontal: 14, paddingBottom: 28 },
+  categorySection: { marginBottom: 14 },
+  categoryTitle: { fontSize: 17, fontWeight: "800", color: "#111827", marginBottom: 8 },
+  classColumn: { borderRadius: 14, borderWidth: 1, borderColor: "#D9DEE5", backgroundColor: "#FFFFFF", overflow: "hidden", marginBottom: 10 },
+  classColumnHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 14, paddingVertical: 13, backgroundColor: "#111827" },
+  classHeaderIdentity: { flex: 1 },
+  classTitle: { fontSize: 16, fontWeight: "800", color: "#FFFFFF" },
+  classLevel: { marginTop: 3, fontSize: 11, color: "#D1D5DB" },
+  classCount: { fontSize: 11, fontWeight: "700", color: "#E5E7EB" },
+  columnHeadings: { flexDirection: "row", alignItems: "center", paddingVertical: 8, paddingHorizontal: 10, backgroundColor: "#F1F5F9", borderBottomWidth: 1, borderBottomColor: "#E5E7EB" },
+  headingText: { flex: 1, fontSize: 10, fontWeight: "800", color: "#6B7280", textTransform: "uppercase" },
+  numberColumn: { flex: 0.6 },
+  emailColumn: { flex: 1.35, textAlign: "right" },
+  teacherRow: { flexDirection: "row", alignItems: "center", minHeight: 52, paddingHorizontal: 10, borderBottomWidth: 1, borderBottomColor: "#F1F5F9" },
+  numberText: { width: 32, fontSize: 12, fontWeight: "800", color: "#111827" },
+  identity: { flex: 1, paddingRight: 8 },
+  teacherName: { fontSize: 13, fontWeight: "700", color: "#111827" },
+  emailCell: { flex: 1.35, alignItems: "flex-end" },
+  email: { fontSize: 11, color: "#6B7280" },
+  errorBox: { marginHorizontal: 14, marginBottom: 8, padding: 12, borderRadius: 10, backgroundColor: "#FEE2E2" },
+  errorText: { color: "#991B1B", fontSize: 12, fontWeight: "600" },
+  empty: { alignItems: "center", paddingVertical: 60 },
+  emptyTitle: { fontSize: 16, fontWeight: "800", color: "#111827", marginBottom: 4 },
+  stateText: { marginTop: 8, fontSize: 12, color: "#6B7280" },
+});
