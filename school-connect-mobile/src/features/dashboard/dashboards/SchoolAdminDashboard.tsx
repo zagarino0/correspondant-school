@@ -1,4 +1,14 @@
+import { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+
 import { RoleDashboard } from "./RoleDashboard";
+import { getSchoolAdminDashboard } from "../../../services/school-admin/school-admin.service";
+import type { SchoolAdminDashboardResponse } from "../../../services/school-admin/school-admin.types";
 
 type SchoolAdminDashboardProps = {
   firstName: string;
@@ -7,6 +17,68 @@ type SchoolAdminDashboardProps = {
 export function SchoolAdminDashboard({
   firstName,
 }: SchoolAdminDashboardProps) {
+  const [dashboard, setDashboard] =
+    useState<SchoolAdminDashboardResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadDashboard() {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const data = await getSchoolAdminDashboard();
+
+        if (mounted) {
+          setDashboard(data);
+        }
+      } catch {
+        if (mounted) {
+          setError(
+            "Impossible de charger les indicateurs de l'établissement.",
+          );
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void loadDashboard();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  if (loading) {
+    return (
+      <View style={styles.stateContainer}>
+        <ActivityIndicator size="large" color="#111827" />
+        <Text style={styles.stateText}>
+          Chargement du tableau de bord...
+        </Text>
+      </View>
+    );
+  }
+
+  if (error || !dashboard) {
+    return (
+      <View style={styles.stateContainer}>
+        <Text style={styles.errorTitle}>Tableau de bord indisponible</Text>
+        <Text style={styles.stateText}>
+          {error ?? "Les données de l'établissement sont indisponibles."}
+        </Text>
+      </View>
+    );
+  }
+
+  const { counts, attendance, communication } = dashboard;
+
   return (
     <RoleDashboard
       firstName={firstName}
@@ -15,48 +87,55 @@ export function SchoolAdminDashboard({
       sections={[
         {
           id: "school-management",
-          title: "Gestion de l'établissement",
+          title: "Vue d'ensemble",
           cards: [
             {
               id: "students",
               title: "Élèves",
-              description: "Gérer les élèves et leurs informations.",
+              value: String(counts.students),
+              description: "Élèves actifs cette année.",
             },
             {
               id: "teachers",
               title: "Enseignants",
-              description: "Gérer les enseignants de l'établissement.",
+              value: String(counts.teachers),
+              description: "Enseignants actifs.",
             },
             {
               id: "classes",
               title: "Classes",
-              description: "Organiser les classes et affectations.",
+              value: String(counts.classes),
+              description: "Classes de l'année active.",
             },
             {
               id: "staff",
               title: "Personnel",
-              description: "Gérer les membres du personnel.",
+              value: String(counts.staff),
+              description: "Affectations actives.",
             },
           ],
         },
         {
-          id: "school-communication",
-          title: "Communication",
+          id: "daily-monitoring",
+          title: "Suivi du jour",
           cards: [
             {
-              id: "announcements",
-              title: "Annonces",
-              description: "Gérer les communications de l'établissement.",
+              id: "attendance",
+              title: "Présences",
+              value: String(attendance.recorded),
+              description:
+                `Présents ${attendance.present} · Absents ${attendance.absent} · Retards ${attendance.late} · Excusés ${attendance.excused}`,
             },
             {
-              id: "messages",
-              title: "Messages",
-              description: "Suivre les échanges avec la communauté scolaire.",
-            },
-            {
-              id: "reports",
-              title: "Rapports",
-              description: "Accéder aux indicateurs et rapports scolaires.",
+              id: "communication",
+              title: "Communication",
+              value: String(communication.unreadMessages),
+              badge:
+                communication.unreadMessages > 0
+                  ? String(communication.unreadMessages)
+                  : undefined,
+              description:
+                `${communication.announcements} annonce(s) · messages non lus`,
             },
           ],
         },
@@ -64,3 +143,25 @@ export function SchoolAdminDashboard({
     />
   );
 }
+
+const styles = StyleSheet.create({
+  stateContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 24,
+  },
+  stateText: {
+    marginTop: 12,
+    textAlign: "center",
+    fontSize: 14,
+    lineHeight: 20,
+    color: "#6B7280",
+  },
+  errorTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#111827",
+    textAlign: "center",
+  },
+});
