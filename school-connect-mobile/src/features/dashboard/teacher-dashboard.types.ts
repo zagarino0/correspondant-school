@@ -32,6 +32,9 @@ export type TeacherDashboardResponse = {
   assignments: {
     pendingCount: number;
   };
+  observations: {
+    count: number;
+  };
   attendance: {
     studentsToRecordCount: number;
     recordedCount: number;

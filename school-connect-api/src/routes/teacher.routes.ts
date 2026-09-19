@@ -386,6 +386,167 @@ export async function teacherRoutes(
   );
 
   app.get(
+    "/me/observations",
+    {
+      onRequest: [authenticate],
+      preHandler: [
+        authorizeResource("student.read", async () => true),
+      ],
+    },
+    async (request, reply) => {
+      if (request.user.role !== "TEACHER") {
+        return reply.code(403).send({
+          error: { code: "FORBIDDEN", message: "Teacher access required." },
+        });
+      }
+
+      const query = request.query as { date?: string };
+      let dateFilter: { gte: Date; lt: Date } | undefined;
+
+      if (query.date) {
+        try {
+          const range = getDateRange(query.date);
+          dateFilter = { gte: range.start, lt: range.end };
+        } catch {
+          return reply.code(400).send({
+            error: {
+              code: "INVALID_DATE",
+              message: "date doit respecter le format YYYY-MM-DD.",
+            },
+          });
+        }
+      }
+
+      const observations = await app.prisma.lessonObservation.findMany({
+        where: {
+          teacherId: request.user.sub,
+          ...(dateFilter ? { date: dateFilter } : {}),
+        },
+        orderBy: [
+          { date: "desc" },
+          { schedule: { startTime: "asc" } },
+        ],
+        select: {
+          id: true,
+          scheduleId: true,
+          date: true,
+          content: true,
+          createdAt: true,
+          updatedAt: true,
+          schedule: {
+            select: {
+              subject: true,
+              startTime: true,
+              endTime: true,
+              room: true,
+              class: {
+                select: {
+                  id: true,
+                  name: true,
+                  level: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      return reply.send({ observations });
+    },
+  );
+
+  app.post(
+    "/me/observations",
+    {
+      onRequest: [authenticate],
+      preHandler: [
+        authorizeResource("student.create", async () => true),
+      ],
+    },
+    async (request, reply) => {
+      if (request.user.role !== "TEACHER") {
+        return reply.code(403).send({
+          error: { code: "FORBIDDEN", message: "Teacher access required." },
+        });
+      }
+
+      const body = request.body as {
+        scheduleId?: string;
+        date?: string;
+        content?: string;
+      };
+
+      const content = body.content?.trim();
+
+      if (!body.scheduleId || !body.date || !content) {
+        return reply.code(400).send({
+          error: {
+            code: "INVALID_OBSERVATION_DATA",
+            message: "scheduleId, date et content sont obligatoires.",
+          },
+        });
+      }
+
+      let date: Date;
+      try {
+        date = getDateRange(body.date).start;
+      } catch {
+        return reply.code(400).send({
+          error: {
+            code: "INVALID_DATE",
+            message: "date doit respecter le format YYYY-MM-DD.",
+          },
+        });
+      }
+
+      const schedule = await app.prisma.schedule.findFirst({
+        where: {
+          id: body.scheduleId,
+          teacherId: request.user.sub,
+        },
+        select: { id: true },
+      });
+
+      if (!schedule) {
+        return reply.code(403).send({
+          error: {
+            code: "SCHEDULE_ACCESS_DENIED",
+            message: "Vous n'êtes pas responsable de ce créneau.",
+          },
+        });
+      }
+
+      const observation = await app.prisma.lessonObservation.upsert({
+        where: {
+          scheduleId_date: {
+            scheduleId: schedule.id,
+            date,
+          },
+        },
+        update: {
+          content,
+        },
+        create: {
+          teacherId: request.user.sub,
+          scheduleId: schedule.id,
+          date,
+          content,
+        },
+        select: {
+          id: true,
+          scheduleId: true,
+          date: true,
+          content: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+
+      return reply.code(200).send({ observation });
+    },
+  );
+
+  app.get(
     "/me/dashboard",
     {
       onRequest: [authenticate],
@@ -470,7 +631,7 @@ export async function teacherRoutes(
 
       const dayOfWeek = dayMap[dateRange.start.getUTCDay()]!;
 
-      const [schedules, pendingAssignments, enrollments] =
+      const [schedules, pendingAssignments, enrollments, observationsCount] =
         await Promise.all([
           app.prisma.schedule.findMany({
             where: {
@@ -517,6 +678,11 @@ export async function teacherRoutes(
               id: true,
             },
           }),
+          app.prisma.lessonObservation.count({
+            where: {
+              teacherId: request.user.sub,
+            },
+          }),
         ]);
 
       const enrollmentIds = enrollments.map(
@@ -553,6 +719,9 @@ export async function teacherRoutes(
         },
         assignments: {
           pendingCount: pendingAssignments,
+        },
+        observations: {
+          count: observationsCount,
         },
         attendance: {
           studentsToRecordCount: Math.max(

@@ -55,3 +55,28 @@ export type TeacherAttendanceResponse = {
   classId: string;
   students: TeacherAttendanceRow[];
 };
+
+
+export type TeacherObservation = {
+  id: string;
+  scheduleId: string;
+  date: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+  schedule: {
+    subject: string;
+    startTime: string;
+    endTime: string;
+    room: string | null;
+    class: {
+      id: string;
+      name: string;
+      level: string | null;
+    };
+  };
+};
+
+export type TeacherObservationsResponse = {
+  observations: TeacherObservation[];
+};

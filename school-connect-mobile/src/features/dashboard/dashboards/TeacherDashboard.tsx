@@ -1,5 +1,13 @@
 import { useCallback, useMemo, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
 
 import { DashboardSection } from "../components/DashboardSection";
@@ -8,13 +16,16 @@ import { getTeacherDashboard } from "../../../services/teacher/teacher.service";
 import {
   getTeacherAttendance,
   getTeacherClasses,
+  getTeacherObservations,
   saveTeacherAttendance,
+  saveTeacherObservation,
 } from "../../../services/teacher/teacher-class.service";
 import { getMyTeacherSchedule } from "../../../services/schedule/schedule.service";
 import type { TeacherDashboardResponse } from "../teacher-dashboard.types";
 import type {
   TeacherAttendanceRow,
   TeacherClass,
+  TeacherObservation,
 } from "../teacher-classes.types";
 import type { TeacherSchedule } from "../../schedule/schedule.types";
 
@@ -42,6 +53,7 @@ type TeacherDashboardProps = { firstName: string };
 type ActivityClass = {
   schedule: TeacherSchedule;
   students: TeacherAttendanceRow[];
+  observation: TeacherObservation | null;
 };
 
 const attendanceLabels = {
@@ -76,6 +88,8 @@ export function TeacherDashboard({ firstName }: TeacherDashboardProps) {
   const [hasError, setHasError] = useState(false);
   const [activityError, setActivityError] = useState(false);
   const [savingAttendance, setSavingAttendance] = useState<string | null>(null);
+  const [observationDrafts, setObservationDrafts] = useState<Record<string, string>>({});
+  const [savingObservation, setSavingObservation] = useState<string | null>(null);
   const [nowMinutes, setNowMinutes] = useState(() => {
     const date = new Date();
     return date.getHours() * 60 + date.getMinutes();
@@ -116,14 +130,38 @@ export function TeacherDashboard({ firstName }: TeacherDashboardProps) {
         .filter((item) => todayScheduleIds.has(item.id))
         .sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime));
 
+      const [observationsResponse] = await Promise.all([
+        getTeacherObservations(dashboardResponse.date),
+      ]);
+
+      const observationsBySchedule = new Map(
+        observationsResponse.observations.map((observation) => [
+          observation.scheduleId,
+          observation,
+        ]),
+      );
+
       const activities = await Promise.all(
         todaySchedules.map(async (schedule) => {
           const response = await getTeacherAttendance(
             schedule.classId,
             dashboardResponse.date,
           );
-          return { schedule, students: response.students };
+          return {
+            schedule,
+            students: response.students,
+            observation: observationsBySchedule.get(schedule.id) ?? null,
+          };
         }),
+      );
+
+      setObservationDrafts(
+        Object.fromEntries(
+          activities.map((activity) => [
+            activity.schedule.id,
+            activity.observation?.content ?? "",
+          ]),
+        ),
       );
 
       setActivityClasses(activities);
@@ -155,6 +193,7 @@ export function TeacherDashboard({ firstName }: TeacherDashboardProps) {
   const scheduleCount = dashboard?.today.scheduleCount ?? null;
   const pendingAssignments = dashboard?.assignments.pendingCount ?? null;
   const studentsToRecord = dashboard?.attendance.studentsToRecordCount ?? null;
+  const observationsCount = dashboard?.observations.count ?? null;
   const nextCourse = dashboard?.today.schedules[0] ?? null;
 
   const activeActivity = useMemo(
@@ -227,6 +266,42 @@ export function TeacherDashboard({ firstName }: TeacherDashboardProps) {
     [activeActivity?.schedule.id, dashboard?.date],
   );
 
+
+
+  const handleObservationSave = useCallback(
+    async (activity: ActivityClass) => {
+      if (activity.schedule.id !== activeActivity?.schedule.id) return;
+
+      const content = observationDrafts[activity.schedule.id]?.trim() ?? "";
+      if (!content) return;
+
+      try {
+        setSavingObservation(activity.schedule.id);
+        const date = dashboard?.date ?? getLocalDateKey();
+        const response = await saveTeacherObservation({
+          scheduleId: activity.schedule.id,
+          date,
+          content,
+        });
+
+        const savedObservation = response.observation as TeacherObservation;
+
+        setActivityClasses((current) =>
+          current.map((item) =>
+            item.schedule.id === activity.schedule.id
+              ? { ...item, observation: { ...item.observation, ...savedObservation } as TeacherObservation }
+              : item,
+          ),
+        );
+      } catch {
+        // The next focus refreshes the observation data.
+      } finally {
+        setSavingObservation(null);
+      }
+    },
+    [activeActivity?.schedule.id, dashboard?.date, observationDrafts],
+  );
+
   const sections: DashboardSectionData[] = [
     {
       id: "teacher-overview-stats",
@@ -255,6 +330,17 @@ export function TeacherDashboard({ firstName }: TeacherDashboardProps) {
               ? "Impossible de charger les devoirs."
               : "Devoirs en attente ou en retard.",
           onPress: () => router.push("/(app)/assignments"),
+        },
+        {
+          id: "observations",
+          title: "Observations pédagogiques",
+          value: loading ? "…" : hasError ? "—" : String(observationsCount ?? 0),
+          description: loading
+            ? "Chargement de l'historique."
+            : hasError
+              ? "Impossible de charger l'historique."
+              : "Voir la grille historique des observations.",
+          onPress: () => router.push("./observations"),
         },
         {
           id: "attendance",
@@ -456,6 +542,56 @@ export function TeacherDashboard({ firstName }: TeacherDashboardProps) {
                       </Text>
                     </View>
 
+                    {isActive || activity.observation ? (
+                      <View style={styles.observationBlock}>
+                        <View style={styles.observationHeader}>
+                          <Text style={styles.observationTitle}>Observation du cours</Text>
+                          {activity.observation ? (
+                            <Text style={styles.observationSaved}>Enregistrée</Text>
+                          ) : null}
+                        </View>
+                        <TextInput
+                          value={observationDrafts[activity.schedule.id] ?? ""}
+                          onChangeText={(value) =>
+                            setObservationDrafts((current) => ({
+                              ...current,
+                              [activity.schedule.id]: value,
+                            }))
+                          }
+                          placeholder="Ex. Nouvelle leçon avec TD"
+                          placeholderTextColor="#9CA3AF"
+                          multiline
+                          editable={isActive && savingObservation !== activity.schedule.id}
+                          style={[
+                            styles.observationInput,
+                            !isActive ? styles.observationInputLocked : null,
+                          ]}
+                        />
+                        {isActive ? (
+                          <Pressable
+                            disabled={
+                              savingObservation === activity.schedule.id ||
+                              !(observationDrafts[activity.schedule.id] ?? "").trim()
+                            }
+                            onPress={() => void handleObservationSave(activity)}
+                            style={[
+                              styles.observationButton,
+                              (savingObservation === activity.schedule.id ||
+                                !(observationDrafts[activity.schedule.id] ?? "").trim())
+                                ? styles.observationButtonDisabled
+                                : null,
+                            ]}
+                          >
+                            {savingObservation === activity.schedule.id ? (
+                              <ActivityIndicator color="#FFFFFF" />
+                            ) : (
+                              <Text style={styles.observationButtonText}>Enregistrer l'observation</Text>
+                            )}
+                          </Pressable>
+                        ) : null}
+                      </View>
+                    ) : null}
+
                     {activity.students.map((student) => {
                       const currentStatus = student.attendance?.status ?? null;
                       const isSaving = savingAttendance === student.enrollmentId;
@@ -578,5 +714,14 @@ const styles = StyleSheet.create({
   scheduleButton: { paddingHorizontal: 10, paddingVertical: 7, borderRadius: 9, backgroundColor: "#111827" },
   scheduleButtonText: { color: "#FFFFFF", fontSize: 11, fontWeight: "700" },
   loadingBlock: { minHeight: 90, alignItems: "center", justifyContent: "center", gap: 8 },
+  observationBlock: { padding: 12, borderTopWidth: 1, borderTopColor: "#E5E7EB", gap: 9 },
+  observationHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
+  observationTitle: { fontSize: 12, fontWeight: "800", color: "#111827" },
+  observationSaved: { fontSize: 11, fontWeight: "700", color: "#6B7280" },
+  observationInput: { minHeight: 74, paddingHorizontal: 11, paddingVertical: 9, borderWidth: 1, borderColor: "#D1D5DB", borderRadius: 9, backgroundColor: "#FFFFFF", color: "#111827", fontSize: 13, textAlignVertical: "top" },
+  observationInputLocked: { backgroundColor: "#F8FAFC", color: "#6B7280" },
+  observationButton: { minHeight: 38, paddingHorizontal: 12, borderRadius: 9, backgroundColor: "#111827", alignItems: "center", justifyContent: "center" },
+  observationButtonDisabled: { opacity: 0.45 },
+  observationButtonText: { color: "#FFFFFF", fontSize: 12, fontWeight: "800" },
   muted: { color: "#6B7280", fontSize: 13 },
 });

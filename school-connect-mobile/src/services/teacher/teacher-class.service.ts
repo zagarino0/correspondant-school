@@ -3,6 +3,7 @@ import type {
   TeacherAttendanceResponse,
   TeacherClassDetailsResponse,
   TeacherClassesResponse,
+  TeacherObservationsResponse,
 } from "../../features/dashboard/teacher-classes.types";
 
 export async function getTeacherClasses(): Promise<TeacherClassesResponse> {
@@ -60,6 +61,29 @@ export async function createTeacherAssignment(payload: {
 }) {
   const response = await apiClient.post(
     "/api/v1/assignments",
+    payload,
+  );
+  return response.data;
+}
+
+
+export async function getTeacherObservations(
+  date?: string,
+): Promise<TeacherObservationsResponse> {
+  const response = await apiClient.get<TeacherObservationsResponse>(
+    "/api/v1/teachers/me/observations",
+    date ? { params: { date } } : undefined,
+  );
+  return response.data;
+}
+
+export async function saveTeacherObservation(payload: {
+  scheduleId: string;
+  date: string;
+  content: string;
+}) {
+  const response = await apiClient.post(
+    "/api/v1/teachers/me/observations",
     payload,
   );
   return response.data;
