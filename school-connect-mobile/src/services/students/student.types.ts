@@ -133,6 +133,13 @@ export type StudentClassesResponse = {
   classes: StudentClassOption[];
 };
 
+export type UpdateStudentResponse = {
+  student: StudentDetail & {
+    email: string;
+    userStatus: string;
+  };
+};
+
 export type UpdateStudentInput = {
   email?: string;
   password?: string;
