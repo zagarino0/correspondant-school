@@ -55,3 +55,12 @@ export type CreateConversationResponse = {
 export type SendMessageResponse = {
   message: Message;
 };
+
+
+export type MessageRecipient = MessageUser & {
+  staffFunction?: string | null;
+};
+
+export type MessageRecipientsResponse = {
+  recipients: MessageRecipient[];
+};
