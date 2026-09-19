@@ -58,3 +58,34 @@ export type StudentNextScheduleResponse = {
   enrollment: StudentScheduleEnrollment;
   schedule: StudentSchedule;
 };
+
+
+export type TeacherSchedule = {
+  id: string;
+  schoolId: string;
+  academicYearId: string;
+  classId: string;
+  teacherId: string;
+  subject: string;
+  dayOfWeek: ScheduleDay;
+  startTime: string;
+  endTime: string;
+  room: string | null;
+  createdAt: string;
+  updatedAt: string;
+  class: {
+    id: string;
+    name: string;
+    level: string;
+  };
+};
+
+export type TeacherScheduleResponse = {
+  teacher: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    schoolId: string | null;
+  };
+  schedules: TeacherSchedule[];
+};
