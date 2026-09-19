@@ -227,6 +227,183 @@ async function main() {
     });
   }
 
+  const gradeData = [
+    { studentNumber: "A001", subject: "Mathématiques", title: "Contrôle fractions", value: 14, coefficient: 1, comment: "Bon travail." },
+    { studentNumber: "A001", subject: "Français", title: "Analyse de texte", value: 16, coefficient: 2, comment: "Très bonne compréhension." },
+    { studentNumber: "A001", subject: "Sciences", title: "Évaluation énergie", value: 12, coefficient: 1, comment: null },
+    { studentNumber: "A002", subject: "Mathématiques", title: "Contrôle fractions", value: 11, coefficient: 1, comment: "À renforcer." },
+    { studentNumber: "A002", subject: "Français", title: "Analyse de texte", value: 13, coefficient: 2, comment: null },
+    { studentNumber: "A002", subject: "Sciences", title: "Évaluation énergie", value: 15, coefficient: 1, comment: "Bonne participation." },
+    { studentNumber: "B001", subject: "Mathématiques", title: "Contrôle fractions", value: 15, coefficient: 1, comment: "Bon niveau." },
+    { studentNumber: "B001", subject: "Français", title: "Expression écrite", value: 12, coefficient: 2, comment: null },
+    { studentNumber: "B001", subject: "Sciences", title: "Évaluation énergie", value: 14, coefficient: 1, comment: null },
+    { studentNumber: "B002", subject: "Mathématiques", title: "Contrôle fractions", value: 9, coefficient: 1, comment: "Doit progresser." },
+    { studentNumber: "B002", subject: "Français", title: "Expression écrite", value: 14, coefficient: 2, comment: "Bonne rédaction." },
+    { studentNumber: "B002", subject: "Sciences", title: "Évaluation énergie", value: 13, coefficient: 1, comment: null },
+    { studentNumber: "C001", subject: "Mathématiques", title: "Contrôle fractions", value: 16, coefficient: 1, comment: "Très bon travail." },
+    { studentNumber: "C001", subject: "Français", title: "Expression écrite", value: 15, coefficient: 2, comment: null },
+    { studentNumber: "C001", subject: "Sciences", title: "Évaluation énergie", value: 17, coefficient: 1, comment: "Excellent." },
+    { studentNumber: "C002", subject: "Mathématiques", title: "Contrôle fractions", value: 10, coefficient: 1, comment: null },
+    { studentNumber: "C002", subject: "Français", title: "Expression écrite", value: 12, coefficient: 2, comment: "Peut mieux faire." },
+    { studentNumber: "C002", subject: "Sciences", title: "Évaluation énergie", value: 14, coefficient: 1, comment: null },
+  ];
+
+  for (const item of gradeData) {
+    const student = await prisma.student.findFirstOrThrow({
+      where: {
+        schoolId: school.id,
+        studentNumber: item.studentNumber,
+      },
+      include: {
+        enrollments: {
+          where: {
+            academicYearId: academicYear.id,
+            status: StudentEnrollmentStatus.ACTIVE,
+          },
+          take: 1,
+        },
+      },
+    });
+
+    const enrollment = student.enrollments[0];
+
+    if (!enrollment) {
+      throw new Error(`Active enrollment missing for ${item.studentNumber}`);
+    }
+
+    const existing = await prisma.grade.findFirst({
+      where: {
+        studentId: student.id,
+        enrollmentId: enrollment.id,
+        subject: item.subject,
+        title: item.title,
+      },
+    });
+
+    if (existing) {
+      await prisma.grade.update({
+        where: { id: existing.id },
+        data: {
+          value: item.value,
+          maxValue: 20,
+          coefficient: item.coefficient,
+          evaluationDate: new Date("2026-09-18T00:00:00.000Z"),
+          comment: item.comment,
+          recordedBy: teacher.id,
+        },
+      });
+    } else {
+      await prisma.grade.create({
+        data: {
+          studentId: student.id,
+          enrollmentId: enrollment.id,
+          subject: item.subject,
+          title: item.title,
+          value: item.value,
+          maxValue: 20,
+          coefficient: item.coefficient,
+          evaluationDate: new Date("2026-09-18T00:00:00.000Z"),
+          comment: item.comment,
+          recordedBy: teacher.id,
+        },
+      });
+    }
+  }
+
+  const assignmentData = [
+    { classIndex: 0, subject: "Mathématiques", title: "Exercices sur les fractions", description: "Réviser les opérations sur les fractions et résoudre les exercices 1 à 10.", dueDate: "2026-09-20T23:59:59.999Z" },
+    { classIndex: 0, subject: "Français", title: "Analyse de texte", description: "Lire le texte fourni et répondre aux questions.", dueDate: "2026-09-22T23:59:59.999Z" },
+    { classIndex: 1, subject: "Mathématiques", title: "Problèmes de calcul", description: "Résoudre les problèmes distribués en classe.", dueDate: "2026-09-21T23:59:59.999Z" },
+    { classIndex: 1, subject: "Français", title: "Expression écrite", description: "Rédiger un texte de 20 lignes sur un sujet donné.", dueDate: "2026-09-23T23:59:59.999Z" },
+    { classIndex: 2, subject: "Mathématiques", title: "Révision calcul", description: "Réviser les notions étudiées cette semaine.", dueDate: "2026-09-24T23:59:59.999Z" },
+    { classIndex: 2, subject: "Sciences", title: "Énergie et matière", description: "Répondre aux questions du chapitre étudié.", dueDate: "2026-09-25T23:59:59.999Z" },
+  ];
+
+  for (const item of assignmentData) {
+    const schoolClass = classes[item.classIndex];
+
+    const existing = await prisma.assignment.findFirst({
+      where: {
+        classId: schoolClass.id,
+        subject: item.subject,
+        title: item.title,
+      },
+    });
+
+    const data = {
+      classId: schoolClass.id,
+      studentId: null,
+      subject: item.subject,
+      title: item.title,
+      description: item.description,
+      assignedAt: new Date("2026-09-18T08:00:00.000Z"),
+      dueDate: new Date(item.dueDate),
+      status: "PENDING" as const,
+      createdBy: teacher.id,
+    };
+
+    if (existing) {
+      await prisma.assignment.update({
+        where: { id: existing.id },
+        data,
+      });
+    } else {
+      await prisma.assignment.create({ data });
+    }
+  }
+
+  const weeklySchedules = [
+    { classIndex: 0, subject: "Mathématiques", dayOfWeek: ScheduleDay.MONDAY, startTime: "08:00", endTime: "09:00", room: "Salle A1" },
+    { classIndex: 0, subject: "Français", dayOfWeek: ScheduleDay.WEDNESDAY, startTime: "09:15", endTime: "10:15", room: "Salle A1" },
+    { classIndex: 0, subject: "Sciences", dayOfWeek: ScheduleDay.FRIDAY, startTime: "10:30", endTime: "11:30", room: "Laboratoire" },
+    { classIndex: 1, subject: "Français", dayOfWeek: ScheduleDay.MONDAY, startTime: "09:15", endTime: "10:15", room: "Salle B1" },
+    { classIndex: 1, subject: "Mathématiques", dayOfWeek: ScheduleDay.TUESDAY, startTime: "08:00", endTime: "09:00", room: "Salle B1" },
+    { classIndex: 1, subject: "Sciences", dayOfWeek: ScheduleDay.THURSDAY, startTime: "10:30", endTime: "11:30", room: "Laboratoire" },
+    { classIndex: 2, subject: "Sciences", dayOfWeek: ScheduleDay.MONDAY, startTime: "10:30", endTime: "11:30", room: "Laboratoire" },
+    { classIndex: 2, subject: "Mathématiques", dayOfWeek: ScheduleDay.WEDNESDAY, startTime: "08:00", endTime: "09:00", room: "Salle C1" },
+    { classIndex: 2, subject: "Français", dayOfWeek: ScheduleDay.FRIDAY, startTime: "09:15", endTime: "10:15", room: "Salle C1" },
+  ];
+
+  for (const item of weeklySchedules) {
+    const schoolClass = classes[item.classIndex];
+
+    const existing = await prisma.schedule.findFirst({
+      where: {
+        schoolId: school.id,
+        academicYearId: academicYear.id,
+        classId: schoolClass.id,
+        teacherId: teacher.id,
+        dayOfWeek: item.dayOfWeek,
+        startTime: item.startTime,
+        endTime: item.endTime,
+      },
+    });
+
+    if (existing) {
+      await prisma.schedule.update({
+        where: { id: existing.id },
+        data: {
+          subject: item.subject,
+          room: item.room,
+        },
+      });
+    } else {
+      await prisma.schedule.create({
+        data: {
+          schoolId: school.id,
+          academicYearId: academicYear.id,
+          classId: schoolClass.id,
+          teacherId: teacher.id,
+          subject: item.subject,
+          dayOfWeek: item.dayOfWeek,
+          startTime: item.startTime,
+          endTime: item.endTime,
+          room: item.room,
+        },
+      });
+    }
+  }
+
   const saturdaySchedules = [
     { classIndex: 0, subject: "Mathématiques", startTime: "09:00", endTime: "10:00", room: "Salle A1" },
     { classIndex: 1, subject: "Français", startTime: "10:15", endTime: "11:15", room: "Salle B1" },
