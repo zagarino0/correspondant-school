@@ -167,6 +167,8 @@ function ScheduleGrid({
       })}
     </View>
   );
+}
+
 export function ParentDashboard({ firstName }: ParentDashboardProps) {
   const router = useRouter();
   const [children, setChildren] = useState<ParentChild[]>([]);
