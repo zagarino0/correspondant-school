@@ -550,6 +550,21 @@ export function ParentDashboard({ firstName }: ParentDashboardProps) {
             : "Sélectionnez un enfant pour suivre ses devoirs.",
         },
         {
+          id: "medical-record",
+          title: "Fiche médicale",
+          value: selectedChild ? "Consulter" : "—",
+          description: selectedChild
+            ? `Informations médicales de ${selectedChild.firstName}.`
+            : "Sélectionnez un enfant pour consulter sa fiche médicale.",
+          onPress: selectedChild
+            ? () =>
+                router.push({
+                  pathname: "/(app)/medical-record",
+                  params: { studentId: selectedChild.id },
+                })
+            : undefined,
+        },
+        {
           id: "schedule",
           title: "Emploi du temps",
           value: selectedChild?.enrollment?.class.name ?? "—",
