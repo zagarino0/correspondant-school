@@ -13,6 +13,45 @@ export async function messageRoutes(
   app: FastifyInstance,
 ): Promise<void> {
   /**
+   * GET /api/v1/messages/conversations/unread-count
+   *
+   * Retourne le nombre de messages non lus pour l'utilisateur connecté.
+   */
+  app.get(
+    "/conversations/unread-count",
+    {
+      onRequest: [authenticate],
+      preHandler: [
+        authorizeResource(
+          "message.read",
+          async () => true,
+        ),
+      ],
+    },
+    async (request, reply) => {
+      const userId = request.user.sub;
+
+      const count = await app.prisma.message.count({
+        where: {
+          senderId: {
+            not: userId,
+          },
+          readAt: null,
+          conversation: {
+            participants: {
+              some: {
+                userId,
+              },
+            },
+          },
+        },
+      });
+
+      return reply.send({ count });
+    },
+  );
+
+  /**
    * GET /api/v1/messages/conversations
    *
    * Retourne uniquement les conversations auxquelles
