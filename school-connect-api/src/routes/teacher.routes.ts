@@ -468,7 +468,7 @@ export async function teacherRoutes(
         6: "SATURDAY",
       };
 
-      const dayOfWeek = dayMap[dateRange.start.getUTCDay()];
+      const dayOfWeek = dayMap[dateRange.start.getUTCDay()]!;
 
       const [schedules, pendingAssignments, enrollments] =
         await Promise.all([
