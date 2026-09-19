@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { UserRole } from "../../types/auth";
 
 export type DashboardShellProps = {
@@ -13,6 +14,8 @@ export type DashboardCardData = {
   badge?: string;
   description?: string;
   onPress?: () => void;
+  content?: ReactNode;
+  fullWidth?: boolean;
 };
 
 export type DashboardSectionData = {
