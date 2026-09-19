@@ -711,6 +711,9 @@ const studentRoutes: FastifyPluginAsync = async (fastify) => {
             ...(parsedDateOfBirth !== undefined
               ? { dateOfBirth: parsedDateOfBirth }
               : {}),
+            ...(data.gender !== undefined
+              ? { gender: data.gender }
+              : {}),
             ...(data.status !== undefined
               ? { status: data.status }
               : {}),
