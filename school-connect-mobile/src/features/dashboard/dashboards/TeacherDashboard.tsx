@@ -692,8 +692,17 @@ export function TeacherDashboard({ firstName }: TeacherDashboardProps) {
                                       }
                                       style={[
                                         styles.attendanceButton,
+                                        status === "ABSENT"
+                                          ? styles.attendanceButtonAbsent
+                                          : status === "PRESENT"
+                                            ? styles.attendanceButtonPresent
+                                            : styles.attendanceButtonLate,
                                         currentStatus === status
-                                          ? styles.attendanceButtonActive
+                                          ? status === "ABSENT"
+                                            ? styles.attendanceButtonAbsentSelected
+                                            : status === "PRESENT"
+                                              ? styles.attendanceButtonPresentSelected
+                                              : styles.attendanceButtonLateSelected
                                           : null,
                                         isSaving ? styles.attendanceButtonDisabled : null,
                                       ]}
@@ -701,8 +710,13 @@ export function TeacherDashboard({ firstName }: TeacherDashboardProps) {
                                       <Text
                                         style={[
                                           styles.attendanceButtonText,
+                                          status === "ABSENT"
+                                            ? styles.attendanceButtonTextAbsent
+                                            : status === "PRESENT"
+                                              ? styles.attendanceButtonTextPresent
+                                              : styles.attendanceButtonTextLate,
                                           currentStatus === status
-                                            ? styles.attendanceButtonTextActive
+                                            ? styles.attendanceButtonTextSelected
                                             : null,
                                         ]}
                                       >
@@ -777,11 +791,20 @@ const styles = StyleSheet.create({
   studentNameText: { fontSize: 13, fontWeight: "600", color: "#111827" },
   studentNumberText: { fontSize: 12, color: "#6B7280" },
   attendanceButtons: { flexDirection: "row", gap: 5 },
-  attendanceButton: { width: 34, height: 32, borderRadius: 8, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "#D1D5DB", backgroundColor: "#FFFFFF" },
-  attendanceButtonActive: { backgroundColor: "#111827", borderColor: "#111827" },
+  attendanceButton: { width: 34, height: 32, borderRadius: 8, alignItems: "center", justifyContent: "center", borderWidth: 1, backgroundColor: "#FFFFFF" },
+  attendanceButtonAbsent: { borderColor: "#DC2626" },
+  attendanceButtonPresent: { borderColor: "#2563EB" },
+  attendanceButtonLate: { borderColor: "#D4A017" },
+  attendanceButtonSelected: { borderWidth: 1 },
   attendanceButtonDisabled: { opacity: 0.45 },
-  attendanceButtonText: { fontSize: 12, fontWeight: "800", color: "#374151" },
-  attendanceButtonTextActive: { color: "#FFFFFF" },
+  attendanceButtonText: { fontSize: 12, fontWeight: "800" },
+  attendanceButtonTextAbsent: { color: "#DC2626" },
+  attendanceButtonTextPresent: { color: "#2563EB" },
+  attendanceButtonTextLate: { color: "#D4A017" },
+  attendanceButtonTextSelected: { color: "#FFFFFF" },
+  attendanceButtonAbsentSelected: { backgroundColor: "#DC2626", borderColor: "#DC2626" },
+  attendanceButtonPresentSelected: { backgroundColor: "#2563EB", borderColor: "#2563EB" },
+  attendanceButtonLateSelected: { backgroundColor: "#D4A017", borderColor: "#D4A017" },
   scheduleButton: { paddingHorizontal: 10, paddingVertical: 7, borderRadius: 9, backgroundColor: "#111827" },
   scheduleButtonText: { color: "#FFFFFF", fontSize: 11, fontWeight: "700" },
   loadingBlock: { minHeight: 90, alignItems: "center", justifyContent: "center", gap: 8 },
