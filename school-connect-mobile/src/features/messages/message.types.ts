@@ -38,6 +38,10 @@ export type ConversationsResponse = {
   conversations: Conversation[];
 };
 
+export type UnreadMessageCountResponse = {
+  count: number;
+};
+
 export type ConversationMessagesResponse = {
   conversation: Pick<Conversation, "id" | "schoolId">;
   messages: Message[];
