@@ -39,7 +39,7 @@ export async function teacherRoutes(
     {
       onRequest: [authenticate],
       preHandler: [
-        authorizeResource("observation.read", async () => true),
+        authorizeResource("student.read", async () => true),
       ],
     },
     async (request, reply) => {
@@ -390,7 +390,7 @@ export async function teacherRoutes(
     {
       onRequest: [authenticate],
       preHandler: [
-        authorizeResource("student.read", async () => true),
+        authorizeResource("observation.read", async () => true),
       ],
     },
     async (request, reply) => {
