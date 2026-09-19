@@ -10,6 +10,7 @@ export function DashboardCard({
   badge,
   description,
   onPress,
+  content,
 }: DashboardCardProps) {
   return (
     <Pressable
@@ -39,6 +40,8 @@ export function DashboardCard({
       {description ? (
         <Text style={styles.description}>{description}</Text>
       ) : null}
+
+      {content ? <View style={styles.content}>{content}</View> : null}
     </Pressable>
   );
 }
@@ -92,5 +95,8 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontSize: 13,
     color: "#6B7280",
+  },
+  content: {
+    marginTop: 14,
   },
 });
