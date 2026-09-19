@@ -1,4 +1,5 @@
 import type { FastifyInstance } from "fastify";
+import type { UserRole } from "@prisma/client";
 
 import { canMessageUser } from "../authorization/message-access.js";
 import { authenticate } from "../middleware/authenticate.js";
@@ -90,10 +91,11 @@ export async function messageRoutes(
         });
       }
 
-      const targetRoles =
-        sender.role === "PARENT" || sender.role === "STUDENT"
-          ? ["SCHOOL_ADMIN", "STAFF", "TEACHER"]
-          : ["SCHOOL_ADMIN", "STAFF", "TEACHER"];
+      const targetRoles: UserRole[] = [
+        "SCHOOL_ADMIN",
+        "STAFF",
+        "TEACHER",
+      ];
 
       const candidates = await app.prisma.user.findMany({
         where: {
