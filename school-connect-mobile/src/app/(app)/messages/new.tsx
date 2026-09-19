@@ -108,10 +108,7 @@ export default function NewMessageScreen() {
 
       const response = await createConversation(selectedRecipientId);
 
-      const messageResponse = await sendMessage(
-        response.conversation.id,
-        trimmedContent,
-      );
+      await sendMessage(response.conversation.id, trimmedContent);
 
       setContent("");
 
@@ -122,7 +119,6 @@ export default function NewMessageScreen() {
         },
       });
 
-      void messageResponse;
     } catch {
       setErrorMessage("Impossible d’envoyer le message.");
     } finally {
