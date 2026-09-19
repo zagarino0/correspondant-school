@@ -51,6 +51,110 @@ export async function messageRoutes(
     },
   );
 
+
+  /**
+   * GET /api/v1/messages/recipients
+   *
+   * Retourne les utilisateurs que l'utilisateur connecté
+   * est autorisé à contacter pour démarrer une conversation.
+   */
+  app.get(
+    "/recipients",
+    {
+      onRequest: [authenticate],
+      preHandler: [
+        authorizeResource(
+          "message.send",
+          async () => true,
+        ),
+      ],
+    },
+    async (request, reply) => {
+      const userId = request.user.sub;
+
+      const sender = await app.prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          role: true,
+          schoolId: true,
+        },
+      });
+
+      if (!sender || !sender.schoolId) {
+        return reply.code(403).send({
+          error: {
+            code: "MESSAGE_RECIPIENTS_UNAVAILABLE",
+            message: "Aucun destinataire disponible.",
+          },
+        });
+      }
+
+      const targetRoles =
+        sender.role === "PARENT" || sender.role === "STUDENT"
+          ? ["SCHOOL_ADMIN", "STAFF", "TEACHER"]
+          : ["SCHOOL_ADMIN", "STAFF", "TEACHER"];
+
+      const candidates = await app.prisma.user.findMany({
+        where: {
+          schoolId: sender.schoolId,
+          status: "ACTIVE",
+          role: {
+            in: targetRoles,
+          },
+        },
+        orderBy: [
+          { role: "asc" },
+          { lastName: "asc" },
+          { firstName: "asc" },
+        ],
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          role: true,
+          schoolId: true,
+          staffProfile: {
+            select: {
+              function: true,
+            },
+          },
+        },
+      });
+
+      const recipients = (
+        await Promise.all(
+          candidates.map(async (candidate) => {
+            const allowed = await canMessageUser(
+              app.prisma,
+              userId,
+              candidate.id,
+            );
+
+            if (!allowed) {
+              return null;
+            }
+
+            return {
+              id: candidate.id,
+              firstName: candidate.firstName,
+              lastName: candidate.lastName,
+              role: candidate.role,
+              schoolId: candidate.schoolId,
+              staffFunction: candidate.staffProfile?.function ?? null,
+            };
+          }),
+        )
+      ).filter(
+        (
+          recipient,
+        ): recipient is NonNullable<typeof recipient> => recipient !== null,
+      );
+
+      return reply.send({ recipients });
+    },
+  );
+
   /**
    * GET /api/v1/messages/conversations
    *
