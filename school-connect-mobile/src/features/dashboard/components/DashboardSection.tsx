@@ -13,24 +13,39 @@ export function DashboardSection({
     <View style={styles.container}>
       <Text style={styles.title}>{title}</Text>
 
-      <View style={styles.cards}>
-        {cards.map((card, index) => (
-          <View
-            key={card.id}
-            style={[
-              styles.cardWrapper,
-              cards.length === 1 || card.fullWidth ? styles.fullWidth : null,
-              cards.some((item) => item.fullWidth) && !card.fullWidth
-                ? index < 2
-                  ? styles.compactWidth
-                  : styles.longWidth
-                : null,
-            ]}
-          >
-            <DashboardCard {...card} />
+      {cards.some((card) => card.fullWidth) ? (
+        <>
+          <View style={styles.cards}>
+            {cards.slice(0, 2).map((card) => (
+              <View key={card.id} style={styles.compactWrapper}>
+                <DashboardCard {...card} />
+              </View>
+            ))}
           </View>
-        ))}
-      </View>
+
+          <View style={styles.secondaryCards}>
+            {cards.slice(2).filter((card) => !card.fullWidth).map((card) => (
+              <View key={card.id} style={styles.secondaryCardWrapper}>
+                <DashboardCard {...card} />
+              </View>
+            ))}
+          </View>
+
+          {cards.filter((card) => card.fullWidth).map((card) => (
+            <View key={card.id} style={styles.fullWidth}>
+              <DashboardCard {...card} />
+            </View>
+          ))}
+        </>
+      ) : (
+        <View style={styles.cards}>
+          {cards.map((card) => (
+            <View key={card.id} style={styles.cardWrapper}>
+              <DashboardCard {...card} />
+            </View>
+          ))}
+        </View>
+      )}
     </View>
   );
 }
@@ -53,10 +68,16 @@ const styles = StyleSheet.create({
   cardWrapper: {
     width: "48%",
   },
-  compactWidth: {
+  compactWrapper: {
     width: "24%",
   },
-  longWidth: {
+  secondaryCards: {
+    marginTop: 12,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+  },
+  secondaryCardWrapper: {
     width: "47%",
   },
   fullWidth: {
