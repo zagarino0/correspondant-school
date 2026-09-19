@@ -8,6 +8,10 @@ import {
   getStudentAttendance,
   type ParentAttendanceRecord,
 } from "../../../services/attendance/attendance.service";
+import {
+  getStudentGrades,
+  type ParentGrade,
+} from "../../../services/grades/grade.service";
 
 type ParentDashboardProps = {
   firstName: string;
@@ -19,6 +23,9 @@ export function ParentDashboard({ firstName }: ParentDashboardProps) {
   const [attendance, setAttendance] = useState<ParentAttendanceRecord[]>([]);
   const [attendanceLoading, setAttendanceLoading] = useState(false);
   const [attendanceError, setAttendanceError] = useState(false);
+  const [grades, setGrades] = useState<ParentGrade[]>([]);
+  const [gradesLoading, setGradesLoading] = useState(false);
+  const [gradesError, setGradesError] = useState(false);
   const [childrenLoading, setChildrenLoading] = useState(true);
   const [childrenError, setChildrenError] = useState(false);
 
@@ -101,6 +108,45 @@ export function ParentDashboard({ firstName }: ParentDashboardProps) {
     };
   }, [selectedChildId]);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadGrades() {
+      if (!selectedChildId) {
+        setGrades([]);
+        setGradesLoading(false);
+        setGradesError(false);
+        return;
+      }
+
+      try {
+        setGradesLoading(true);
+        setGradesError(false);
+
+        const response = await getStudentGrades(selectedChildId);
+
+        if (isMounted) {
+          setGrades(response.grades);
+        }
+      } catch {
+        if (isMounted) {
+          setGrades([]);
+          setGradesError(true);
+        }
+      } finally {
+        if (isMounted) {
+          setGradesLoading(false);
+        }
+      }
+    }
+
+    void loadGrades();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedChildId]);
+
   const selectedChild = useMemo(
     () => children.find((child) => child.id === selectedChildId) ?? null,
     [children, selectedChildId],
@@ -158,6 +204,42 @@ export function ParentDashboard({ firstName }: ParentDashboardProps) {
     );
   }, [attendance]);
 
+  const gradeSummary = useMemo(() => {
+    if (grades.length === 0) {
+      return {
+        count: 0,
+        average: null as number | null,
+      };
+    }
+
+    const weightedTotal = grades.reduce(
+      (total, grade) =>
+        total + (grade.value / grade.maxValue) * 20 * grade.coefficient,
+      0,
+    );
+
+    const coefficientTotal = grades.reduce(
+      (total, grade) => total + grade.coefficient,
+      0,
+    );
+
+    return {
+      count: grades.length,
+      average:
+        coefficientTotal > 0 ? weightedTotal / coefficientTotal : null,
+    };
+  }, [grades]);
+
+  const resultsDescription = !selectedChild
+    ? "Sélectionnez un enfant pour consulter ses résultats."
+    : gradesLoading
+      ? "Chargement des résultats."
+      : gradesError
+        ? "Impossible de charger les résultats."
+        : gradeSummary.count === 0
+          ? "Aucune note enregistrée."
+          : `Moyenne : ${gradeSummary.average?.toFixed(2)} / 20 · ${gradeSummary.count} note(s)`;
+
   const attendanceDescription = !selectedChild
     ? "Sélectionnez un enfant pour consulter ses présences."
     : attendanceLoading
@@ -191,9 +273,16 @@ export function ParentDashboard({ firstName }: ParentDashboardProps) {
         {
           id: "results",
           title: "Résultats",
-          description: selectedChild
-            ? `Consulter les notes et résultats de ${selectedChild.firstName}.`
-            : "Sélectionnez un enfant pour consulter ses résultats.",
+          value: gradesLoading
+            ? "…"
+            : gradesError
+              ? "—"
+              : selectedChild
+                ? gradeSummary.average !== null
+                  ? `${gradeSummary.average.toFixed(2)} / 20`
+                  : "—"
+                : "—",
+          description: resultsDescription,
         },
         {
           id: "assignments",
