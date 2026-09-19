@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import {
   ActivityIndicator,
   FlatList,
@@ -119,13 +119,15 @@ export default function StudentsScreen() {
     [search, status],
   );
 
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      void loadStudents(1, true);
-    }, 300);
+  useFocusEffect(
+    useCallback(() => {
+      const timeout = setTimeout(() => {
+        void loadStudents(1, true);
+      }, 300);
 
-    return () => clearTimeout(timeout);
-  }, [loadStudents]);
+      return () => clearTimeout(timeout);
+    }, [loadStudents]),
+  );
 
   const handleRefresh = () => {
     setRefreshing(true);
