@@ -89,6 +89,9 @@ export const rolePermissions: Record<Role, readonly Permission[]> = {
     "attendance.create",
     "attendance.update",
 
+    "observation.read",
+    "observation.create",
+
     "assignment.read",
     "assignment.create",
     "assignment.update",

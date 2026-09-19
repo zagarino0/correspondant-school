@@ -14,6 +14,9 @@ export const permissions = [
   "attendance.update",
   "attendance.delete",
 
+  "observation.read",
+  "observation.create",
+
   "assignment.read",
   "assignment.create",
   "assignment.update",
