@@ -234,7 +234,7 @@ export default function ScheduleScreen() {
 
                               {"class" in schedule ? (
                                 <Text style={styles.classText} numberOfLines={2}>
-                                  {schedule.class.name}
+                                  {(schedule as TeacherSchedule).class.name}
                                 </Text>
                               ) : null}
 
