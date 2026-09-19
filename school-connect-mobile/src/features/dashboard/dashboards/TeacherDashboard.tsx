@@ -50,6 +50,22 @@ const attendanceLabels = {
   LATE: "R",
 } as const;
 
+type SlotState = "ACTIVE" | "UPCOMING" | "COMPLETED";
+
+function timeToMinutes(value: string): number {
+  const [hours, minutes] = value.split(":").map(Number);
+  return hours * 60 + minutes;
+}
+
+function getSlotState(schedule: TeacherSchedule, nowMinutes: number): SlotState {
+  const start = timeToMinutes(schedule.startTime);
+  const end = timeToMinutes(schedule.endTime);
+
+  if (nowMinutes >= start && nowMinutes < end) return "ACTIVE";
+  if (nowMinutes < start) return "UPCOMING";
+  return "COMPLETED";
+}
+
 export function TeacherDashboard({ firstName }: TeacherDashboardProps) {
   const router = useRouter();
   const [dashboard, setDashboard] = useState<TeacherDashboardResponse | null>(null);
@@ -60,6 +76,10 @@ export function TeacherDashboard({ firstName }: TeacherDashboardProps) {
   const [hasError, setHasError] = useState(false);
   const [activityError, setActivityError] = useState(false);
   const [savingAttendance, setSavingAttendance] = useState<string | null>(null);
+  const [nowMinutes, setNowMinutes] = useState(() => {
+    const date = new Date();
+    return date.getHours() * 60 + date.getMinutes();
+  });
 
   const loadDashboard = useCallback(async () => {
     try {
@@ -92,9 +112,9 @@ export function TeacherDashboard({ firstName }: TeacherDashboardProps) {
         dashboardResponse.today.schedules.map((item) => item.id),
       );
 
-      const todaySchedules = scheduleResponse.schedules.filter((item) =>
-        todayScheduleIds.has(item.id),
-      );
+      const todaySchedules = scheduleResponse.schedules
+        .filter((item) => todayScheduleIds.has(item.id))
+        .sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime));
 
       const activities = await Promise.all(
         todaySchedules.map(async (schedule) => {
@@ -118,6 +138,16 @@ export function TeacherDashboard({ firstName }: TeacherDashboardProps) {
     useCallback(() => {
       void loadDashboard();
       void loadActivity();
+
+      const refreshClock = () => {
+        const date = new Date();
+        setNowMinutes(date.getHours() * 60 + date.getMinutes());
+      };
+
+      refreshClock();
+      const interval = setInterval(refreshClock, 30_000);
+
+      return () => clearInterval(interval);
     }, [loadActivity, loadDashboard]),
   );
 
@@ -127,12 +157,30 @@ export function TeacherDashboard({ firstName }: TeacherDashboardProps) {
   const studentsToRecord = dashboard?.attendance.studentsToRecordCount ?? null;
   const nextCourse = dashboard?.today.schedules[0] ?? null;
 
+  const activeActivity = useMemo(
+    () =>
+      activityClasses.find(
+        (activity) => getSlotState(activity.schedule, nowMinutes) === "ACTIVE",
+      ) ?? null,
+    [activityClasses, nowMinutes],
+  );
+
+  const nextActivity = useMemo(
+    () =>
+      activityClasses.find(
+        (activity) => getSlotState(activity.schedule, nowMinutes) === "UPCOMING",
+      ) ?? null,
+    [activityClasses, nowMinutes],
+  );
+
   const handleAttendance = useCallback(
     async (
       activity: ActivityClass,
       student: TeacherAttendanceRow,
       status: "PRESENT" | "ABSENT" | "LATE",
     ) => {
+      if (activity.schedule.id !== activeActivity?.schedule.id) return;
+
       try {
         setSavingAttendance(student.enrollmentId);
         const date = dashboard?.date ?? getLocalDateKey();
@@ -171,12 +219,12 @@ export function TeacherDashboard({ firstName }: TeacherDashboardProps) {
           }),
         );
       } catch {
-        // The existing dashboard error state remains unchanged; the next focus refreshes data.
+        // The next focus refreshes the attendance data.
       } finally {
         setSavingAttendance(null);
       }
     },
-    [dashboard?.date],
+    [activeActivity?.schedule.id, dashboard?.date],
   );
 
   const sections: DashboardSectionData[] = [
@@ -310,6 +358,7 @@ export function TeacherDashboard({ firstName }: TeacherDashboardProps) {
               <Text style={styles.cardTitle}>Classes synchronisées avec l'emploi du temps</Text>
               <Text style={styles.cardDescription}>
                 La classe et la matière viennent automatiquement de vos cours du jour.
+                Seul le créneau actif permet de modifier les présences.
               </Text>
             </View>
             <Pressable
@@ -320,6 +369,25 @@ export function TeacherDashboard({ firstName }: TeacherDashboardProps) {
             </Pressable>
           </View>
 
+          {activeActivity ? (
+            <View style={styles.activeSlotNotice}>
+              <Text style={styles.activeSlotTitle}>Créneau actif</Text>
+              <Text style={styles.activeSlotText}>
+                {activeActivity.schedule.class.name} — {activeActivity.schedule.subject}
+                {" · "}
+                {activeActivity.schedule.startTime} – {activeActivity.schedule.endTime}
+              </Text>
+            </View>
+          ) : nextActivity ? (
+            <View style={styles.nextSlotNotice}>
+              <Text style={styles.nextSlotTitle}>Aucun créneau actif</Text>
+              <Text style={styles.nextSlotText}>
+                Prochain cours : {nextActivity.schedule.startTime} —{" "}
+                {nextActivity.schedule.class.name} — {nextActivity.schedule.subject}
+              </Text>
+            </View>
+          ) : null}
+
           {activityLoading ? (
             <View style={styles.loadingBlock}>
               <ActivityIndicator />
@@ -329,90 +397,126 @@ export function TeacherDashboard({ firstName }: TeacherDashboardProps) {
             <Text style={styles.muted}>{activityEmptyText}</Text>
           ) : (
             <View style={styles.activityList}>
-              {activityClasses.map((activity) => (
-                <View key={activity.schedule.id} style={styles.activityClass}>
-                  <View style={styles.activityHeader}>
-                    <View style={styles.flex}>
-                      <Text style={styles.activityClassName}>
-                        {activity.schedule.class.name} — {activity.schedule.subject}
+              {activityClasses.map((activity) => {
+                const slotState = getSlotState(activity.schedule, nowMinutes);
+                const isActive = slotState === "ACTIVE";
+                const stateLabel =
+                  slotState === "ACTIVE"
+                    ? "Créneau actif"
+                    : slotState === "UPCOMING"
+                      ? "À venir"
+                      : "Terminé";
+
+                return (
+                  <View
+                    key={activity.schedule.id}
+                    style={[
+                      styles.activityClass,
+                      !isActive ? styles.activityClassLocked : null,
+                    ]}
+                  >
+                    <View style={styles.activityHeader}>
+                      <View style={styles.flex}>
+                        <Text style={styles.activityClassName}>
+                          {activity.schedule.class.name} — {activity.schedule.subject}
+                        </Text>
+                        <Text style={styles.activityMeta}>
+                          {activity.schedule.startTime} – {activity.schedule.endTime}
+                          {activity.schedule.room
+                            ? " · Salle " + activity.schedule.room
+                            : ""}
+                        </Text>
+                      </View>
+                      <View
+                        style={[
+                          styles.scheduleBadge,
+                          isActive ? styles.scheduleBadgeActive : null,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.scheduleBadgeText,
+                            isActive ? styles.scheduleBadgeTextActive : null,
+                          ]}
+                        >
+                          {stateLabel}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.studentHeader}>
+                      <Text style={[styles.studentHeaderText, styles.studentNameColumn]}>
+                        Élève
                       </Text>
-                      <Text style={styles.activityMeta}>
-                        {activity.schedule.startTime} – {activity.schedule.endTime}
-                        {activity.schedule.room
-                          ? " · Salle " + activity.schedule.room
-                          : ""}
+                      <Text style={[styles.studentHeaderText, styles.studentNumberColumn]}>
+                        N°
+                      </Text>
+                      <Text style={[styles.studentHeaderText, styles.attendanceColumn]}>
+                        A / P / R
                       </Text>
                     </View>
-                    <View style={styles.scheduleBadge}>
-                      <Text style={styles.scheduleBadgeText}>
-                        {dayLabels[activity.schedule.dayOfWeek]}
-                      </Text>
-                    </View>
-                  </View>
 
-                  <View style={styles.studentHeader}>
-                    <Text style={[styles.studentHeaderText, styles.studentNameColumn]}>
-                      Élève
-                    </Text>
-                    <Text style={[styles.studentHeaderText, styles.studentNumberColumn]}>
-                      N°
-                    </Text>
-                    <Text style={[styles.studentHeaderText, styles.attendanceColumn]}>
-                      A / P / R
-                    </Text>
-                  </View>
+                    {activity.students.map((student) => {
+                      const currentStatus = student.attendance?.status ?? null;
+                      const isSaving = savingAttendance === student.enrollmentId;
+                      const buttonsDisabled = !isActive || isSaving;
 
-                  {activity.students.map((student) => {
-                    const currentStatus = student.attendance?.status ?? null;
-                    const isSaving = savingAttendance === student.enrollmentId;
+                      return (
+                        <View
+                          key={student.enrollmentId}
+                          style={[
+                            styles.studentRow,
+                            !isActive ? styles.studentRowLocked : null,
+                          ]}
+                        >
+                          <Text style={[styles.studentNameText, styles.studentNameColumn]}>
+                            {student.student.firstName} {student.student.lastName}
+                          </Text>
+                          <Text style={[styles.studentNumberText, styles.studentNumberColumn]}>
+                            {student.student.studentNumber}
+                          </Text>
 
-                    return (
-                      <View key={student.enrollmentId} style={styles.studentRow}>
-                        <Text style={[styles.studentNameText, styles.studentNameColumn]}>
-                          {student.student.firstName} {student.student.lastName}
-                        </Text>
-                        <Text style={[styles.studentNumberText, styles.studentNumberColumn]}>
-                          {student.student.studentNumber}
-                        </Text>
-
-                        <View style={styles.attendanceColumn}>
-                          <View style={styles.attendanceButtons}>
-                            {(Object.keys(attendanceLabels) as Array<
-                              keyof typeof attendanceLabels
-                            >).map((status) => (
-                              <Pressable
-                                key={status}
-                                disabled={isSaving}
-                                onPress={() =>
-                                  void handleAttendance(activity, student, status)
-                                }
-                                style={[
-                                  styles.attendanceButton,
-                                  currentStatus === status
-                                    ? styles.attendanceButtonActive
-                                    : null,
-                                  isSaving ? styles.attendanceButtonDisabled : null,
-                                ]}
-                              >
-                                <Text
+                          <View style={styles.attendanceColumn}>
+                            <View style={styles.attendanceButtons}>
+                              {(Object.keys(attendanceLabels) as Array<
+                                keyof typeof attendanceLabels
+                              >).map((status) => (
+                                <Pressable
+                                  key={status}
+                                  disabled={buttonsDisabled}
+                                  onPress={() =>
+                                    void handleAttendance(activity, student, status)
+                                  }
                                   style={[
-                                    styles.attendanceButtonText,
+                                    styles.attendanceButton,
                                     currentStatus === status
-                                      ? styles.attendanceButtonTextActive
+                                      ? styles.attendanceButtonActive
+                                      : null,
+                                    buttonsDisabled
+                                      ? styles.attendanceButtonDisabled
                                       : null,
                                   ]}
                                 >
-                                  {attendanceLabels[status]}
-                                </Text>
-                              </Pressable>
-                            ))}
+                                  <Text
+                                    style={[
+                                      styles.attendanceButtonText,
+                                      currentStatus === status
+                                        ? styles.attendanceButtonTextActive
+                                        : null,
+                                    ]}
+                                  >
+                                    {attendanceLabels[status]}
+                                  </Text>
+                                </Pressable>
+                              ))}
+                            </View>
                           </View>
                         </View>
-                      </View>
-                    );
-                  })}
-                </View>
-              ))}
+                      );
+                    })}
+                  </View>
+                );
+              })}
             </View>
           )}
         </View>
@@ -442,14 +546,24 @@ const styles = StyleSheet.create({
   classLevel: { marginTop: 5, fontSize: 12, color: "#6B7280" },
   activityList: { gap: 14 },
   activityClass: { borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 12, overflow: "hidden" },
+  activityClassLocked: { opacity: 0.62 },
   activityHeader: { flexDirection: "row", alignItems: "center", padding: 14, backgroundColor: "#F8FAFC", gap: 10 },
   activityClassName: { fontSize: 15, fontWeight: "700", color: "#111827" },
   activityMeta: { marginTop: 5, fontSize: 12, color: "#6B7280" },
   scheduleBadge: { paddingHorizontal: 9, paddingVertical: 6, borderRadius: 10, backgroundColor: "#E5E7EB" },
+  scheduleBadgeActive: { backgroundColor: "#111827" },
   scheduleBadgeText: { fontSize: 11, fontWeight: "700", color: "#374151" },
+  scheduleBadgeTextActive: { color: "#FFFFFF" },
+  activeSlotNotice: { padding: 12, borderRadius: 10, backgroundColor: "#111827" },
+  activeSlotTitle: { fontSize: 11, fontWeight: "800", color: "#FFFFFF", textTransform: "uppercase" },
+  activeSlotText: { marginTop: 4, fontSize: 13, fontWeight: "700", color: "#FFFFFF" },
+  nextSlotNotice: { padding: 12, borderRadius: 10, backgroundColor: "#F1F5F9", borderWidth: 1, borderColor: "#E5E7EB" },
+  nextSlotTitle: { fontSize: 11, fontWeight: "800", color: "#374151", textTransform: "uppercase" },
+  nextSlotText: { marginTop: 4, fontSize: 13, fontWeight: "700", color: "#111827" },
   studentHeader: { flexDirection: "row", alignItems: "center", minHeight: 38, paddingHorizontal: 12, backgroundColor: "#F1F5F9", borderTopWidth: 1, borderTopColor: "#E5E7EB" },
   studentHeaderText: { fontSize: 11, fontWeight: "700", color: "#6B7280" },
   studentRow: { flexDirection: "row", alignItems: "center", minHeight: 58, paddingHorizontal: 12, paddingVertical: 8, borderTopWidth: 1, borderTopColor: "#E5E7EB" },
+  studentRowLocked: { backgroundColor: "#F8FAFC" },
   studentNameColumn: { flex: 1, paddingRight: 8 },
   studentNumberColumn: { width: 76, paddingRight: 6 },
   attendanceColumn: { width: 132, alignItems: "flex-end" },
