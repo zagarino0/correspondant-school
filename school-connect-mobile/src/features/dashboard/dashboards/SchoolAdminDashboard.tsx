@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useRouter } from "expo-router";
 import {
   ActivityIndicator,
   StyleSheet,
@@ -17,6 +18,7 @@ type SchoolAdminDashboardProps = {
 export function SchoolAdminDashboard({
   firstName,
 }: SchoolAdminDashboardProps) {
+  const router = useRouter();
   const [dashboard, setDashboard] =
     useState<SchoolAdminDashboardResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -94,6 +96,7 @@ export function SchoolAdminDashboard({
               title: "Élèves",
               value: String(counts.students),
               description: "Élèves actifs cette année.",
+              onPress: () => router.push("/(app)/students"),
             },
             {
               id: "teachers",
