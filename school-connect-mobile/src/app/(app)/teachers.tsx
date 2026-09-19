@@ -338,7 +338,7 @@ export default function TeachersScreen() {
               ) : null}
             </View>
           );
-        }}        )}
+        }}
       />
     </View>
   );
