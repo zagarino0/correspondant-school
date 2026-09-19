@@ -86,6 +86,54 @@ export default function StudentsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [expandedCategory, setExpandedCategory] =
+    useState<StudentCategory | null>(null);
+  const [expandedLevels, setExpandedLevels] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [expandedClasses, setExpandedClasses] = useState<Set<string>>(
+    () => new Set(),
+  );
+
+  const toggleCategory = (category: StudentCategory) => {
+    setExpandedCategory((current) => {
+      const next = current === category ? null : category;
+
+      setExpandedLevels(new Set());
+      setExpandedClasses(new Set());
+
+      return next;
+    });
+  };
+
+  const toggleLevel = (levelKey: string) => {
+    setExpandedLevels((current) => {
+      const next = new Set(current);
+
+      if (next.has(levelKey)) {
+        next.delete(levelKey);
+      } else {
+        next.add(levelKey);
+      }
+
+      setExpandedClasses(new Set());
+      return next;
+    });
+  };
+
+  const toggleClass = (classKey: string) => {
+    setExpandedClasses((current) => {
+      const next = new Set(current);
+
+      if (next.has(classKey)) {
+        next.delete(classKey);
+      } else {
+        next.add(classKey);
+      }
+
+      return next;
+    });
+  };
 
   const loadStudents = useCallback(
     async (targetPage: number, replace: boolean) => {
@@ -280,13 +328,21 @@ export default function StudentsScreen() {
 
           return (
             <View style={styles.categorySection}>
-              <View style={styles.categoryHeader}>
-                <View>
-                  <Text style={styles.categoryTitle}>
-                    {CATEGORY_LABELS[categoryGroup.category]}
-                  </Text>
-                  <Text style={styles.categoryCount}>
-                    {categoryStudentCount} élève(s) · {categoryGroup.levels.length} niveau(x)
+              <Pressable
+                onPress={() => toggleCategory(categoryGroup.category)}
+                style={styles.categoryHeader}
+              >
+                <View style={styles.categoryHeaderIdentity}>
+                  <View style={styles.categoryHeaderText}>
+                    <Text style={styles.categoryTitle}>
+                      {CATEGORY_LABELS[categoryGroup.category]}
+                    </Text>
+                    <Text style={styles.categoryCount}>
+                      {categoryStudentCount} élève(s) · {categoryGroup.levels.length} niveau(x)
+                    </Text>
+                  </View>
+                  <Text style={styles.expandIcon}>
+                    {expandedCategory === categoryGroup.category ? "▼" : "▶"}
                   </Text>
                 </View>
                 <View style={styles.categoryBadge}>
@@ -297,106 +353,176 @@ export default function StudentsScreen() {
                     )}
                   </Text>
                 </View>
-              </View>
+              </Pressable>
 
-              <View style={styles.levelGrid}>
-                {categoryGroup.levels.map((levelGroup) => (
-                  <View key={levelGroup.level} style={styles.levelCard}>
-                    <View style={styles.levelHeader}>
-                      <Text style={styles.levelTitle}>{levelGroup.level}</Text>
-                      <Text style={styles.levelCount}>
-                        {levelGroup.classes.length} classe(s)
-                      </Text>
-                    </View>
+              {expandedCategory === categoryGroup.category ? (
+                <View style={styles.levelGrid}>
+                  {categoryGroup.levels.map((levelGroup) => {
+                    const levelKey =
+                      categoryGroup.category + "::" + levelGroup.level;
+                    const isLevelExpanded = expandedLevels.has(levelKey);
 
-                    <View style={styles.classGrid}>
-                      {levelGroup.classes.map((classGroup) => (
-                        <View key={classGroup.classId} style={styles.classCard}>
-                          <View style={styles.classCardHeader}>
-                            <View style={styles.classHeaderIdentity}>
-                              <Text style={styles.classTitle}>
-                                {classGroup.className}
-                              </Text>
-                              <Text style={styles.classCount}>
-                                {classGroup.students.length} élève(s)
-                              </Text>
-                            </View>
+                    return (
+                      <View key={levelGroup.level} style={styles.levelCard}>
+                        <Pressable
+                          onPress={() => toggleLevel(levelKey)}
+                          style={styles.levelHeader}
+                        >
+                          <View style={styles.levelHeaderText}>
+                            <Text style={styles.levelTitle}>{levelGroup.level}</Text>
+                            <Text style={styles.levelCount}>
+                              {levelGroup.classes.length} classe(s)
+                            </Text>
                           </View>
+                          <Text style={styles.expandIcon}>
+                            {isLevelExpanded ? "▼" : "▶"}
+                          </Text>
+                        </Pressable>
 
-                          <View style={styles.studentListHeader}>
-                            <Text style={[styles.studentListHeaderText, styles.studentNumberCol]}>
-                              N°
-                            </Text>
-                            <Text style={[styles.studentListHeaderText, styles.studentNameCol]}>
-                              Élève
-                            </Text>
-                            <Text style={[styles.studentListHeaderText, styles.studentGenderCol]}>
-                              S.
-                            </Text>
-                            <Text style={[styles.studentListHeaderText, styles.studentMatriculeCol]}>
-                              Mat.
-                            </Text>
-                            <View style={styles.studentActionCol} />
+                        {isLevelExpanded ? (
+                          <View style={styles.classGrid}>
+                            {levelGroup.classes.map((classGroup) => {
+                              const classKey =
+                                categoryGroup.category +
+                                "::" +
+                                levelGroup.level +
+                                "::" +
+                                classGroup.classId;
+                              const isClassExpanded =
+                                expandedClasses.has(classKey);
+
+                              return (
+                                <View
+                                  key={classGroup.classId}
+                                  style={styles.classCard}
+                                >
+                                  <Pressable
+                                    onPress={() => toggleClass(classKey)}
+                                    style={styles.classCardHeader}
+                                  >
+                                    <View style={styles.classHeaderIdentity}>
+                                      <Text style={styles.classTitle}>
+                                        {classGroup.className}
+                                      </Text>
+                                      <Text style={styles.classCount}>
+                                        {classGroup.students.length} élève(s)
+                                      </Text>
+                                    </View>
+                                    <Text style={styles.classExpandIcon}>
+                                      {isClassExpanded ? "▼" : "▶"}
+                                    </Text>
+                                  </Pressable>
+
+                                  {isClassExpanded ? (
+                                    <>
+                                      <View style={styles.studentListHeader}>
+                                        <Text
+                                          style={[
+                                            styles.studentListHeaderText,
+                                            styles.studentNumberCol,
+                                          ]}
+                                        >
+                                          N°
+                                        </Text>
+                                        <Text
+                                          style={[
+                                            styles.studentListHeaderText,
+                                            styles.studentNameCol,
+                                          ]}
+                                        >
+                                          Élève
+                                        </Text>
+                                        <Text
+                                          style={[
+                                            styles.studentListHeaderText,
+                                            styles.studentGenderCol,
+                                          ]}
+                                        >
+                                          S.
+                                        </Text>
+                                        <Text
+                                          style={[
+                                            styles.studentListHeaderText,
+                                            styles.studentMatriculeCol,
+                                          ]}
+                                        >
+                                          Mat.
+                                        </Text>
+                                        <View style={styles.studentActionCol} />
+                                      </View>
+
+                                      {classGroup.students.map((student) => (
+                                        <View
+                                          key={student.id}
+                                          style={styles.studentRow}
+                                        >
+                                          <View style={styles.studentNumberCol}>
+                                            <Text style={styles.positionText}>
+                                              {student.classPosition ?? "—"}
+                                            </Text>
+                                          </View>
+
+                                          <View style={styles.studentNameCol}>
+                                            <Text
+                                              style={styles.studentName}
+                                              numberOfLines={1}
+                                            >
+                                              {student.lastName} {student.firstName}
+                                            </Text>
+                                          </View>
+
+                                          <View style={styles.studentGenderCol}>
+                                            <Text style={styles.genderText}>
+                                              {student.gender === "MALE"
+                                                ? "G"
+                                                : student.gender === "FEMALE"
+                                                  ? "F"
+                                                  : "—"}
+                                            </Text>
+                                          </View>
+
+                                          <View style={styles.studentMatriculeCol}>
+                                            <Text
+                                              style={styles.studentNumber}
+                                              numberOfLines={1}
+                                            >
+                                              {student.studentNumber}
+                                            </Text>
+                                          </View>
+
+                                          <View style={styles.studentActionCol}>
+                                            <Pressable
+                                              onPress={() =>
+                                                router.push({
+                                                  pathname:
+                                                    "/(app)/students/[studentId]",
+                                                  params: {
+                                                    studentId: student.id,
+                                                  },
+                                                })
+                                              }
+                                              style={styles.editButton}
+                                            >
+                                              <Text style={styles.editButtonText}>
+                                                Modifier
+                                              </Text>
+                                            </Pressable>
+                                          </View>
+                                        </View>
+                                      ))}
+                                    </>
+                                  ) : null}
+                                </View>
+                              );
+                            })}
                           </View>
-
-                          {classGroup.students.map((student) => (
-                            <View key={student.id} style={styles.studentRow}>
-                              <View style={styles.studentNumberCol}>
-                                <Text style={styles.positionText}>
-                                  {student.classPosition ?? "—"}
-                                </Text>
-                              </View>
-
-                              <View style={styles.studentNameCol}>
-                                <Text
-                                  style={styles.studentName}
-                                  numberOfLines={1}
-                                >
-                                  {student.lastName} {student.firstName}
-                                </Text>
-                              </View>
-
-                              <View style={styles.studentGenderCol}>
-                                <Text style={styles.genderText}>
-                                  {student.gender === "MALE"
-                                    ? "G"
-                                    : student.gender === "FEMALE"
-                                      ? "F"
-                                      : "—"}
-                                </Text>
-                              </View>
-
-                              <View style={styles.studentMatriculeCol}>
-                                <Text
-                                  style={styles.studentNumber}
-                                  numberOfLines={1}
-                                >
-                                  {student.studentNumber}
-                                </Text>
-                              </View>
-
-                              <View style={styles.studentActionCol}>
-                                <Pressable
-                                  onPress={() =>
-                                    router.push({
-                                      pathname: "/(app)/students/[studentId]",
-                                      params: { studentId: student.id },
-                                    })
-                                  }
-                                  style={styles.editButton}
-                                >
-                                  <Text style={styles.editButtonText}>Modifier</Text>
-                                </Pressable>
-                              </View>
-                            </View>
-                          ))}
-                        </View>
-                      ))}
-                    </View>
-                  </View>
-                ))}
-              </View>
-            </View>
+                        ) : null}
+                      </View>
+                    );
+                  })}
+                </View>
+              ) : null}
+            </View>            </View>
           );
         }}
       />
@@ -452,9 +578,20 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 4,
     paddingVertical: 6,
-    marginBottom: 10,
   },
+  categoryHeaderIdentity: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  categoryHeaderText: { flex: 1 },
   categoryTitle: { fontSize: 19, fontWeight: "900", color: "#111827" },
+  expandIcon: {
+    fontSize: 11,
+    fontWeight: "900",
+    color: "#111827",
+  },
   categoryCount: { marginTop: 3, fontSize: 11, color: "#6B7280" },
   categoryBadge: {
     minWidth: 34,
@@ -481,12 +618,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
   },
   levelHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 2,
-    paddingBottom: 9,
-    marginBottom: 9,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
+    paddingVertical: 2,
   },
+  levelHeaderText: { flex: 1 },
   levelTitle: { fontSize: 15, fontWeight: "900", color: "#111827" },
   levelCount: { marginTop: 2, fontSize: 10, fontWeight: "700", color: "#6B7280" },
   classGrid: {
@@ -504,6 +642,9 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   classCardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 9,
     paddingVertical: 9,
     backgroundColor: "#111827",
@@ -516,6 +657,12 @@ const styles = StyleSheet.create({
   },
   classTitle: { flex: 1, fontSize: 13, fontWeight: "900", color: "#FFFFFF" },
   classCount: { fontSize: 9, fontWeight: "800", color: "#D1D5DB" },
+  classExpandIcon: {
+    marginLeft: 6,
+    fontSize: 10,
+    fontWeight: "900",
+    color: "#FFFFFF",
+  },
   studentListHeader: {
     flexDirection: "row",
     alignItems: "center",
