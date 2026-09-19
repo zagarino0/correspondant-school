@@ -3,6 +3,7 @@ import { AssignmentStatus, ScheduleDay } from "@prisma/client";
 
 import { authenticate } from "../middleware/authenticate.js";
 import { authorizeResource } from "../middleware/authorize-resource.js";
+import { authorize } from "../middleware/authorize.js";
 
 function getDateRange(date: string): { start: Date; end: Date } {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
@@ -33,6 +34,118 @@ function getDateRange(date: string): { start: Date; end: Date } {
 export async function teacherRoutes(
   app: FastifyInstance,
 ): Promise<void> {
+  app.get(
+    "/",
+    {
+      onRequest: [authenticate],
+      preHandler: [authorize("student.read")],
+    },
+    async (request, reply) => {
+      if (
+        request.user.role !== "SCHOOL_ADMIN" &&
+        request.user.role !== "SUPER_ADMIN"
+      ) {
+        return reply.code(403).send({
+          error: {
+            code: "FORBIDDEN",
+            message: "School administrator access required.",
+          },
+        });
+      }
+
+      const schoolId = request.user.schoolId;
+
+      if (!schoolId) {
+        return reply.code(400).send({
+          error: {
+            code: "SCHOOL_REQUIRED",
+            message: "A school is required.",
+          },
+        });
+      }
+
+      const academicYear = await app.prisma.academicYear.findFirst({
+        where: {
+          schoolId,
+          status: "ACTIVE",
+        },
+        orderBy: { startDate: "desc" },
+        select: { id: true, name: true },
+      });
+
+      if (!academicYear) {
+        return reply.code(404).send({
+          error: {
+            code: "ACTIVE_ACADEMIC_YEAR_NOT_FOUND",
+            message: "No active academic year was found.",
+          },
+        });
+      }
+
+      const teachers = await app.prisma.user.findMany({
+        where: {
+          schoolId,
+          role: "TEACHER",
+          status: "ACTIVE",
+          teacherClassAssignments: {
+            some: {
+              class: {
+                schoolId,
+                academicYearId: academicYear.id,
+              },
+            },
+          },
+        },
+        orderBy: [
+          { lastName: "asc" },
+          { firstName: "asc" },
+        ],
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          status: true,
+          teacherClassAssignments: {
+            where: {
+              class: {
+                schoolId,
+                academicYearId: academicYear.id,
+              },
+            },
+            orderBy: { class: { name: "asc" } },
+            select: {
+              id: true,
+              class: {
+                select: {
+                  id: true,
+                  name: true,
+                  level: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      return reply.send({
+        academicYear,
+        teachers: teachers.map((teacher) => ({
+          id: teacher.id,
+          firstName: teacher.firstName,
+          lastName: teacher.lastName,
+          email: teacher.email,
+          status: teacher.status,
+          classes: teacher.teacherClassAssignments.map((assignment) => ({
+            id: assignment.class.id,
+            name: assignment.class.name,
+            level: assignment.class.level,
+          })),
+        })),
+      });
+    },
+  );
+
 
   app.get(
     "/me/classes",
