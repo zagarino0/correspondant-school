@@ -34,7 +34,6 @@ const SCHEDULE_DAYS: {
   { key: "THURSDAY", label: "Jeudi" },
   { key: "FRIDAY", label: "Vendredi" },
   { key: "SATURDAY", label: "Samedi" },
-  { key: "SUNDAY", label: "Dimanche" },
 ];
 
 function getTodayScheduleDay(): ParentScheduleDay {
@@ -162,172 +161,6 @@ function ScheduleGrid({
       })}
     </View>
   );
-}mport { useEffect, useMemo, useState } from "react";
-import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
-import { useRouter } from "expo-router";
-
-import { DashboardSection } from "../components/DashboardSection";
-import type { DashboardCardData, DashboardSectionData } from "../dashboard.types";
-import {
-  getChildSchedule,
-  getMyChildren,
-  type ParentChild,
-  type ParentChildSchedule,
-  type ParentScheduleDay,
-} from "../../../services/parents/parent.service";
-import {
-  getStudentAttendance,
-  type ParentAttendanceRecord,
-} from "../../../services/attendance/attendance.service";
-import {
-  getStudentGrades,
-  type ParentGrade,
-} from "../../../services/grades/grade.service";
-
-type ParentDashboardProps = {
-  firstName: string;
-};
-
-const SCHEDULE_DAYS: {
-  key: ParentScheduleDay;
-  label: string;
-}[] = [
-  { key: "MONDAY", label: "Lundi" },
-  { key: "TUESDAY", label: "Mardi" },
-  { key: "WEDNESDAY", label: "Mercredi" },
-  { key: "THURSDAY", label: "Jeudi" },
-  { key: "FRIDAY", label: "Vendredi" },
-  { key: "SATURDAY", label: "Samedi" },
-  { key: "SUNDAY", label: "Dimanche" },
-];
-
-function getTodayScheduleDay(): ParentScheduleDay {
-  const days: ParentScheduleDay[] = [
-    "SUNDAY",
-    "MONDAY",
-    "TUESDAY",
-    "WEDNESDAY",
-    "THURSDAY",
-    "FRIDAY",
-    "SATURDAY",
-  ];
-
-  return days[new Date().getDay()];
-}
-
-function ScheduleGrid({
-  schedules,
-  loading,
-  error,
-}: {
-  schedules: ParentChildSchedule[];
-  loading: boolean;
-  error: boolean;
-}) {
-  if (loading) {
-    return (
-      <View style={styles.scheduleState}>
-        <Text style={styles.scheduleStateText}>
-          Chargement de l’emploi du temps…
-        </Text>
-      </View>
-    );
-  }
-
-  if (error) {
-    return (
-      <View style={styles.scheduleState}>
-        <Text style={styles.scheduleStateText}>
-          Impossible de charger l’emploi du temps.
-        </Text>
-      </View>
-    );
-  }
-
-  if (schedules.length === 0) {
-    return (
-      <View style={styles.scheduleState}>
-        <Text style={styles.scheduleStateText}>
-          Aucun créneau n’est enregistré pour cette classe.
-        </Text>
-      </View>
-    );
-  }
-
-  const today = getTodayScheduleDay();
-
-  return (
-    <ScrollView
-      horizontal
-      nestedScrollEnabled
-      showsHorizontalScrollIndicator={true}
-      contentContainerStyle={styles.scheduleGrid}
-    >
-      {SCHEDULE_DAYS.map((day) => {
-        const daySchedules = schedules
-          .filter((schedule) => schedule.dayOfWeek === day.key)
-          .sort((a, b) => a.startTime.localeCompare(b.startTime));
-
-        const isToday = day.key === today;
-
-        return (
-          <View
-            key={day.key}
-            style={[
-              styles.scheduleDay,
-              isToday ? styles.scheduleDayToday : null,
-            ]}
-          >
-            <View
-              style={[
-                styles.scheduleDayHeader,
-                isToday ? styles.scheduleDayHeaderToday : null,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.scheduleDayLabel,
-                  isToday ? styles.scheduleDayLabelToday : null,
-                ]}
-              >
-                {day.label}
-              </Text>
-              {isToday ? (
-                <Text style={styles.todayLabel}>Aujourd’hui</Text>
-              ) : null}
-            </View>
-
-            {daySchedules.length > 0 ? (
-              daySchedules.map((schedule) => (
-                <View key={schedule.id} style={styles.scheduleLesson}>
-                  <Text style={styles.scheduleTime}>
-                    {schedule.startTime} – {schedule.endTime}
-                  </Text>
-                  <Text style={styles.scheduleSubject} numberOfLines={2}>
-                    {schedule.subject}
-                  </Text>
-                  <Text style={styles.scheduleTeacher} numberOfLines={1}>
-                    {schedule.teacher.firstName} {schedule.teacher.lastName}
-                  </Text>
-                  {schedule.room ? (
-                    <Text style={styles.scheduleRoom}>
-                      Salle {schedule.room}
-                    </Text>
-                  ) : null}
-                </View>
-              ))
-            ) : (
-              <View style={styles.scheduleEmpty}>
-                <Text style={styles.scheduleEmptyText}>Aucun cours</Text>
-              </View>
-            )}
-          </View>
-        );
-      })}
-    </ScrollView>
-  );
-}
-
 export function ParentDashboard({ firstName }: ParentDashboardProps) {
   const router = useRouter();
   const [children, setChildren] = useState<ParentChild[]>([]);
@@ -841,7 +674,6 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   scheduleDay: {
-    borderRadius: 12,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "#E5E7EB",
