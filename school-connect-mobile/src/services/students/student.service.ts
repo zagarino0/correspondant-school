@@ -5,6 +5,7 @@ import type {
   StudentDetailResponse,
   StudentListResponse,
   UpdateStudentInput,
+  UpdateStudentResponse,
 } from "./student.types";
 
 export async function getStudents(
@@ -39,8 +40,8 @@ export async function getStudentClasses(): Promise<StudentClassesResponse> {
 export async function updateStudent(
   studentId: string,
   data: UpdateStudentInput,
-): Promise<StudentDetailResponse> {
-  const response = await apiClient.patch<StudentDetailResponse>(
+): Promise<UpdateStudentResponse> {
+  const response = await apiClient.patch<UpdateStudentResponse>(
     `/api/v1/students/${studentId}`,
     data,
   );
