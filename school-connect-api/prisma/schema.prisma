@@ -227,6 +227,8 @@ model Student {
   enrollments StudentEnrollment[]
   attendances Attendance[]
 
+  medicalRecord StudentMedicalRecord?
+
   grades      Grade[]
   assignments Assignment[]
 
@@ -236,6 +238,25 @@ model Student {
   @@unique([schoolId, studentNumber])
   @@index([schoolId])
   @@index([lastName, firstName])
+}
+
+model StudentMedicalRecord {
+  id                    String   @id @default(cuid())
+  studentId             String   @unique
+  bloodGroup            String?
+  allergies             String?
+  medicalConditions     String?
+  medications           String?
+  emergencyContactName  String?
+  emergencyContactPhone String?
+  doctorName            String?
+  doctorPhone           String?
+  notes                 String?
+
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model StudentEnrollment {
