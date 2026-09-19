@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -96,6 +96,7 @@ export function TeacherDashboard({ firstName }: TeacherDashboardProps) {
     const date = new Date();
     return date.getHours() * 60 + date.getMinutes();
   });
+  const previousActiveSlotId = useRef<string | null>(null);
 
   const loadDashboard = useCallback(async () => {
     try {
@@ -232,6 +233,17 @@ export function TeacherDashboard({ firstName }: TeacherDashboardProps) {
     });
   }, [activityClasses, nowMinutes]);
 
+  useEffect(() => {
+    const currentActiveSlotId = activeActivity?.schedule.id ?? null;
+    const previousSlotId = previousActiveSlotId.current;
+
+    if (previousSlotId && !currentActiveSlotId) {
+      router.replace("/(app)");
+    }
+
+    previousActiveSlotId.current = currentActiveSlotId;
+  }, [activeActivity?.schedule.id, router]);
+
   const handleAttendance = useCallback(
     async (
       activity: ActivityClass,
@@ -285,8 +297,6 @@ export function TeacherDashboard({ firstName }: TeacherDashboardProps) {
     },
     [activeActivity?.schedule.id, dashboard?.date],
   );
-
-
 
   const handleObservationSave = useCallback(
     async (activity: ActivityClass) => {
@@ -543,13 +553,21 @@ export function TeacherDashboard({ firstName }: TeacherDashboardProps) {
                       <View
                         style={[
                           styles.scheduleBadge,
-                          isActive ? styles.scheduleBadgeActive : null,
+                          slotState === "ACTIVE"
+                            ? styles.scheduleBadgeActive
+                            : slotState === "UPCOMING"
+                              ? styles.scheduleBadgeUpcoming
+                              : styles.scheduleBadgeCompleted,
                         ]}
                       >
                         <Text
                           style={[
                             styles.scheduleBadgeText,
-                            isActive ? styles.scheduleBadgeTextActive : null,
+                            slotState === "ACTIVE"
+                              ? styles.scheduleBadgeTextActive
+                              : slotState === "UPCOMING"
+                                ? styles.scheduleBadgeTextUpcoming
+                                : styles.scheduleBadgeTextCompleted,
                           ]}
                         >
                           {stateLabel}
@@ -735,10 +753,14 @@ const styles = StyleSheet.create({
   activityHeader: { flexDirection: "row", alignItems: "center", padding: 14, backgroundColor: "#F8FAFC", gap: 10 },
   activityClassName: { fontSize: 15, fontWeight: "700", color: "#111827" },
   activityMeta: { marginTop: 5, fontSize: 12, color: "#6B7280" },
-  scheduleBadge: { paddingHorizontal: 9, paddingVertical: 6, borderRadius: 10, backgroundColor: "#E5E7EB" },
+  scheduleBadge: { paddingHorizontal: 9, paddingVertical: 6, borderRadius: 10 },
   scheduleBadgeActive: { backgroundColor: "#111827" },
-  scheduleBadgeText: { fontSize: 11, fontWeight: "700", color: "#374151" },
+  scheduleBadgeUpcoming: { backgroundColor: "#DBEAFE" },
+  scheduleBadgeCompleted: { backgroundColor: "#E5E7EB" },
+  scheduleBadgeText: { fontSize: 11, fontWeight: "700" },
   scheduleBadgeTextActive: { color: "#FFFFFF" },
+  scheduleBadgeTextUpcoming: { color: "#1D4ED8" },
+  scheduleBadgeTextCompleted: { color: "#6B7280" },
   activeSlotNotice: { padding: 12, borderRadius: 10, backgroundColor: "#111827" },
   activeSlotTitle: { fontSize: 11, fontWeight: "800", color: "#FFFFFF", textTransform: "uppercase" },
   activeSlotText: { marginTop: 4, fontSize: 13, fontWeight: "700", color: "#FFFFFF" },
