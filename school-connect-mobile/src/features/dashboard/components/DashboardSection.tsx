@@ -16,16 +16,8 @@ export function DashboardSection({
       {cards.some((card) => card.fullWidth) ? (
         <>
           <View style={styles.cards}>
-            {cards.slice(0, 2).map((card) => (
-              <View key={card.id} style={styles.compactWrapper}>
-                <DashboardCard {...card} />
-              </View>
-            ))}
-          </View>
-
-          <View style={styles.secondaryCards}>
-            {cards.slice(2).filter((card) => !card.fullWidth).map((card) => (
-              <View key={card.id} style={styles.secondaryCardWrapper}>
+            {cards.filter((card) => !card.fullWidth).map((card) => (
+              <View key={card.id} style={styles.equalCardWrapper}>
                 <DashboardCard {...card} />
               </View>
             ))}
@@ -68,17 +60,8 @@ const styles = StyleSheet.create({
   cardWrapper: {
     width: "48%",
   },
-  compactWrapper: {
+  equalCardWrapper: {
     width: "24%",
-  },
-  secondaryCards: {
-    marginTop: 12,
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 12,
-  },
-  secondaryCardWrapper: {
-    width: "47%",
   },
   fullWidth: {
     width: "100%",
