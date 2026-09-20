@@ -1,4 +1,5 @@
 import { RoleDashboard } from "./RoleDashboard";
+import { MedicalAccessCard } from "../components/MedicalAccessCard";
 
 type StaffDashboardProps = {
   firstName: string;
@@ -6,7 +7,8 @@ type StaffDashboardProps = {
 
 export function StaffDashboard({ firstName }: StaffDashboardProps) {
   return (
-    <RoleDashboard
+    <>
+      <RoleDashboard
       firstName={firstName}
       title="Espace personnel"
       subtitle="accédez aux opérations qui vous concernent."
@@ -33,6 +35,8 @@ export function StaffDashboard({ firstName }: StaffDashboardProps) {
           ],
         },
       ]}
-    />
+      />
+      <MedicalAccessCard />
+    </>
   );
 }
