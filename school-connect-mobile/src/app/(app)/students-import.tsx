@@ -53,8 +53,8 @@ export default function StudentsImportScreen() {
 
       if (!sheet) throw new Error("Aucune feuille Excel trouvée.");
 
-      const raw = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
-      const parsed = raw.map((row) => ({
+      const raw: Array<Record<string, unknown>> = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
+      const parsed: BulkStudentInput[] = raw.map((row: Record<string, unknown>) => ({
         firstName: String(getValue(row, ["firstname", "prénom", "prenom"]) ?? "").trim(),
         lastName: String(getValue(row, ["lastname", "nom"]) ?? "").trim(),
         email: String(getValue(row, ["email", "e-mail"]) ?? "").trim(),
@@ -64,7 +64,7 @@ export default function StudentsImportScreen() {
         gender: String(getValue(row, ["gender", "genre", "sexe"]) ?? "").trim().toUpperCase() === "FEMALE" ||
           String(getValue(row, ["gender", "genre", "sexe"]) ?? "").trim().toLowerCase() === "fille" ? "FEMALE" : "MALE",
         className: String(getValue(row, ["classname", "classe"]) ?? "").trim(),
-      })) as BulkStudentInput[];
+      }));
 
       if (!parsed.length) throw new Error("Le fichier ne contient aucune ligne.");
       const invalid = parsed.findIndex((row) => !row.firstName || !row.lastName || !row.email || row.password.length < 8 || !row.studentNumber || !row.className);
