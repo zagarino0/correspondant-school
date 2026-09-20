@@ -1,6 +1,9 @@
 import { apiClient } from "../api/client";
 import type {
   CreateClassInput,
+  CreateScheduleInput,
+  SchoolAdminSchedulesResponse,
+  UpdateClassInput,
   CreatePersonnelInput,
   CreateTeacherInput,
   SchoolAdminDashboardResponse,
@@ -26,5 +29,38 @@ export async function createTeacher(input: CreateTeacherInput) {
 
 export async function createPersonnel(input: CreatePersonnelInput) {
   const response = await apiClient.post("/api/v1/school-admin/personnel", input);
+  return response.data;
+}
+
+export async function updateSchoolClass(
+  classId: string,
+  input: UpdateClassInput,
+) {
+  const response = await apiClient.patch(
+    `/api/v1/school-admin/classes/${classId}`,
+    input,
+  );
+  return response.data;
+}
+
+export async function deleteSchoolClass(classId: string) {
+  const response = await apiClient.delete(
+    `/api/v1/school-admin/classes/${classId}`,
+  );
+  return response.data;
+}
+
+export async function getSchoolAdminSchedules(): Promise<SchoolAdminSchedulesResponse> {
+  const response = await apiClient.get<SchoolAdminSchedulesResponse>(
+    "/api/v1/school-admin/schedules",
+  );
+  return response.data;
+}
+
+export async function createSchoolSchedule(input: CreateScheduleInput) {
+  const response = await apiClient.post(
+    "/api/v1/school-admin/schedules",
+    input,
+  );
   return response.data;
 }
