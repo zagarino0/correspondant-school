@@ -32,22 +32,6 @@ export function StaffDashboard({ firstName }: StaffDashboardProps) {
             },
           ],
         },
-        {
-          id: "staff-communication",
-          title: "Communication",
-          cards: [
-            {
-              id: "announcements",
-              title: "Annonces",
-              description: "Consulter les informations de l'établissement.",
-            },
-            {
-              id: "messages",
-              title: "Messages",
-              description: "Échanger avec les utilisateurs autorisés.",
-            },
-          ],
-        },
       ]}
     />
   );
