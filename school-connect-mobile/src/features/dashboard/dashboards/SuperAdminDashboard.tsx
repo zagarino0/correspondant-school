@@ -39,22 +39,6 @@ export function SuperAdminDashboard({
             },
           ],
         },
-        {
-          id: "platform-communication",
-          title: "Communication",
-          cards: [
-            {
-              id: "announcements",
-              title: "Annonces",
-              description: "Superviser les communications de la plateforme.",
-            },
-            {
-              id: "messages",
-              title: "Messages",
-              description: "Accéder aux échanges autorisés.",
-            },
-          ],
-        },
       ]}
     />
   );
