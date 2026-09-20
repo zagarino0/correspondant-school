@@ -10,7 +10,7 @@ export function DashboardSection({
   cards,
 }: DashboardSectionProps) {
   const { width } = useWindowDimensions();
-  const isPhone = width < 480;
+  const isPhone = width < 600;
   const fullWidthCards = cards.filter((card) => card.fullWidth);
   const compactCards = cards.filter((card) => !card.fullWidth);
   const firstRowCards = compactCards.slice(0, 2);
