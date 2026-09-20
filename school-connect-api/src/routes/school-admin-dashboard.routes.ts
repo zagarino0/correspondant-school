@@ -31,7 +31,8 @@ export async function schoolAdminDashboardRoutes(
         return reply.code(400).send({
           error: {
             code: "SCHOOL_REQUIRED",
-            message: "A school is required for the school administrator dashboard.",
+            message:
+              "A school is required for the school administrator dashboard.",
           },
         });
       }
@@ -90,8 +91,8 @@ export async function schoolAdminDashboardRoutes(
       const [
         studentCount,
         teacherCount,
-        classCount,
-        staffCount,
+        classes,
+        staffAssignments,
         attendance,
         announcementCount,
         unreadMessages,
@@ -113,19 +114,57 @@ export async function schoolAdminDashboardRoutes(
             status: "ACTIVE",
           },
         }),
-        app.prisma.schoolClass.count({
+        app.prisma.schoolClass.findMany({
           where: {
             schoolId,
             academicYearId: academicYear.id,
           },
+          orderBy: [
+            { level: "asc" },
+            { name: "asc" },
+          ],
+          select: {
+            id: true,
+            name: true,
+            level: true,
+            _count: {
+              select: {
+                enrollments: {
+                  where: {
+                    status: "ACTIVE",
+                  },
+                },
+              },
+            },
+          },
         }),
-        app.prisma.staffAssignment.count({
+        app.prisma.staffAssignment.findMany({
           where: {
             schoolId,
             active: true,
             staff: {
               user: {
                 status: "ACTIVE",
+              },
+            },
+          },
+          orderBy: {
+            startDate: "asc",
+          },
+          select: {
+            id: true,
+            staff: {
+              select: {
+                function: true,
+                user: {
+                  select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                    email: true,
+                    status: true,
+                  },
+                },
               },
             },
           },
@@ -203,9 +242,24 @@ export async function schoolAdminDashboardRoutes(
         counts: {
           students: studentCount,
           teachers: teacherCount,
-          classes: classCount,
-          staff: staffCount,
+          classes: classes.length,
+          staff: staffAssignments.length,
         },
+        classes: classes.map((schoolClass) => ({
+          id: schoolClass.id,
+          name: schoolClass.name,
+          level: schoolClass.level,
+          studentCount: schoolClass._count.enrollments,
+        })),
+        personnel: staffAssignments.map((assignment) => ({
+          id: assignment.staff.user.id,
+          assignmentId: assignment.id,
+          firstName: assignment.staff.user.firstName,
+          lastName: assignment.staff.user.lastName,
+          email: assignment.staff.user.email,
+          function: assignment.staff.function,
+          status: assignment.staff.user.status,
+        })),
         attendance: attendanceSummary,
         communication: {
           announcements: announcementCount,
