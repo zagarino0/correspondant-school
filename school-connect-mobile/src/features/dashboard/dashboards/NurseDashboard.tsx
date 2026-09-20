@@ -86,6 +86,13 @@ export function NurseDashboard({ firstName }: NurseDashboardProps) {
       title: "Actions",
       cards: [
         {
+          id: "medical-calendar",
+          title: "Suivi médical",
+          value: "Calendrier",
+          description: "Planifier les consultations, visites et suivis réalisés à l'école.",
+          onPress: () => router.push("/(app)/medical-calendar"),
+        },
+        {
           id: "open-files",
           title: "Fiches médicales",
           value: "Ouvrir",
@@ -97,7 +104,7 @@ export function NurseDashboard({ firstName }: NurseDashboardProps) {
           title: "Historique",
           value: loading ? "…" : error ? "—" : String(dashboard?.recentChanges ?? 0),
           description: "Modifications enregistrées au cours des 30 derniers jours.",
-          onPress: () => router.push("/(app)/medical"),
+          onPress: () => router.push("/(app)/medical-history"),
         },
       ],
     },
