@@ -1,5 +1,6 @@
-import type { FastifyPluginAsync } from "fastify";
+import type { FastifyInstance, FastifyPluginAsync } from "fastify";
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
 
 import { authenticate } from "../middleware/authenticate.js";
 import { canAccessTarget, getMedicalAccess } from "../authorization/medical-access.js";
@@ -79,7 +80,7 @@ const reportSelect = {
 } as const;
 
 async function requireMedicalFull(
-  fastify: Parameters<FastifyPluginAsync>[0],
+  fastify: FastifyInstance,
   request: any,
   reply: any,
 ) {
@@ -221,7 +222,7 @@ export const medicalReportRoutes: FastifyPluginAsync = async (fastify) => {
         });
       }
 
-      const data: Record<string, unknown> = {};
+      const data: Prisma.MedicalReportUpdateInput = {};
       for (const [key, value] of Object.entries(input)) {
         if (value !== undefined) data[key] = value;
       }
