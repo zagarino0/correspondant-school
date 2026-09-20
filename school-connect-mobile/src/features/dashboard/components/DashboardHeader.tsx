@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
 import { getMyAnnouncements } from "../../../features/announcements/announcement.service";
@@ -79,7 +80,7 @@ export function DashboardHeader({ firstName, role }: DashboardHeaderProps) {
             accessibilityRole="button"
             accessibilityLabel="Annonces"
           >
-            <Text style={styles.actionIcon}>♢</Text>
+            <Ionicons name="notifications-outline" size={23} color="#344976" />
             {unreadAnnouncements > 0 ? (
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>
@@ -95,7 +96,7 @@ export function DashboardHeader({ firstName, role }: DashboardHeaderProps) {
             accessibilityRole="button"
             accessibilityLabel="Profil"
           >
-            <Text style={styles.profileIcon}>♙</Text>
+            <Ionicons name="person-outline" size={22} color="#FFFFFF" />
           </Pressable>
         </View>
       </View>
