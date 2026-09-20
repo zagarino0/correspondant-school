@@ -707,6 +707,10 @@ model MedicalReport {
   priority    String @default("NORMAL")
 
   reason        String?
+  temperature           Float?
+  weightKg              Float?
+  bloodPressureSystolic Int?
+  bloodPressureDiastolic Int?
   observations  String?
   actionsTaken  String?
   outcome       String?
