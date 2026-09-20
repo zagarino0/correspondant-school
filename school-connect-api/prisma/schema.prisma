@@ -98,6 +98,7 @@ model School {
   announcements   Announcement[]
   conversations   Conversation[]
   medicalEvents   MedicalEvent[]
+  medicalReports  MedicalReport[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -129,6 +130,9 @@ model User {
 
   medicalEventsTarget  MedicalEvent[] @relation("MedicalEventTarget")
   medicalEventsCreated MedicalEvent[] @relation("MedicalEventCreator")
+
+  medicalReportsTarget  MedicalReport[] @relation("MedicalReportTarget")
+  medicalReportsCreated MedicalReport[] @relation("MedicalReportCreator")
 
   parentLinks ParentStudent[] @relation("ParentLinks")
 
@@ -679,6 +683,42 @@ model MedicalEvent {
   @@index([targetUserId, startAt])
   @@index([createdByUserId])
   @@index([status, startAt])
+}
+
+model MedicalReport {
+  id String @id @default(cuid())
+
+  schoolId      String
+  targetUserId  String
+  createdByUserId String
+
+  type        String
+  title       String
+  reportDate  DateTime
+  status      String @default("DRAFT")
+  priority    String @default("NORMAL")
+
+  reason        String?
+  observations  String?
+  actionsTaken  String?
+  outcome       String?
+  recommendations String?
+  parentContacted Boolean @default(false)
+  parentContactedAt DateTime?
+  referredTo    String?
+  notes         String?
+
+  school     School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  target     User   @relation("MedicalReportTarget", fields: [targetUserId], references: [id], onDelete: Cascade)
+  createdBy  User   @relation("MedicalReportCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([schoolId, reportDate])
+  @@index([targetUserId, reportDate])
+  @@index([createdByUserId])
+  @@index([status, reportDate])
 }
 
 model MedicalHistory {
