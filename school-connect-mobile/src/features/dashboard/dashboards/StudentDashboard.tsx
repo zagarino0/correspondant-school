@@ -6,13 +6,8 @@ import { DashboardSection } from "../components/DashboardSection";
 import type { DashboardSectionData } from "../dashboard.types";
 import { getMyAssignments } from "../../../services/assignments/assignment.service";
 import { getMyNextSchedule } from "../../../services/schedule/schedule.service";
-import { getMyAnnouncements } from "../../announcements/announcement.service";
 import type { StudentSchedule } from "../../schedule/schedule.types";
 import { normalizeApiError } from "../../../services/api/errors";
-import { getUnreadMessageCount } from "../../../services/messages/message.service";
-import { createRealtimeConnection } from "../../../services/realtime/websocket.service";
-import type { RealtimeEvent } from "../../../services/realtime/websocket.types";
-import { useAuthStore } from "../../../stores/authStore";
 
 type StudentDashboardProps = {
   firstName: string;
@@ -32,55 +27,11 @@ export function StudentDashboard({
   firstName,
 }: StudentDashboardProps) {
   const router = useRouter();
-  const currentUserId = useAuthStore((state) => state.user?.id);
-  const [unreadMessageCount, setUnreadMessageCount] = useState<number | null>(null);
   const [assignmentCount, setAssignmentCount] = useState<number | null>(null);
   const [assignmentsError, setAssignmentsError] = useState(false);
   const [nextSchedule, setNextSchedule] = useState<StudentSchedule | null>(null);
   const [nextScheduleLoading, setNextScheduleLoading] = useState(true);
   const [nextScheduleError, setNextScheduleError] = useState(false);
-  const [announcementCount, setAnnouncementCount] = useState<number | null>(null);
-  const [announcementsError, setAnnouncementsError] = useState(false);
-
-  useFocusEffect(
-    useCallback(() => {
-      let isMounted = true;
-
-      async function loadUnreadMessages() {
-        try {
-          const count = await getUnreadMessageCount();
-
-          if (isMounted) {
-            setUnreadMessageCount(count);
-          }
-        } catch {
-          if (isMounted) {
-            setUnreadMessageCount(null);
-          }
-        }
-      }
-
-      void loadUnreadMessages();
-
-      const realtime = createRealtimeConnection({
-        onEvent: (event: RealtimeEvent) => {
-          if (
-            event.type === "message:new" &&
-            event.payload.senderId !== currentUserId
-          ) {
-            setUnreadMessageCount((current) => (current ?? 0) + 1);
-          }
-        },
-      });
-
-      realtime.connect();
-
-      return () => {
-        isMounted = false;
-        realtime.close();
-      };
-    }, [currentUserId]),
-  );
 
   useEffect(() => {
     let isMounted = true;
@@ -146,32 +97,6 @@ export function StudentDashboard({
     };
   }, []);
 
-  useEffect(() => {
-    let isMounted = true;
-
-    async function loadAnnouncements() {
-      try {
-        setAnnouncementsError(false);
-        const response = await getMyAnnouncements();
-
-        if (isMounted) {
-          setAnnouncementCount(
-            response.announcements.filter((announcement) => !announcement.isRead).length,
-          );
-        }
-      } catch {
-        if (isMounted) {
-          setAnnouncementsError(true);
-        }
-      }
-    }
-
-    void loadAnnouncements();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
 
   const nextScheduleValue = nextScheduleLoading
     ? "…"
@@ -218,34 +143,6 @@ export function StudentDashboard({
           title: "Emploi du temps",
           description: "Consulter vos cours et horaires.",
           onPress: () => router.push("/(app)/schedule"),
-        },
-        {
-          id: "announcements",
-          title: "Annonces",
-          value: announcementsError
-            ? "—"
-            : announcementCount === null
-              ? "…"
-              : String(announcementCount),
-          description: "Vos annonces non lues.",
-          onPress: () => router.push("/(app)/announcements"),
-        },
-        {
-          id: "messages",
-          title: "Messages",
-          badge:
-            unreadMessageCount !== null && unreadMessageCount > 0
-              ? unreadMessageCount > 99
-                ? "99+"
-                : String(unreadMessageCount)
-              : undefined,
-          description:
-            unreadMessageCount === null
-              ? "Vos échanges avec l’établissement."
-              : unreadMessageCount > 0
-                ? `${unreadMessageCount} message${unreadMessageCount > 1 ? "s" : ""} non lu${unreadMessageCount > 1 ? "s" : ""}.`
-                : "Aucun nouveau message.",
-          onPress: () => router.push("/(app)/messages"),
         },
       ],
     },
