@@ -4,6 +4,37 @@ export type TeacherClassSummary = {
   level: string | null;
 };
 
+export type TeacherClass = TeacherClassSummary & {
+  academicYearId: string;
+  academicYear: {
+    id: string;
+    name: string;
+    status: string;
+  };
+  studentCount: number;
+};
+
+export type TeacherClassStudent = {
+  enrollmentId: string;
+  studentId: string;
+  student: {
+    id: string;
+    studentNumber: string;
+    firstName: string;
+    lastName: string;
+    status: string;
+  };
+};
+
+export type TeacherClassesResponse = {
+  classes: TeacherClass[];
+};
+
+export type TeacherClassDetailResponse = {
+  class: Omit<TeacherClass, "studentCount">;
+  students: TeacherClassStudent[];
+};
+
 export type SchoolTeacher = {
   id: string;
   firstName: string;
