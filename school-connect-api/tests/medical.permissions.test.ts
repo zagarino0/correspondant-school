@@ -288,6 +288,19 @@ describe("medical permissions - real API integration", () => {
     });
 
     expect(update.statusCode).toBe(200);
+
+    const history = await app.inject({
+      method: "GET",
+      url: `/api/v1/medical-history/${studentAUserId}`,
+      headers: auth(token),
+    });
+    expect(history.statusCode).toBe(200);
+    expect(history.json().history.length).toBeGreaterThan(0);
+    expect(history.json().history[0]).toMatchObject({
+      field: "notes",
+      newValue: "Updated by admin without nurse",
+      actor: { role: "SCHOOL_ADMIN" },
+    });
   });
 
   it("2. School Admin with active nurse is denied", async () => {
@@ -330,6 +343,13 @@ describe("medical permissions - real API integration", () => {
     });
 
     expect(people.statusCode).toBe(403);
+
+    const history = await app.inject({
+      method: "GET",
+      url: `/api/v1/medical-history/${studentBUserId}`,
+      headers: auth(token),
+    });
+    expect(history.statusCode).toBe(403);
   });
 
   it("3. Nurse gets FULL access only for the assigned school", async () => {
@@ -363,6 +383,21 @@ describe("medical permissions - real API integration", () => {
     });
 
     expect(otherSchool.statusCode).toBe(403);
+
+    const history = await app.inject({
+      method: "GET",
+      url: `/api/v1/medical-history/${studentBUserId}`,
+      headers: auth(token),
+    });
+    expect(history.statusCode).toBe(200);
+    expect(history.json().history.length).toBeGreaterThan(0);
+
+    const otherHistory = await app.inject({
+      method: "GET",
+      url: `/api/v1/medical-history/${studentAUserId}`,
+      headers: auth(token),
+    });
+    expect(otherHistory.statusCode).toBe(403);
   });
 
   it("4. Parent can read only their own child and cannot write", async () => {
@@ -420,5 +455,20 @@ describe("medical permissions - real API integration", () => {
     });
 
     expect(write.statusCode).toBe(403);
+
+    const history = await app.inject({
+      method: "GET",
+      url: `/api/v1/medical-history/${studentAUserId}`,
+      headers: auth(token),
+    });
+    expect(history.statusCode).toBe(200);
+    expect(history.json().history.length).toBeGreaterThan(0);
+
+    const otherHistory = await app.inject({
+      method: "GET",
+      url: `/api/v1/medical-history/${studentBUserId}`,
+      headers: auth(token),
+    });
+    expect(otherHistory.statusCode).toBe(403);
   });
 });
