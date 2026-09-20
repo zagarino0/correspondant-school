@@ -263,6 +263,10 @@ model StudentMedicalRecord {
   id                    String   @id @default(cuid())
   studentId             String   @unique
   bloodGroup            String?
+  temperature           Float?
+  weightKg              Float?
+  bloodPressureSystolic Int?
+  bloodPressureDiastolic Int?
   allergies             String?
   medicalConditions     String?
   medications           String?
@@ -282,6 +286,10 @@ model AdultMedicalRecord {
   id                    String   @id @default(cuid())
   userId                String   @unique
   bloodGroup            String?
+  temperature           Float?
+  weightKg              Float?
+  bloodPressureSystolic Int?
+  bloodPressureDiastolic Int?
   allergies             String?
   medicalConditions     String?
   medications           String?
