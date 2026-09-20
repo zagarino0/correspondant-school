@@ -122,3 +122,27 @@ export async function updateMedicalRecord(
 
   return getMedicalDetails(userId);
 }
+
+
+export type MedicalHistoryEntry = {
+  id: string;
+  action: "CREATED" | "UPDATED";
+  field: string;
+  previousValue: string | null;
+  newValue: string | null;
+  createdAt: string;
+  actor: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    role: string;
+    function: string | null;
+  };
+};
+
+export async function getMedicalHistory(userId: string): Promise<{ history: MedicalHistoryEntry[] }> {
+  const response = await apiClient.get<{ history: MedicalHistoryEntry[] }>(
+    `/api/v1/medical-history/${encodeURIComponent(userId)}`,
+  );
+  return response.data;
+}
