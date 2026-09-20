@@ -130,17 +130,6 @@ export function SchoolAdminDashboard({
               description:
                 `Présents ${attendance.present} · Absents ${attendance.absent} · Retards ${attendance.late} · Excusés ${attendance.excused}`,
             },
-            {
-              id: "communication",
-              title: "Communication",
-              value: String(communication.unreadMessages),
-              badge:
-                communication.unreadMessages > 0
-                  ? String(communication.unreadMessages)
-                  : undefined,
-              description:
-                `${communication.announcements} annonce(s) · messages non lus`,
-            },
           ],
         },
       ]}
