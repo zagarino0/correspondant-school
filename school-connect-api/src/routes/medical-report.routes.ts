@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyPluginAsync } from "fastify";
 import { z } from "zod";
-import { Prisma } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 
 import { authenticate } from "../middleware/authenticate.js";
 import { canAccessTarget, getMedicalAccess } from "../authorization/medical-access.js";
