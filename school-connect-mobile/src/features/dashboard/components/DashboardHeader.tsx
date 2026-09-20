@@ -4,7 +4,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
 import { getMyAnnouncements } from "../../../features/announcements/announcement.service";
-import { getUnreadMessageCount } from "../../../services/messages/message.service";
 import type { UserRole } from "../../../types/auth";
 
 type DashboardHeaderProps = {
@@ -24,17 +23,13 @@ const roleLabels: Record<UserRole, string> = {
 export function DashboardHeader({ firstName, role }: DashboardHeaderProps) {
   const router = useRouter();
   const [unreadAnnouncements, setUnreadAnnouncements] = useState(0);
-  const [unreadMessages, setUnreadMessages] = useState(0);
 
   useEffect(() => {
     let mounted = true;
 
     async function loadBadges() {
       try {
-        const [announcementResponse, unreadMessageCount] = await Promise.all([
-          getMyAnnouncements(),
-          getUnreadMessageCount(),
-        ]);
+        const announcementResponse = await getMyAnnouncements();
 
         if (!mounted) return;
 
@@ -43,7 +38,6 @@ export function DashboardHeader({ firstName, role }: DashboardHeaderProps) {
             (announcement) => !announcement.isRead,
           ).length,
         );
-        setUnreadMessages(unreadMessageCount);
       } catch {
         if (!mounted) return;
         setUnreadAnnouncements(0);
@@ -195,18 +189,5 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 9,
     fontWeight: "900",
-  },
-  messageHint: {
-    marginTop: 8,
-    alignSelf: "flex-start",
-    paddingHorizontal: 9,
-    paddingVertical: 4,
-    borderRadius: 10,
-    backgroundColor: "#FEF2F2",
-  },
-  messageHintText: {
-    color: "#B91C1C",
-    fontSize: 10,
-    fontWeight: "700",
   },
 });
