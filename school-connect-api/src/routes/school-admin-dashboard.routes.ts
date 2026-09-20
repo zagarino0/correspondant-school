@@ -187,6 +187,264 @@ export async function schoolAdminDashboardRoutes(
     },
   );
 
+  app.patch(
+    "/classes/:classId",
+    { onRequest: schoolAdminGuard },
+    async (request, reply) => {
+      if (request.user.role !== "SCHOOL_ADMIN" && request.user.role !== "SUPER_ADMIN") {
+        return reply.code(403).send({ error: { code: "FORBIDDEN", message: "School administrator access required." } });
+      }
+
+      const schoolId = request.user.schoolId;
+      if (!schoolId) {
+        return reply.code(400).send({ error: { code: "SCHOOL_REQUIRED", message: "A school is required." } });
+      }
+
+      const { classId } = request.params as { classId: string };
+      const schema = z.object({
+        name: z.string().trim().min(1),
+        level: z.string().trim().min(1),
+      });
+      const parsed = schema.safeParse(request.body);
+      if (!parsed.success) {
+        return reply.code(400).send({ error: { code: "VALIDATION_ERROR", message: "Nom et niveau de classe sont obligatoires." } });
+      }
+
+      const schoolClass = await app.prisma.schoolClass.findFirst({
+        where: { id: classId, schoolId },
+        select: { id: true, academicYearId: true },
+      });
+
+      if (!schoolClass) {
+        return reply.code(404).send({ error: { code: "CLASS_NOT_FOUND", message: "Classe introuvable." } });
+      }
+
+      const duplicate = await app.prisma.schoolClass.findFirst({
+        where: {
+          academicYearId: schoolClass.academicYearId,
+          name: parsed.data.name,
+          id: { not: classId },
+        },
+        select: { id: true },
+      });
+
+      if (duplicate) {
+        return reply.code(409).send({ error: { code: "CLASS_ALREADY_EXISTS", message: "Cette classe existe déjà pour l'année scolaire." } });
+      }
+
+      const updated = await app.prisma.schoolClass.update({
+        where: { id: classId },
+        data: { name: parsed.data.name, level: parsed.data.level },
+        select: { id: true, name: true, level: true },
+      });
+
+      return reply.send({ class: updated });
+    },
+  );
+
+  app.delete(
+    "/classes/:classId",
+    { onRequest: schoolAdminGuard },
+    async (request, reply) => {
+      if (request.user.role !== "SCHOOL_ADMIN" && request.user.role !== "SUPER_ADMIN") {
+        return reply.code(403).send({ error: { code: "FORBIDDEN", message: "School administrator access required." } });
+      }
+
+      const schoolId = request.user.schoolId;
+      if (!schoolId) {
+        return reply.code(400).send({ error: { code: "SCHOOL_REQUIRED", message: "A school is required." } });
+      }
+
+      const { classId } = request.params as { classId: string };
+      const schoolClass = await app.prisma.schoolClass.findFirst({
+        where: { id: classId, schoolId },
+        select: {
+          id: true,
+          name: true,
+          _count: {
+            select: {
+              enrollments: {
+                where: { status: "ACTIVE" },
+              },
+            },
+          },
+        },
+      });
+
+      if (!schoolClass) {
+        return reply.code(404).send({ error: { code: "CLASS_NOT_FOUND", message: "Classe introuvable." } });
+      }
+
+      if (schoolClass._count.enrollments > 0) {
+        return reply.code(409).send({
+          error: {
+            code: "CLASS_HAS_STUDENTS",
+            message: "Impossible de supprimer une classe contenant encore des élèves actifs.",
+          },
+        });
+      }
+
+      await app.prisma.schoolClass.delete({ where: { id: classId } });
+
+      return reply.send({ success: true, classId, name: schoolClass.name });
+    },
+  );
+
+  app.get(
+    "/schedules",
+    { onRequest: schoolAdminGuard },
+    async (request, reply) => {
+      if (request.user.role !== "SCHOOL_ADMIN" && request.user.role !== "SUPER_ADMIN") {
+        return reply.code(403).send({ error: { code: "FORBIDDEN", message: "School administrator access required." } });
+      }
+
+      const schoolId = request.user.schoolId;
+      if (!schoolId) {
+        return reply.code(400).send({ error: { code: "SCHOOL_REQUIRED", message: "A school is required." } });
+      }
+
+      const academicYear = await app.prisma.academicYear.findFirst({
+        where: { schoolId, status: "ACTIVE" },
+        orderBy: { startDate: "desc" },
+        select: { id: true, name: true, status: true },
+      });
+
+      if (!academicYear) {
+        return reply.code(404).send({ error: { code: "ACTIVE_ACADEMIC_YEAR_NOT_FOUND", message: "Aucune année scolaire active." } });
+      }
+
+      const schedules = await app.prisma.schedule.findMany({
+        where: { schoolId, academicYearId: academicYear.id },
+        orderBy: [{ dayOfWeek: "asc" }, { startTime: "asc" }],
+        select: {
+          id: true,
+          classId: true,
+          teacherId: true,
+          subject: true,
+          dayOfWeek: true,
+          startTime: true,
+          endTime: true,
+          room: true,
+          class: { select: { id: true, name: true, level: true } },
+          teacher: { select: { id: true, firstName: true, lastName: true } },
+        },
+      });
+
+      return reply.send({ academicYear, schedules });
+    },
+  );
+
+  app.post(
+    "/schedules",
+    { onRequest: schoolAdminGuard },
+    async (request, reply) => {
+      if (request.user.role !== "SCHOOL_ADMIN" && request.user.role !== "SUPER_ADMIN") {
+        return reply.code(403).send({ error: { code: "FORBIDDEN", message: "School administrator access required." } });
+      }
+
+      const schoolId = request.user.schoolId;
+      if (!schoolId) {
+        return reply.code(400).send({ error: { code: "SCHOOL_REQUIRED", message: "A school is required." } });
+      }
+
+      const schema = z.object({
+        classId: z.string().min(1),
+        teacherId: z.string().min(1),
+        subject: z.string().trim().min(1),
+        dayOfWeek: z.enum(["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"]),
+        startTime: z.string().regex(/^([01]\\d|2[0-3]):[0-5]\\d$/),
+        endTime: z.string().regex(/^([01]\\d|2[0-3]):[0-5]\\d$/),
+        room: z.string().trim().max(100).optional().nullable(),
+      });
+
+      const parsed = schema.safeParse(request.body);
+      if (!parsed.success || parsed.data.startTime >= parsed.data.endTime) {
+        return reply.code(400).send({
+          error: { code: "VALIDATION_ERROR", message: "Classe, enseignant, matière, jour et horaires valides sont obligatoires." },
+        });
+      }
+
+      const academicYear = await app.prisma.academicYear.findFirst({
+        where: { schoolId, status: "ACTIVE" },
+        orderBy: { startDate: "desc" },
+        select: { id: true, name: true, status: true },
+      });
+
+      if (!academicYear) {
+        return reply.code(404).send({ error: { code: "ACTIVE_ACADEMIC_YEAR_NOT_FOUND", message: "Aucune année scolaire active." } });
+      }
+
+      const [schoolClass, teacher] = await Promise.all([
+        app.prisma.schoolClass.findFirst({
+          where: { id: parsed.data.classId, schoolId, academicYearId: academicYear.id },
+          select: { id: true, name: true },
+        }),
+        app.prisma.user.findFirst({
+          where: { id: parsed.data.teacherId, schoolId, role: "TEACHER", status: "ACTIVE" },
+          select: { id: true, firstName: true, lastName: true },
+        }),
+      ]);
+
+      if (!schoolClass) {
+        return reply.code(404).send({ error: { code: "CLASS_NOT_FOUND", message: "Classe introuvable pour l'année active." } });
+      }
+
+      if (!teacher) {
+        return reply.code(404).send({ error: { code: "TEACHER_NOT_FOUND", message: "Enseignant introuvable." } });
+      }
+
+      const conflict = await app.prisma.schedule.findFirst({
+        where: {
+          schoolId,
+          academicYearId: academicYear.id,
+          dayOfWeek: parsed.data.dayOfWeek,
+          OR: [
+            { classId: parsed.data.classId },
+            { teacherId: parsed.data.teacherId },
+          ],
+          startTime: { lt: parsed.data.endTime },
+          endTime: { gt: parsed.data.startTime },
+        },
+        select: { id: true, classId: true, teacherId: true, startTime: true, endTime: true },
+      });
+
+      if (conflict) {
+        return reply.code(409).send({
+          error: {
+            code: "SCHEDULE_CONFLICT",
+            message: "Ce créneau entre en conflit avec un autre cours de la classe ou de l'enseignant.",
+          },
+        });
+      }
+
+      const schedule = await app.prisma.schedule.create({
+        data: {
+          schoolId,
+          academicYearId: academicYear.id,
+          classId: parsed.data.classId,
+          teacherId: parsed.data.teacherId,
+          subject: parsed.data.subject,
+          dayOfWeek: parsed.data.dayOfWeek,
+          startTime: parsed.data.startTime,
+          endTime: parsed.data.endTime,
+          room: parsed.data.room?.trim() || null,
+        },
+        select: {
+          id: true,
+          classId: true,
+          teacherId: true,
+          subject: true,
+          dayOfWeek: true,
+          startTime: true,
+          endTime: true,
+          room: true,
+        },
+      });
+
+      return reply.code(201).send({ schedule });
+    },
+  );
+
   app.get(
     "/dashboard",
     {
