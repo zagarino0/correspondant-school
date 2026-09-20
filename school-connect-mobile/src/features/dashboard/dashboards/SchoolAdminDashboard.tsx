@@ -144,6 +144,20 @@ export function SchoolAdminDashboard({
           title: "Ajouter",
           cards: [
             {
+              id: "add-student",
+              title: "Nouvel élève",
+              value: "+",
+              description: "Ajouter un élève individuellement.",
+              onPress: () => router.push("/(app)/student-create"),
+            },
+            {
+              id: "import-students",
+              title: "Élèves par groupe",
+              value: "Excel",
+              description: "Importer plusieurs élèves depuis un fichier Excel.",
+              onPress: () => router.push("/(app)/students-import"),
+            },
+            {
               id: "add-class",
               title: "Nouvelle classe",
               value: "+",
@@ -156,6 +170,13 @@ export function SchoolAdminDashboard({
               value: "+",
               description: "Ajouter un membre du personnel.",
               onPress: () => router.push("/(app)/personnel-create"),
+            },
+            {
+              id: "import-personnel",
+              title: "Personnel par groupe",
+              value: "Excel",
+              description: "Importer plusieurs membres du personnel depuis Excel.",
+              onPress: () => router.push("/(app)/personnel-import"),
             },
             {
               id: "add-teacher",
