@@ -537,6 +537,201 @@ const studentRoutes: FastifyPluginAsync = async (fastify) => {
     }
   );
 
+
+  fastify.post(
+    "/students/bulk",
+    {
+      onRequest: [authenticate, authorize("student.create")],
+    },
+    async (request, reply) => {
+      const schoolId = request.user.schoolId;
+
+      if (!schoolId) {
+        return reply.status(403).send({
+          error: { code: "SCHOOL_CONTEXT_REQUIRED", message: "A school context is required." },
+        });
+      }
+
+      const schema = z.object({
+        students: z.array(
+          z.object({
+            email: z.string().email(),
+            password: z.string().min(8),
+            firstName: z.string().trim().min(1).max(100),
+            lastName: z.string().trim().min(1).max(100),
+            studentNumber: z.string().trim().min(1).max(50),
+            dateOfBirth: z.string().datetime().nullable().optional(),
+            classId: z.string().min(1).optional(),
+            className: z.string().trim().min(1).optional(),
+            gender: z.enum(["MALE", "FEMALE"]),
+          }).refine((item) => Boolean(item.classId || item.className), {
+            message: "classId or className is required.",
+            path: ["classId"],
+          }),
+        ).min(1).max(500),
+      });
+
+      const parsed = schema.safeParse(request.body);
+      if (!parsed.success) {
+        return reply.status(400).send({
+          error: {
+            code: "VALIDATION_ERROR",
+            message: "Le fichier doit contenir entre 1 et 500 élèves avec des données valides.",
+            details: parsed.error.flatten(),
+          },
+        });
+      }
+
+      const academicYear = await fastify.prisma.academicYear.findFirst({
+        where: { schoolId, status: "ACTIVE" },
+        orderBy: { startDate: "desc" },
+        select: { id: true, name: true },
+      });
+
+      if (!academicYear) {
+        return reply.status(404).send({
+          error: { code: "ACTIVE_ACADEMIC_YEAR_NOT_FOUND", message: "Aucune année scolaire active." },
+        });
+      }
+
+      const rows = parsed.data.students;
+      const emails = rows.map((row) => row.email.toLowerCase());
+      const numbers = rows.map((row) => row.studentNumber.trim());
+
+      if (new Set(emails).size !== emails.length) {
+        return reply.status(409).send({
+          error: { code: "DUPLICATE_EMAIL_IN_FILE", message: "Le fichier contient des emails en double." },
+        });
+      }
+
+      if (new Set(numbers).size !== numbers.length) {
+        return reply.status(409).send({
+          error: { code: "DUPLICATE_STUDENT_NUMBER_IN_FILE", message: "Le fichier contient des matricules en double." },
+        });
+      }
+
+      const [existingUsers, existingStudents, classes] = await Promise.all([
+        fastify.prisma.user.findMany({
+          where: { email: { in: emails } },
+          select: { email: true },
+        }),
+        fastify.prisma.student.findMany({
+          where: { schoolId, studentNumber: { in: numbers } },
+          select: { studentNumber: true },
+        }),
+        fastify.prisma.schoolClass.findMany({
+          where: { schoolId, academicYearId: academicYear.id },
+          select: { id: true, name: true },
+        }),
+      ]);
+
+      if (existingUsers.length) {
+        return reply.status(409).send({
+          error: {
+            code: "EMAIL_ALREADY_EXISTS",
+            message: `Email(s) déjà utilisé(s): ${existingUsers.map((item) => item.email).join(", ")}`,
+          },
+        });
+      }
+
+      if (existingStudents.length) {
+        return reply.status(409).send({
+          error: {
+            code: "STUDENT_NUMBER_ALREADY_EXISTS",
+            message: `Matricule(s) déjà utilisé(s): ${existingStudents.map((item) => item.studentNumber).join(", ")}`,
+          },
+        });
+      }
+
+      const classById = new Map(classes.map((item) => [item.id, item]));
+      const classByName = new Map(classes.map((item) => [item.name.trim().toLowerCase(), item]));
+
+      const resolvedRows = rows.map((row, index) => {
+        const schoolClass = row.classId
+          ? classById.get(row.classId)
+          : classByName.get(row.className!.trim().toLowerCase());
+
+        if (!schoolClass) {
+          throw new Error(`Classe introuvable à la ligne ${index + 2}: ${row.className ?? row.classId}`);
+        }
+
+        return { row, schoolClass };
+      });
+
+      try {
+        const created = await fastify.prisma.$transaction(async (tx) => {
+          const result = [];
+
+          for (const { row, schoolClass } of resolvedRows) {
+            const email = row.email.toLowerCase();
+            const firstName = row.firstName.trim();
+            const lastName = row.lastName.trim();
+            const studentNumber = row.studentNumber.trim();
+
+            const user = await tx.user.create({
+              data: {
+                schoolId,
+                email,
+                passwordHash: await bcrypt.hash(row.password, 12),
+                firstName,
+                lastName,
+                role: "STUDENT",
+                status: "ACTIVE",
+              },
+            });
+
+            const student = await tx.student.create({
+              data: {
+                schoolId,
+                userId: user.id,
+                studentNumber,
+                firstName,
+                lastName,
+                dateOfBirth: row.dateOfBirth ? new Date(row.dateOfBirth) : null,
+                gender: row.gender,
+                status: "ACTIVE",
+              },
+            });
+
+            const enrollment = await tx.studentEnrollment.create({
+              data: {
+                studentId: student.id,
+                academicYearId: schoolClass.academicYearId,
+                classId: schoolClass.id,
+                status: "ACTIVE",
+              },
+            });
+
+            result.push({
+              id: student.id,
+              studentNumber: student.studentNumber,
+              firstName: student.firstName,
+              lastName: student.lastName,
+              email: user.email,
+              classId: enrollment.classId,
+            });
+          }
+
+          return result;
+        });
+
+        return reply.code(201).send({
+          success: true,
+          created: created.length,
+          students: created,
+          academicYear,
+        });
+      } catch (error) {
+        return reply.status(400).send({
+          error: {
+            code: "BULK_IMPORT_FAILED",
+            message: error instanceof Error ? error.message : "Import des élèves impossible.",
+          },
+        });
+      }
+    },
+  );
+
   fastify.patch(
     "/students/:studentId",
     {
