@@ -9,6 +9,7 @@ import {
 } from "react-native";
 
 import { RoleDashboard } from "./RoleDashboard";
+import { MedicalAccessCard } from "../components/MedicalAccessCard";
 import { getSchoolAdminDashboard, getSchoolAdminSchedules } from "../../../services/school-admin/school-admin.service";
 import type { SchoolAdminDashboardResponse, ScheduleDay, SchoolAdminSchedule } from "../../../services/school-admin/school-admin.types";
 
@@ -202,6 +203,8 @@ export function SchoolAdminDashboard({
         },
         ]}
       />
+
+      <MedicalAccessCard />
 
       <View style={styles.timetableSection}>
         <View style={styles.timetableHeader}>
