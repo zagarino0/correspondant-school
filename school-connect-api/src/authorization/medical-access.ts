@@ -7,7 +7,7 @@ type MedicalAccess = {
   reason?: string;
 };
 
-async function getMedicalAccess(
+export async function getMedicalAccess(
   fastify: FastifyInstance,
   userId: string,
   role: string,
@@ -92,7 +92,7 @@ async function getMedicalAccess(
   };
 }
 
-async function canAccessTarget(
+export async function canAccessTarget(
   fastify: FastifyInstance,
   requesterId: string,
   requesterRole: string,
