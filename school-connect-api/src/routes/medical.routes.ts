@@ -44,7 +44,8 @@ async function getMedicalAccess(
     const allowed =
       staff?.function === "INFIRMIER" &&
       staff.user.status === "ACTIVE" &&
-      staff.assignments.length > 0;
+      !!schoolId &&
+      staff.assignments.some((assignment) => assignment.schoolId === schoolId);
 
     return {
       allowed,
@@ -141,6 +142,17 @@ async function canAccessTarget(
           ...access,
           allowed: false,
           reason: "La fiche appartient à un autre établissement.",
+        },
+        target: null,
+      };
+    }
+
+    if (!["TEACHER", "STAFF", "STUDENT"].includes(target.role)) {
+      return {
+        access: {
+          ...access,
+          allowed: false,
+          reason: "Cette fiche n'est pas un dossier médical géré par le module.",
         },
         target: null,
       };
