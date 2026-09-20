@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 
 import { DashboardSection } from "../components/DashboardSection";
@@ -117,11 +117,11 @@ function ScheduleGrid({
           .filter((schedule) => schedule.dayOfWeek === day)
           .sort((a, b) => a.startTime.localeCompare(b.startTime));
 
-        const isToday = day.key === today;
+        const isToday = day === today;
 
         return (
           <View
-            key={day.key}
+            key={day}
             style={[
               styles.scheduleDay,
               { width: dayWidth },
