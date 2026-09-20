@@ -7,7 +7,6 @@ import { DashboardHeader } from "../../features/dashboard/components/DashboardHe
 import { ParentDashboard } from "../../features/dashboard/dashboards/ParentDashboard";
 import { SchoolAdminDashboard } from "../../features/dashboard/dashboards/SchoolAdminDashboard";
 import { StaffDashboard } from "../../features/dashboard/dashboards/StaffDashboard";
-import { NurseDashboard } from "../../features/dashboard/dashboards/NurseDashboard";
 import { StudentDashboard } from "../../features/dashboard/dashboards/StudentDashboard";
 import { SuperAdminDashboard } from "../../features/dashboard/dashboards/SuperAdminDashboard";
 import { TeacherDashboard } from "../../features/dashboard/dashboards/TeacherDashboard";
@@ -36,10 +35,7 @@ export default function AppHomeScreen() {
       case "STUDENT": return <StudentDashboard firstName={user.firstName} />;
       case "PARENT": return <ParentDashboard firstName={user.firstName} />;
       case "TEACHER": return <TeacherDashboard firstName={user.firstName} />;
-      case "STAFF":
-        return user.staffProfile?.function === "INFIRMIER"
-          ? <NurseDashboard firstName={user.firstName} />
-          : <StaffDashboard firstName={user.firstName} />;
+      case "STAFF": return <StaffDashboard firstName={user.firstName} />;
       case "SCHOOL_ADMIN": return <SchoolAdminDashboard firstName={user.firstName} />;
       case "SUPER_ADMIN": return <SuperAdminDashboard firstName={user.firstName} />;
       default: return null;
