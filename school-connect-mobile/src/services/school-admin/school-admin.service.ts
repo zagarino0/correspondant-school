@@ -64,3 +64,21 @@ export async function createSchoolSchedule(input: CreateScheduleInput) {
   );
   return response.data;
 }
+
+export async function updateSchoolSchedule(
+  scheduleId: string,
+  input: CreateScheduleInput,
+) {
+  const response = await apiClient.patch(
+    `/api/v1/school-admin/schedules/${scheduleId}`,
+    input,
+  );
+  return response.data;
+}
+
+export async function deleteSchoolSchedule(scheduleId: string) {
+  const response = await apiClient.delete(
+    `/api/v1/school-admin/schedules/${scheduleId}`,
+  );
+  return response.data;
+}
