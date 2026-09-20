@@ -286,7 +286,7 @@ export default function AssignmentsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F5F7FA" },
   teacherContainer: { flex: 1, backgroundColor: "#F8FAFC" },
-  header: { paddingHorizontal: 24, paddingTop: 24, paddingBottom: 20, backgroundColor: "#FFFFFF", flexDirection: "row", alignItems: "center", gap: 14, borderBottomWidth: 1, borderBottomColor: "#E5E7EB" },
+  header: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 14, backgroundColor: "#FFFFFF", flexDirection: "row", alignItems: "center", gap: 14, borderBottomWidth: 1, borderBottomColor: "#E5E7EB" },
   teacherHeader: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16, backgroundColor: "#FFFFFF", flexDirection: "row", alignItems: "center", gap: 14, borderBottomWidth: 1, borderBottomColor: "#E5E7EB" },
   backButton: { fontSize: 36, lineHeight: 36, color: "#111827" },
   headerTitle: { fontSize: 24, fontWeight: "700", color: "#111827" },
@@ -324,7 +324,7 @@ const styles = StyleSheet.create({
   studentNumber: { marginTop: 3, fontSize: 11, color: "#9CA3AF" },
   workStatus: { fontSize: 11, fontWeight: "700", color: "#374151" },
   note: { fontSize: 11, lineHeight: 16, color: "#9CA3AF" },
-  stateContainer: { flex: 1, padding: 24, justifyContent: "center", alignItems: "center" },
+  stateContainer: { flex: 1, padding: 16, justifyContent: "center", alignItems: "center" },
   stateCard: { padding: 20, borderRadius: 14, backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#E5E7EB", alignItems: "center" },
   stateTitle: { fontSize: 18, fontWeight: "700", color: "#111827", textAlign: "center" },
   stateText: { marginTop: 8, fontSize: 14, lineHeight: 20, color: "#6B7280", textAlign: "center" },

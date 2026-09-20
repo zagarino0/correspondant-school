@@ -168,8 +168,8 @@ const styles = StyleSheet.create({
 
   header: {
     paddingHorizontal: 20,
-    paddingTop: 24,
-    paddingBottom: 20,
+    paddingTop: 16,
+    paddingBottom: 14,
     backgroundColor: "#FFFFFF",
     flexDirection: "row",
     alignItems: "center",
@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
 
   content: {
     flex: 1,
-    padding: 24,
+    padding: 16,
   },
 
   stateContainer: {
@@ -249,7 +249,7 @@ const styles = StyleSheet.create({
 
   title: {
     marginTop: 20,
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: "700",
     color: "#111827",
   },

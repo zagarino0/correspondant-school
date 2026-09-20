@@ -206,9 +206,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#F5F7FA",
   },
   header: {
-    paddingHorizontal: 24,
-    paddingTop: 24,
-    paddingBottom: 20,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 14,
     backgroundColor: "#FFFFFF",
     flexDirection: "row",
     alignItems: "center",
@@ -291,7 +291,7 @@ const styles = StyleSheet.create({
   },
   stateContainer: {
     flex: 1,
-    padding: 24,
+    padding: 16,
     justifyContent: "center",
     alignItems: "center",
   },

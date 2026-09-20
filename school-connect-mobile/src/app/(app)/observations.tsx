@@ -110,7 +110,7 @@ export default function TeacherObservationsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F8FAFC" },
-  content: { padding: 24, paddingBottom: 40, gap: 18 },
+  content: { padding: 16, paddingBottom: 40, gap: 18 },
   header: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
   flex: { flex: 1 },
   title: { fontSize: 25, fontWeight: "800", color: "#111827" },

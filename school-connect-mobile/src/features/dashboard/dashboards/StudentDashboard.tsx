@@ -273,11 +273,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contentContainer: {
-    padding: 24,
+    paddingHorizontal: 16,
+    paddingTop: 18,
     paddingBottom: 32,
   },
   title: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: "700",
     color: "#111827",
   },

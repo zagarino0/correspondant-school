@@ -314,8 +314,8 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 20,
-    paddingTop: 24,
-    paddingBottom: 20,
+    paddingTop: 16,
+    paddingBottom: 14,
     backgroundColor: "#FFFFFF",
     flexDirection: "row",
     alignItems: "center",
@@ -345,7 +345,7 @@ const styles = StyleSheet.create({
     width: 44,
   },
   content: {
-    padding: 24,
+    padding: 16,
     paddingBottom: 40,
   },
   childSelector: {
@@ -411,7 +411,7 @@ const styles = StyleSheet.create({
   },
   summaryValue: {
     marginTop: 6,
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: "800",
     color: "#111827",
   },
