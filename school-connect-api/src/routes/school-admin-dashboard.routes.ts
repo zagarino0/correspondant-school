@@ -1,4 +1,6 @@
 import type { FastifyInstance } from "fastify";
+import bcrypt from "bcryptjs";
+import { z } from "zod";
 
 import { authenticate } from "../middleware/authenticate.js";
 import { authorize } from "../middleware/authorize.js";
@@ -6,6 +8,185 @@ import { authorize } from "../middleware/authorize.js";
 export async function schoolAdminDashboardRoutes(
   app: FastifyInstance,
 ): Promise<void> {
+
+  const schoolAdminGuard = [
+    authenticate,
+    authorize("student.read"),
+  ];
+
+  app.post(
+    "/classes",
+    { onRequest: schoolAdminGuard },
+    async (request, reply) => {
+      if (request.user.role !== "SCHOOL_ADMIN" && request.user.role !== "SUPER_ADMIN") {
+        return reply.code(403).send({ error: { code: "FORBIDDEN", message: "School administrator access required." } });
+      }
+
+      const schoolId = request.user.schoolId;
+      if (!schoolId) {
+        return reply.code(400).send({ error: { code: "SCHOOL_REQUIRED", message: "A school is required." } });
+      }
+
+      const schema = z.object({
+        name: z.string().trim().min(1),
+        level: z.string().trim().min(1),
+      });
+      const parsed = schema.safeParse(request.body);
+      if (!parsed.success) {
+        return reply.code(400).send({ error: { code: "VALIDATION_ERROR", message: "Nom et niveau de classe sont obligatoires." } });
+      }
+
+      const academicYear = await app.prisma.academicYear.findFirst({
+        where: { schoolId, status: "ACTIVE" },
+        orderBy: { startDate: "desc" },
+      });
+      if (!academicYear) {
+        return reply.code(404).send({ error: { code: "ACTIVE_ACADEMIC_YEAR_NOT_FOUND", message: "Aucune année scolaire active." } });
+      }
+
+      const existing = await app.prisma.schoolClass.findUnique({
+        where: { academicYearId_name: { academicYearId: academicYear.id, name: parsed.data.name } },
+      });
+      if (existing) {
+        return reply.code(409).send({ error: { code: "CLASS_ALREADY_EXISTS", message: "Cette classe existe déjà pour l'année active." } });
+      }
+
+      const schoolClass = await app.prisma.schoolClass.create({
+        data: {
+          schoolId,
+          academicYearId: academicYear.id,
+          name: parsed.data.name,
+          level: parsed.data.level,
+        },
+        select: { id: true, name: true, level: true },
+      });
+
+      return reply.code(201).send({ class: schoolClass });
+    },
+  );
+
+  app.post(
+    "/teachers",
+    { onRequest: schoolAdminGuard },
+    async (request, reply) => {
+      if (request.user.role !== "SCHOOL_ADMIN" && request.user.role !== "SUPER_ADMIN") {
+        return reply.code(403).send({ error: { code: "FORBIDDEN", message: "School administrator access required." } });
+      }
+
+      const schoolId = request.user.schoolId;
+      if (!schoolId) {
+        return reply.code(400).send({ error: { code: "SCHOOL_REQUIRED", message: "A school is required." } });
+      }
+
+      const schema = z.object({
+        firstName: z.string().trim().min(1),
+        lastName: z.string().trim().min(1),
+        email: z.string().trim().email(),
+        password: z.string().min(6),
+      });
+      const parsed = schema.safeParse(request.body);
+      if (!parsed.success) {
+        return reply.code(400).send({ error: { code: "VALIDATION_ERROR", message: "Nom, prénom, email et mot de passe (6 caractères minimum) sont obligatoires." } });
+      }
+
+      const email = parsed.data.email.toLowerCase();
+      const existing = await app.prisma.user.findUnique({ where: { email } });
+      if (existing) {
+        return reply.code(409).send({ error: { code: "EMAIL_ALREADY_EXISTS", message: "Cette adresse email est déjà utilisée." } });
+      }
+
+      const teacher = await app.prisma.user.create({
+        data: {
+          schoolId,
+          email,
+          firstName: parsed.data.firstName,
+          lastName: parsed.data.lastName,
+          passwordHash: await bcrypt.hash(parsed.data.password, 12),
+          role: "TEACHER",
+          status: "ACTIVE",
+        },
+        select: { id: true, email: true, firstName: true, lastName: true, role: true, status: true },
+      });
+
+      return reply.code(201).send({ teacher });
+    },
+  );
+
+  app.post(
+    "/personnel",
+    { onRequest: schoolAdminGuard },
+    async (request, reply) => {
+      if (request.user.role !== "SCHOOL_ADMIN" && request.user.role !== "SUPER_ADMIN") {
+        return reply.code(403).send({ error: { code: "FORBIDDEN", message: "School administrator access required." } });
+      }
+
+      const schoolId = request.user.schoolId;
+      if (!schoolId) {
+        return reply.code(400).send({ error: { code: "SCHOOL_REQUIRED", message: "A school is required." } });
+      }
+
+      const schema = z.object({
+        firstName: z.string().trim().min(1),
+        lastName: z.string().trim().min(1),
+        email: z.string().trim().email(),
+        password: z.string().min(6),
+        function: z.enum(["ADMINISTRATION", "SURVEILLANT", "SECRETARIAT", "COMPTABILITE", "INFIRMIER"]),
+      });
+      const parsed = schema.safeParse(request.body);
+      if (!parsed.success) {
+        return reply.code(400).send({ error: { code: "VALIDATION_ERROR", message: "Tous les champs du personnel sont obligatoires." } });
+      }
+
+      const email = parsed.data.email.toLowerCase();
+      const existing = await app.prisma.user.findUnique({ where: { email } });
+      if (existing) {
+        return reply.code(409).send({ error: { code: "EMAIL_ALREADY_EXISTS", message: "Cette adresse email est déjà utilisée." } });
+      }
+
+      const staff = await app.prisma.$transaction(async (tx) => {
+        const user = await tx.user.create({
+          data: {
+            schoolId,
+            email,
+            firstName: parsed.data.firstName,
+            lastName: parsed.data.lastName,
+            passwordHash: await bcrypt.hash(parsed.data.password, 12),
+            role: "STAFF",
+            status: "ACTIVE",
+          },
+        });
+
+        const profile = await tx.staffProfile.create({
+          data: {
+            userId: user.id,
+            function: parsed.data.function,
+          },
+        });
+
+        await tx.staffAssignment.create({
+          data: {
+            staffId: profile.id,
+            schoolId,
+            startDate: new Date(),
+            active: true,
+          },
+        });
+
+        return {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          role: user.role,
+          status: user.status,
+          function: profile.function,
+        };
+      });
+
+      return reply.code(201).send({ staff });
+    },
+  );
+
   app.get(
     "/dashboard",
     {
