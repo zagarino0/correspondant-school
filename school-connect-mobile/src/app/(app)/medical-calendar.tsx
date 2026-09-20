@@ -242,14 +242,14 @@ export default function MedicalCalendarScreen() {
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.content}>
-          <View style={styles.weekHeader}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.weekHeader}>
             {weekDays.map((day) => (
               <Pressable key={dateKey(day)} style={styles.dayHeader} onPress={() => openCreate(day)}>
                 <Text style={styles.dayText}>{formatDay(day)}</Text>
                 <Text style={[styles.addDay, dateKey(day) === dateKey(new Date()) && styles.todayDot]}>+</Text>
               </Pressable>
             ))}
-          </View>
+          </ScrollView>
 
           {weekDays.map((day) => {
             const dayEvents = eventsByDay.get(dateKey(day)) ?? [];
@@ -420,8 +420,8 @@ const styles = StyleSheet.create({
   retryText: { color: BLUE, fontSize: 12, fontWeight: "900" },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
   content: { padding: 14, paddingBottom: 30 },
-  weekHeader: { flexDirection: "row", gap: 8, marginBottom: 12 },
-  dayHeader: { flex: 1, minWidth: 75, padding: 10, borderRadius: 12, backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#E4E7EC" },
+  weekHeader: { gap: 8, marginBottom: 12 },
+  dayHeader: { width: 94, padding: 10, borderRadius: 12, backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#E4E7EC" },
   dayText: { fontSize: 11, fontWeight: "900", color: "#344054", textTransform: "capitalize" },
   addDay: { marginTop: 7, fontSize: 16, fontWeight: "900", color: BLUE },
   todayDot: { color: "#166534" },
