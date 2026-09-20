@@ -26,6 +26,7 @@ import { teacherRoutes } from "../routes/teacher.routes.js";
 import { parentRoutes } from "../routes/parent.routes.js";
 import { schoolAdminDashboardRoutes } from "../routes/school-admin-dashboard.routes.js";
 import medicalRoutes from "../routes/medical.routes.js";
+import medicalHistoryRoutes from "../routes/medical-history.routes.js";
 
 import jwtPlugin from "../plugins/jwt.js";
 
@@ -84,6 +85,9 @@ export async function buildApp() {
   });
   await app.register(medicalRoutes, {
     prefix: "/api/v1/medical",
+  });
+  await app.register(medicalHistoryRoutes, {
+    prefix: "/api/v1/medical-history",
   });
   await app.register(attendanceRoutes, {
     prefix: "/api/v1",
