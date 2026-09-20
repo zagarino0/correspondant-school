@@ -3,6 +3,7 @@ import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 
 import { DashboardSection } from "../components/DashboardSection";
+import { MedicalAccessCard } from "../components/MedicalAccessCard";
 import type { DashboardCardData, DashboardSectionData } from "../dashboard.types";
 import {
   getChildSchedule,
@@ -572,6 +573,8 @@ export function ParentDashboard({ firstName }: ParentDashboardProps) {
           {selectedChildDescription}
         </Text>
       )}
+
+      <MedicalAccessCard />
 
       {sections.map((section) => (
         <DashboardSection key={section.id} {...section} />
