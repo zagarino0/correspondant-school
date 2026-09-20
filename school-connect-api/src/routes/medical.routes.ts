@@ -5,6 +5,10 @@ import { authenticate } from "../middleware/authenticate.js";
 
 const medicalUpdateSchema = z.object({
   bloodGroup: z.string().trim().max(20).optional().nullable(),
+  temperature: z.coerce.number().min(30).max(45).optional().nullable(),
+  weightKg: z.coerce.number().min(1).max(300).optional().nullable(),
+  bloodPressureSystolic: z.coerce.number().int().min(50).max(250).optional().nullable(),
+  bloodPressureDiastolic: z.coerce.number().int().min(30).max(180).optional().nullable(),
   allergies: z.string().trim().max(4000).optional().nullable(),
   medicalConditions: z.string().trim().max(4000).optional().nullable(),
   medications: z.string().trim().max(4000).optional().nullable(),
@@ -689,6 +693,10 @@ export const medicalRoutes: FastifyPluginAsync = async (fastify) => {
         Object.entries(data).filter(([, value]) => value !== undefined),
       ) as {
         bloodGroup?: string | null;
+        temperature?: number | null;
+        weightKg?: number | null;
+        bloodPressureSystolic?: number | null;
+        bloodPressureDiastolic?: number | null;
         allergies?: string | null;
         medicalConditions?: string | null;
         medications?: string | null;
