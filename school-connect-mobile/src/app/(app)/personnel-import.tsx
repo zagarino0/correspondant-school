@@ -19,8 +19,8 @@ export default function PersonnelImportScreen(){
       const asset=result.assets[0]; const buffer=await (await fetch(asset.uri)).arrayBuffer();
       const workbook=XLSX.read(buffer,{type:"array"}); const sheet=workbook.Sheets[workbook.SheetNames[0]];
       if(!sheet)throw new Error("Aucune feuille Excel trouvée.");
-      const raw=XLSX.utils.sheet_to_json<Record<string,unknown>>(sheet,{defval:""});
-      const parsed=raw.map(row=>{
+      const raw: Array<Record<string, unknown>> = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet,{defval:""});
+      const parsed: BulkPersonnelInput[] = raw.map((row: Record<string, unknown>): BulkPersonnelInput=>{
         const rawFn=String(getValue(row,["function","fonction"])??"").trim().toLowerCase();
         const aliases:Record<string,StaffFunction>={administration:"ADMINISTRATION",surveillance:"SURVEILLANT",surveillant:"SURVEILLANT",secrétariat:"SECRETARIAT",secretariat:"SECRETARIAT",comptabilité:"COMPTABILITE",comptabilite:"COMPTABILITE",infirmerie:"INFIRMIER",infirmier:"INFIRMIER"};
         return {
@@ -31,7 +31,7 @@ export default function PersonnelImportScreen(){
           function:aliases[rawFn]??rawFn.toUpperCase() as StaffFunction,
         };
       });
-      const invalid=parsed.findIndex(r=>!r.firstName||!r.lastName||!r.email||r.password.length<6||!functions.includes(r.function));
+      const invalid=parsed.findIndex((r: BulkPersonnelInput)=>!r.firstName||!r.lastName||!r.email||r.password.length<6||!functions.includes(r.function));
       if(invalid>=0)throw new Error(`Ligne ${invalid+2}: prénom, nom, email, mot de passe (6+) et fonction valide sont obligatoires.`);
       if(!parsed.length)throw new Error("Le fichier ne contient aucune ligne.");
       setRows(parsed);setFileName(asset.name);
