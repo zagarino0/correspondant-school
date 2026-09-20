@@ -12,29 +12,19 @@ import { useAuthStore } from "../../stores/authStore";
 
 export default function AppHomeScreen() {
   const router = useRouter();
-
   const user = useAuthStore((state) => state.user);
 
   const renderDashboard = () => {
-    if (!user) {
-      return null;
-    }
+    if (!user) return null;
 
     switch (user.role) {
-      case "STUDENT":
-        return <StudentDashboard firstName={user.firstName} />;
-      case "PARENT":
-        return <ParentDashboard firstName={user.firstName} />;
-      case "TEACHER":
-        return <TeacherDashboard firstName={user.firstName} />;
-      case "STAFF":
-        return <StaffDashboard firstName={user.firstName} />;
-      case "SCHOOL_ADMIN":
-        return <SchoolAdminDashboard firstName={user.firstName} />;
-      case "SUPER_ADMIN":
-        return <SuperAdminDashboard firstName={user.firstName} />;
-      default:
-        return null;
+      case "STUDENT": return <StudentDashboard firstName={user.firstName} />;
+      case "PARENT": return <ParentDashboard firstName={user.firstName} />;
+      case "TEACHER": return <TeacherDashboard firstName={user.firstName} />;
+      case "STAFF": return <StaffDashboard firstName={user.firstName} />;
+      case "SCHOOL_ADMIN": return <SchoolAdminDashboard firstName={user.firstName} />;
+      case "SUPER_ADMIN": return <SuperAdminDashboard firstName={user.firstName} />;
+      default: return null;
     }
   };
 
@@ -48,9 +38,9 @@ export default function AppHomeScreen() {
       {renderDashboard()}
 
       <View style={styles.bottomNavigation}>
-        <Pressable style={styles.navItem}>
-          <Text style={styles.navIcon}>⌂</Text>
-          <Text style={styles.navLabel}>Accueil</Text>
+        <Pressable style={[styles.navItem, styles.navItemActive]} accessibilityRole="button" accessibilityLabel="Accueil">
+          <Text style={[styles.navIcon, styles.navIconActive]}>⌂</Text>
+          <Text style={[styles.navLabel, styles.navLabelActive]}>Accueil</Text>
         </Pressable>
 
         <Pressable
@@ -59,7 +49,9 @@ export default function AppHomeScreen() {
           accessibilityRole="button"
           accessibilityLabel="Messages"
         >
-          <Text style={styles.navIcon}>✉</Text>
+          <View style={styles.navIconWrap}>
+            <Text style={styles.navIcon}>✉</Text>
+          </View>
           <Text style={styles.navLabel}>Messages</Text>
         </Pressable>
 
@@ -72,16 +64,6 @@ export default function AppHomeScreen() {
           <Text style={styles.navIcon}>✦</Text>
           <Text style={styles.navLabel}>Assistant</Text>
         </Pressable>
-
-        <Pressable
-          style={styles.navItem}
-          onPress={() => router.push("/(app)/profile")}
-          accessibilityRole="button"
-          accessibilityLabel="Profil"
-        >
-          <Text style={styles.navIcon}>♙</Text>
-          <Text style={styles.navLabel}>Profil</Text>
-        </Pressable>
       </View>
     </View>
   );
@@ -93,28 +75,52 @@ const styles = StyleSheet.create({
     backgroundColor: "#F5F7FA",
   },
   bottomNavigation: {
+    position: "absolute",
+    left: 14,
+    right: 14,
+    bottom: 14,
+    height: 64,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-around",
-    paddingTop: 8,
-    paddingBottom: 8,
+    paddingHorizontal: 8,
+    borderRadius: 22,
     backgroundColor: "#FFFFFF",
-    borderTopWidth: 1,
-    borderTopColor: "#E5E7EB",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 8,
   },
   navItem: {
+    flex: 1,
+    height: 54,
     alignItems: "center",
     justifyContent: "center",
-    flex: 1,
-    minWidth: 0,
-    gap: 4,
+    borderRadius: 16,
+    gap: 2,
+  },
+  navItemActive: {
+    backgroundColor: "#EEF2F7",
+  },
+  navIconWrap: {
+    position: "relative",
   },
   navIcon: {
-    fontSize: 20,
-    color: "#374151",
+    fontSize: 21,
+    color: "#475569",
+  },
+  navIconActive: {
+    color: "#344976",
   },
   navLabel: {
-    fontSize: 12,
-    color: "#374151",
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#64748B",
+  },
+  navLabelActive: {
+    color: "#344976",
   },
 });

@@ -19,13 +19,6 @@ import {
   getStudentGrades,
   type ParentGrade,
 } from "../../../services/grades/grade.service";
-import { getMyAnnouncements } from "../../../features/announcements/announcement.service";
-import type { StudentAnnouncement } from "../../../features/announcements/announcement.types";
-import {
-  getMyConversations,
-  getUnreadMessageCount,
-} from "../../../services/messages/message.service";
-import type { Conversation } from "../../../features/messages/message.types";
 
 type ParentDashboardProps = {
   firstName: string;
@@ -185,11 +178,6 @@ export function ParentDashboard({ firstName }: ParentDashboardProps) {
   const [scheduleError, setScheduleError] = useState(false);
   const [childrenLoading, setChildrenLoading] = useState(true);
   const [childrenError, setChildrenError] = useState(false);
-  const [announcements, setAnnouncements] = useState<StudentAnnouncement[]>([]);
-  const [messages, setMessages] = useState<Conversation[]>([]);
-  const [unreadMessages, setUnreadMessages] = useState(0);
-  const [communicationLoading, setCommunicationLoading] = useState(true);
-  const [communicationError, setCommunicationError] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -351,46 +339,6 @@ export function ParentDashboard({ firstName }: ParentDashboardProps) {
     };
   }, [selectedChildId]);
 
-  useEffect(() => {
-    let isMounted = true;
-
-    async function loadCommunication() {
-      try {
-        setCommunicationLoading(true);
-        setCommunicationError(false);
-
-        const [announcementResponse, conversationResponse, unreadCount] =
-          await Promise.all([
-            getMyAnnouncements(),
-            getMyConversations(),
-            getUnreadMessageCount(),
-          ]);
-
-        if (isMounted) {
-          setAnnouncements(announcementResponse.announcements);
-          setMessages(conversationResponse.conversations);
-          setUnreadMessages(unreadCount);
-        }
-      } catch {
-        if (isMounted) {
-          setAnnouncements([]);
-          setMessages([]);
-          setUnreadMessages(0);
-          setCommunicationError(true);
-        }
-      } finally {
-        if (isMounted) {
-          setCommunicationLoading(false);
-        }
-      }
-    }
-
-    void loadCommunication();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
 
   const selectedChild = useMemo(
     () => children.find((child) => child.id === selectedChildId) ?? null,
@@ -590,58 +538,7 @@ export function ParentDashboard({ firstName }: ParentDashboardProps) {
         },
       ],
     },
-    {
-      id: "parent-communication",
-      title: "Communication",
-      cards: [
-        {
-          id: "announcements",
-          title: "Annonces",
-          value: communicationLoading
-            ? "…"
-            : communicationError
-              ? "—"
-              : String(announcements.length),
-          badge:
-            !communicationLoading && !communicationError && announcements.some(
-              (announcement) => !announcement.isRead,
-            )
-              ? "Nouveau"
-              : undefined,
-          description:
-            communicationLoading
-              ? "Chargement des annonces."
-              : communicationError
-                ? "Impossible de charger les annonces."
-                : announcements.length > 0
-                  ? announcements[0].title
-                  : "Aucune annonce reçue.",
-          onPress: () => router.push("/(app)/announcements"),
-        },
-        {
-          id: "messages",
-          title: "Messages",
-          value: communicationLoading
-            ? "…"
-            : communicationError
-              ? "—"
-              : String(messages.length),
-          badge:
-            !communicationLoading && !communicationError && unreadMessages > 0
-              ? String(unreadMessages)
-              : undefined,
-          description:
-            communicationLoading
-              ? "Chargement des conversations."
-              : communicationError
-                ? "Impossible de charger les messages."
-                : messages.length > 0
-                  ? "Dernières conversations disponibles."
-                  : "Aucune conversation.",
-          onPress: () => router.push("/(app)/messages"),
-        },
-      ],
-    },
+
   ];
 
   return (

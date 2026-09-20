@@ -1,5 +1,9 @@
-import { StyleSheet, Text, View } from "react-native";
+import { useEffect, useState } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useRouter } from "expo-router";
 
+import { getMyAnnouncements } from "../../../features/announcements/announcement.service";
+import { getUnreadMessageCount } from "../../../services/messages/message.service";
 import type { UserRole } from "../../../types/auth";
 
 type DashboardHeaderProps = {
@@ -16,50 +20,192 @@ const roleLabels: Record<UserRole, string> = {
   STAFF: "Personnel",
 };
 
-export function DashboardHeader({
-  firstName,
-  role,
-}: DashboardHeaderProps) {
+export function DashboardHeader({ firstName, role }: DashboardHeaderProps) {
+  const router = useRouter();
+  const [unreadAnnouncements, setUnreadAnnouncements] = useState(0);
+  const [unreadMessages, setUnreadMessages] = useState(0);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadBadges() {
+      try {
+        const [announcementResponse, unreadMessageCount] = await Promise.all([
+          getMyAnnouncements(),
+          getUnreadMessageCount(),
+        ]);
+
+        if (!mounted) return;
+
+        setUnreadAnnouncements(
+          announcementResponse.announcements.filter(
+            (announcement) => !announcement.isRead,
+          ).length,
+        );
+        setUnreadMessages(unreadMessageCount);
+      } catch {
+        if (!mounted) return;
+        setUnreadAnnouncements(0);
+        setUnreadMessages(0);
+      }
+    }
+
+    void loadBadges();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   return (
     <View style={styles.container}>
-      <View style={styles.textContainer}>
-        <Text style={styles.brand}>School Connect</Text>
-        <Text style={styles.greeting} numberOfLines={1}>
-          Bonjour {firstName}
-        </Text>
-        <Text style={styles.role} numberOfLines={1}>
-          {roleLabels[role]}
-        </Text>
+      <View style={styles.topRow}>
+        <View style={styles.textContainer}>
+          <Text style={styles.brand} numberOfLines={1}>
+            Correspondant
+          </Text>
+          <Text style={styles.greeting} numberOfLines={1}>
+            Bonjour {firstName}
+          </Text>
+          <Text style={styles.role} numberOfLines={1}>
+            {roleLabels[role]}
+          </Text>
+        </View>
+
+        <View style={styles.actions}>
+          <Pressable
+            onPress={() => router.push("/(app)/announcements")}
+            style={styles.iconButton}
+            accessibilityRole="button"
+            accessibilityLabel="Annonces"
+          >
+            <Text style={styles.actionIcon}>♢</Text>
+            {unreadAnnouncements > 0 ? (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>
+                  {unreadAnnouncements > 99 ? "99+" : unreadAnnouncements}
+                </Text>
+              </View>
+            ) : null}
+          </Pressable>
+
+          <Pressable
+            onPress={() => router.push("/(app)/profile")}
+            style={styles.profileButton}
+            accessibilityRole="button"
+            accessibilityLabel="Profil"
+          >
+            <Text style={styles.profileIcon}>♙</Text>
+          </Pressable>
+        </View>
       </View>
+
+      {unreadMessages > 0 ? (
+        <View style={styles.messageHint}>
+          <Text style={styles.messageHintText}>
+            {unreadMessages} nouveau{unreadMessages > 1 ? "x" : ""} message{unreadMessages > 1 ? "s" : ""}
+          </Text>
+        </View>
+      ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 18,
-    paddingTop: 14,
-    paddingBottom: 14,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 12,
     backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
   },
+  topRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
   textContainer: {
+    flex: 1,
     minWidth: 0,
   },
   brand: {
-    fontSize: 22,
-    fontWeight: "700",
+    fontSize: 21,
+    fontWeight: "800",
     color: "#111827",
   },
   greeting: {
     marginTop: 4,
-    fontSize: 15,
+    fontSize: 14,
     color: "#6B7280",
   },
   role: {
     marginTop: 2,
-    fontSize: 12,
+    fontSize: 11,
     color: "#9CA3AF",
+  },
+  actions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  iconButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F3F4F6",
+    position: "relative",
+  },
+  actionIcon: {
+    fontSize: 24,
+    fontWeight: "800",
+    color: "#344976",
+  },
+  profileButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#344976",
+  },
+  profileIcon: {
+    fontSize: 22,
+    color: "#FFFFFF",
+  },
+  badge: {
+    position: "absolute",
+    top: -2,
+    right: -2,
+    minWidth: 18,
+    height: 18,
+    paddingHorizontal: 4,
+    borderRadius: 9,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#DC2626",
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
+  },
+  badgeText: {
+    color: "#FFFFFF",
+    fontSize: 9,
+    fontWeight: "900",
+  },
+  messageHint: {
+    marginTop: 8,
+    alignSelf: "flex-start",
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 10,
+    backgroundColor: "#FEF2F2",
+  },
+  messageHintText: {
+    color: "#B91C1C",
+    fontSize: 10,
+    fontWeight: "700",
   },
 });
