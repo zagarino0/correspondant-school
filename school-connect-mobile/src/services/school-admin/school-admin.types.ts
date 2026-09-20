@@ -45,3 +45,31 @@ export type SchoolAdminDashboardResponse = {
     unreadMessages: number;
   };
 };
+
+
+export type CreateClassInput = {
+  name: string;
+  level: string;
+};
+
+export type CreateTeacherInput = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+};
+
+export type StaffFunction =
+  | "ADMINISTRATION"
+  | "SURVEILLANT"
+  | "SECRETARIAT"
+  | "COMPTABILITE"
+  | "INFIRMIER";
+
+export type CreatePersonnelInput = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  function: StaffFunction;
+};
