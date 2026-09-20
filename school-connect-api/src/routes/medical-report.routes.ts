@@ -222,10 +222,22 @@ export const medicalReportRoutes: FastifyPluginAsync = async (fastify) => {
         });
       }
 
-      const data: Prisma.MedicalReportUpdateInput = {};
-      for (const [key, value] of Object.entries(input)) {
-        if (value !== undefined) data[key] = value;
-      }
+      const data: Prisma.MedicalReportUpdateInput = {
+        ...(input.title !== undefined ? { title: input.title } : {}),
+        ...(input.type !== undefined ? { type: input.type } : {}),
+        ...(input.reportDate !== undefined ? { reportDate: input.reportDate } : {}),
+        ...(input.status !== undefined ? { status: input.status } : {}),
+        ...(input.priority !== undefined ? { priority: input.priority } : {}),
+        ...(input.reason !== undefined ? { reason: input.reason } : {}),
+        ...(input.observations !== undefined ? { observations: input.observations } : {}),
+        ...(input.actionsTaken !== undefined ? { actionsTaken: input.actionsTaken } : {}),
+        ...(input.outcome !== undefined ? { outcome: input.outcome } : {}),
+        ...(input.recommendations !== undefined ? { recommendations: input.recommendations } : {}),
+        ...(input.parentContacted !== undefined ? { parentContacted: input.parentContacted } : {}),
+        ...(input.parentContactedAt !== undefined ? { parentContactedAt: input.parentContactedAt } : {}),
+        ...(input.referredTo !== undefined ? { referredTo: input.referredTo } : {}),
+        ...(input.notes !== undefined ? { notes: input.notes } : {}),
+      };
 
       if (typeof data.reportDate === "string") {
         data.reportDate = new Date(data.reportDate);
