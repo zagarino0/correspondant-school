@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { ScrollView, StyleSheet, Text } from "react-native";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 
 import { DashboardSection } from "../components/DashboardSection";
 import type { DashboardSectionData } from "../dashboard.types";
