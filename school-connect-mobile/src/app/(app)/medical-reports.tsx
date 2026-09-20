@@ -61,6 +61,14 @@ export default function MedicalReportsScreen() {
 
   const initialUserId = typeof params.userId === "string" ? params.userId : null;
 
+  const goBack = useCallback(() => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace("/(app)");
+    }
+  }, [router]);
+
   const [access, setAccess] = useState<MedicalAccess | null>(null);
   const [people, setPeople] = useState<MedicalPerson[]>([]);
   const [children, setChildren] = useState<MedicalChild[]>([]);
@@ -247,7 +255,7 @@ export default function MedicalReportsScreen() {
         <Text style={styles.lock}>🔒</Text>
         <Text style={styles.title}>Rapports médicaux indisponibles</Text>
         <Text style={styles.muted}>{access?.reason ?? error ?? "Accès refusé."}</Text>
-        <Pressable style={styles.primaryButton} onPress={() => router.back()}>
+        <Pressable style={styles.primaryButton} onPress={goBack}>
           <Text style={styles.primaryText}>Retour</Text>
         </Pressable>
       </View>
