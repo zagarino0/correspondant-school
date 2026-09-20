@@ -621,7 +621,7 @@ const studentRoutes: FastifyPluginAsync = async (fastify) => {
         }),
         fastify.prisma.schoolClass.findMany({
           where: { schoolId, academicYearId: academicYear.id },
-          select: { id: true, name: true },
+          select: { id: true, name: true, academicYearId: true },
         }),
       ]);
 
