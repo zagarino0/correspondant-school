@@ -247,6 +247,19 @@ export default function MedicalScreen() {
         >
           <Text style={styles.historyButtonText}>Historique</Text>
         </Pressable>
+        {selectedUserId ? (
+          <Pressable
+            style={styles.historyButton}
+            onPress={() =>
+              router.push({
+                pathname: "/(app)/medical-reports",
+                params: { userId: selectedUserId },
+              })
+            }
+          >
+            <Text style={styles.historyButtonText}>Rapports</Text>
+          </Pressable>
+        ) : null}
         <View style={styles.headerBadge}>
           <Text style={styles.headerBadgeText}>
             {access.mode === "PARENT" ? "Parent" : "Gestion"}
