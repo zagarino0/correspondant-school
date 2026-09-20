@@ -606,8 +606,8 @@ const styles = StyleSheet.create({
   scheduleDayTablet: { width: "48.5%", marginBottom: 10 },
   scheduleDayWide: { width: "31.8%", marginBottom: 10 },
   scheduleDayToday: {
-    borderColor: "#2563EB",
-    backgroundColor: "#EFF6FF",
+    borderColor: "#344976",
+    backgroundColor: "#EEF2F7",
   },
   scheduleDayHeader: {
     minHeight: 52,
@@ -619,8 +619,8 @@ const styles = StyleSheet.create({
     borderBottomColor: "#E5E7EB",
   },
   scheduleDayHeaderToday: {
-    backgroundColor: "#2563EB",
-    borderBottomColor: "#2563EB",
+    backgroundColor: "#344976",
+    borderBottomColor: "#344976",
   },
   scheduleDayLabel: {
     fontSize: 13,
@@ -634,7 +634,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
     fontSize: 10,
     fontWeight: "700",
-    color: "#DBEAFE",
+    color: "#E7ECF5",
   },
   scheduleLesson: {
     margin: 8,
@@ -647,7 +647,7 @@ const styles = StyleSheet.create({
   scheduleTime: {
     fontSize: 11,
     fontWeight: "700",
-    color: "#2563EB",
+    color: "#344976",
   },
   scheduleSubject: {
     marginTop: 5,
