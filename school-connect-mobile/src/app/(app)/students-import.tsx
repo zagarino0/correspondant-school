@@ -13,6 +13,19 @@ const getValue = (row: Record<string, unknown>, keys: string[]) => {
   return entry?.[1];
 };
 
+const parseDateValue = (value: unknown): string | null => {
+  if (value === null || value === undefined || String(value).trim() === "") return null;
+  if (typeof value === "number") {
+    const parsed = XLSX.SSF.parse_date_code(value);
+    if (!parsed) return null;
+    return new Date(Date.UTC(parsed.y, parsed.m - 1, parsed.d)).toISOString();
+  }
+  const raw = String(value).trim();
+  const iso = /^\d{4}-\d{2}-\d{2}$/.test(raw) ? `${raw}T00:00:00.000Z` : raw;
+  const date = new Date(iso);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+};
+
 export default function StudentsImportScreen() {
   const [fileName, setFileName] = useState("");
   const [rows, setRows] = useState<BulkStudentInput[]>([]);
@@ -47,7 +60,7 @@ export default function StudentsImportScreen() {
         email: String(getValue(row, ["email", "e-mail"]) ?? "").trim(),
         password: String(getValue(row, ["password", "motdepasse", "mot de passe"]) ?? "").trim(),
         studentNumber: String(getValue(row, ["studentnumber", "matricule", "numero", "numéro"]) ?? "").trim(),
-        dateOfBirth: String(getValue(row, ["dateofbirth", "date de naissance", "datenaissance"]) ?? "").trim() || null,
+        dateOfBirth: parseDateValue(getValue(row, ["dateofbirth", "date de naissance", "datenaissance"])),
         gender: String(getValue(row, ["gender", "genre", "sexe"]) ?? "").trim().toUpperCase() === "FEMALE" ||
           String(getValue(row, ["gender", "genre", "sexe"]) ?? "").trim().toLowerCase() === "fille" ? "FEMALE" : "MALE",
         className: String(getValue(row, ["classname", "classe"]) ?? "").trim(),
