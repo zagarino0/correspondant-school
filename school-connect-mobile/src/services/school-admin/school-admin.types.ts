@@ -73,3 +73,56 @@ export type CreatePersonnelInput = {
   password: string;
   function: StaffFunction;
 };
+
+export type UpdateClassInput = {
+  name: string;
+  level: string;
+};
+
+export type ScheduleDay =
+  | "MONDAY"
+  | "TUESDAY"
+  | "WEDNESDAY"
+  | "THURSDAY"
+  | "FRIDAY"
+  | "SATURDAY";
+
+export type CreateScheduleInput = {
+  classId: string;
+  teacherId: string;
+  subject: string;
+  dayOfWeek: ScheduleDay;
+  startTime: string;
+  endTime: string;
+  room?: string | null;
+};
+
+export type SchoolAdminSchedule = {
+  id: string;
+  classId: string;
+  teacherId: string;
+  subject: string;
+  dayOfWeek: ScheduleDay;
+  startTime: string;
+  endTime: string;
+  room: string | null;
+  class: {
+    id: string;
+    name: string;
+    level: string | null;
+  };
+  teacher: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  };
+};
+
+export type SchoolAdminSchedulesResponse = {
+  academicYear: {
+    id: string;
+    name: string;
+    status: string;
+  };
+  schedules: SchoolAdminSchedule[];
+};
