@@ -2,8 +2,8 @@ import { useCallback, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect } from "expo-router";
 
-import { getSchoolTeachers } from "../../../services/teachers/teacher.service";
-import type { SchoolTeacher, TeacherClassSummary } from "../../../services/teachers/teacher.types";
+import { getSchoolTeachers } from "../../services/teachers/teacher.service";
+import type { SchoolTeacher, TeacherClassSummary } from "../../services/teachers/teacher.types";
 
 export default function TeacherClassesScreen() {
   const [classes, setClasses] = useState<TeacherClassSummary[]>([]);
