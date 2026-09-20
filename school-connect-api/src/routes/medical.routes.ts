@@ -458,14 +458,31 @@ export const medicalRoutes: FastifyPluginAsync = async (fastify) => {
 
       const data = parsed.data;
 
+      // With exactOptionalPropertyTypes enabled, Prisma nullable fields must
+      // not receive explicit undefined values. Build the payload by copying
+      // only fields that are actually present in the request.
+      const medicalData = Object.fromEntries(
+        Object.entries(data).filter(([, value]) => value !== undefined),
+      ) as {
+        bloodGroup?: string | null;
+        allergies?: string | null;
+        medicalConditions?: string | null;
+        medications?: string | null;
+        emergencyContactName?: string | null;
+        emergencyContactPhone?: string | null;
+        doctorName?: string | null;
+        doctorPhone?: string | null;
+        notes?: string | null;
+      };
+
       if (target.studentId) {
         const record = await fastify.prisma.studentMedicalRecord.upsert({
           where: { studentId: target.studentId },
           create: {
             studentId: target.studentId,
-            ...data,
+            ...medicalData,
           },
-          update: data,
+          update: medicalData,
         });
 
         return { record, recordType: "STUDENT" };
@@ -475,9 +492,9 @@ export const medicalRoutes: FastifyPluginAsync = async (fastify) => {
         where: { userId },
         create: {
           userId,
-          ...data,
+          ...medicalData,
         },
-        update: data,
+        update: medicalData,
       });
 
       return { record, recordType: "ADULT" };
