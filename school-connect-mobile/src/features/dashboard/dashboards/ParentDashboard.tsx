@@ -24,17 +24,19 @@ type ParentDashboardProps = {
   firstName: string;
 };
 
-const SCHEDULE_DAYS: {
-  key: ParentScheduleDay;
-  label: string;
-}[] = [
-  { key: "MONDAY", label: "Lundi" },
-  { key: "TUESDAY", label: "Mardi" },
-  { key: "WEDNESDAY", label: "Mercredi" },
-  { key: "THURSDAY", label: "Jeudi" },
-  { key: "FRIDAY", label: "Vendredi" },
-  { key: "SATURDAY", label: "Samedi" },
-];
+function getScheduleDayLabel(day: ParentScheduleDay): string {
+  const labels: Record<ParentScheduleDay, string> = {
+    MONDAY: "Lundi",
+    TUESDAY: "Mardi",
+    WEDNESDAY: "Mercredi",
+    THURSDAY: "Jeudi",
+    FRIDAY: "Vendredi",
+    SATURDAY: "Samedi",
+    SUNDAY: "Dimanche",
+  };
+
+  return labels[day];
+}
 
 function getTodayScheduleDay(): ParentScheduleDay {
   const days: ParentScheduleDay[] = [
@@ -59,9 +61,16 @@ function ScheduleGrid({
   loading: boolean;
   error: boolean;
 }) {
-  const { width } = useWindowDimensions();
-  const isPhone = width < 600;
-  const isTablet = width < 900;
+  const [containerWidth, setContainerWidth] = useState(0);
+  const columns = containerWidth >= 900 ? 3 : containerWidth >= 600 ? 2 : 1;
+  const columnGap = 10;
+  const dayWidth =
+    columns === 1
+      ? "100%"
+      : Math.max(
+          0,
+          (containerWidth - columnGap * (columns - 1)) / columns,
+        );
 
   if (loading) {
     return (
@@ -94,12 +103,18 @@ function ScheduleGrid({
   }
 
   const today = getTodayScheduleDay();
+  const days = Array.from(
+    new Set(schedules.map((schedule) => schedule.dayOfWeek)),
+  );
 
   return (
-    <View style={styles.scheduleGrid}>
-      {SCHEDULE_DAYS.map((day) => {
+    <View
+      style={styles.scheduleGrid}
+      onLayout={(event) => setContainerWidth(event.nativeEvent.layout.width)}
+    >
+      {days.map((day) => {
         const daySchedules = schedules
-          .filter((schedule) => schedule.dayOfWeek === day.key)
+          .filter((schedule) => schedule.dayOfWeek === day)
           .sort((a, b) => a.startTime.localeCompare(b.startTime));
 
         const isToday = day.key === today;
@@ -109,7 +124,7 @@ function ScheduleGrid({
             key={day.key}
             style={[
               styles.scheduleDay,
-              isPhone ? styles.scheduleDayPhone : isTablet ? styles.scheduleDayTablet : styles.scheduleDayWide,
+              { width: dayWidth },
               isToday ? styles.scheduleDayToday : null,
             ]}
           >
@@ -125,7 +140,7 @@ function ScheduleGrid({
                   isToday ? styles.scheduleDayLabelToday : null,
                 ]}
               >
-                {day.label}
+                {getScheduleDayLabel(day)}
               </Text>
               {isToday ? (
                 <Text style={styles.todayLabel}>Aujourd’hui</Text>
@@ -591,9 +606,11 @@ const styles = StyleSheet.create({
     color: "#374151",
   },
   scheduleGrid: {
+    width: "100%",
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "space-between",
+    columnGap: 10,
+    rowGap: 10,
   },
   scheduleDay: {
     borderRadius: 12,
@@ -602,9 +619,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#F9FAFB",
     overflow: "hidden",
   },
-  scheduleDayPhone: { width: "100%", marginBottom: 10 },
-  scheduleDayTablet: { width: "48.5%", marginBottom: 10 },
-  scheduleDayWide: { width: "31.8%", marginBottom: 10 },
   scheduleDayToday: {
     borderColor: "#344976",
     backgroundColor: "#EEF2F7",
