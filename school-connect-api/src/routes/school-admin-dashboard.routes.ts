@@ -236,6 +236,12 @@ export async function schoolAdminDashboardRoutes(
         }
       }
 
+      const personnel = Array.from(
+        new Map(
+          staffAssignments.map((assignment) => [assignment.staff.user.id, assignment]),
+        ).values(),
+      );
+
       return reply.send({
         school,
         academicYear,
@@ -243,7 +249,7 @@ export async function schoolAdminDashboardRoutes(
           students: studentCount,
           teachers: teacherCount,
           classes: classes.length,
-          staff: staffAssignments.length,
+          staff: personnel.length,
         },
         classes: classes.map((schoolClass) => ({
           id: schoolClass.id,
@@ -251,7 +257,7 @@ export async function schoolAdminDashboardRoutes(
           level: schoolClass.level,
           studentCount: schoolClass._count.enrollments,
         })),
-        personnel: staffAssignments.map((assignment) => ({
+        personnel: personnel.map((assignment) => ({
           id: assignment.staff.user.id,
           assignmentId: assignment.id,
           firstName: assignment.staff.user.firstName,
