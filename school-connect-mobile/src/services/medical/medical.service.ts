@@ -256,3 +256,99 @@ export async function updateMedicalEvent(
 export async function deleteMedicalEvent(eventId: string): Promise<void> {
   await apiClient.delete(`/api/v1/medical/calendar/${encodeURIComponent(eventId)}`);
 }
+
+
+export type MedicalReportType =
+  | "INFIRMARY_VISIT"
+  | "MEDICAL_INCIDENT"
+  | "CONSULTATION"
+  | "FOLLOW_UP"
+  | "PERIODIC";
+
+export type MedicalReportStatus = "DRAFT" | "FINAL" | "CANCELLED";
+export type MedicalReportPriority = "NORMAL" | "IMPORTANT" | "URGENT";
+
+export type MedicalReport = {
+  id: string;
+  schoolId: string;
+  targetUserId: string;
+  createdByUserId: string;
+  type: MedicalReportType;
+  title: string;
+  reportDate: string;
+  status: MedicalReportStatus;
+  priority: MedicalReportPriority;
+  reason: string | null;
+  observations: string | null;
+  actionsTaken: string | null;
+  outcome: string | null;
+  recommendations: string | null;
+  parentContacted: boolean;
+  parentContactedAt: string | null;
+  referredTo: string | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+  target: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    role: string;
+    studentProfile: { id: string; studentNumber: string } | null;
+  };
+  createdBy: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    role: string;
+    staffProfile: { function: string } | null;
+  };
+};
+
+export type MedicalReportInput = {
+  targetUserId: string;
+  type: MedicalReportType;
+  title: string;
+  reportDate: string;
+  status?: MedicalReportStatus;
+  priority?: MedicalReportPriority;
+  reason?: string | null;
+  observations?: string | null;
+  actionsTaken?: string | null;
+  outcome?: string | null;
+  recommendations?: string | null;
+  parentContacted?: boolean;
+  parentContactedAt?: string | null;
+  referredTo?: string | null;
+  notes?: string | null;
+};
+
+export async function getMedicalReports(userId: string): Promise<{ reports: MedicalReport[]; access: MedicalAccess }> {
+  const response = await apiClient.get<{ reports: MedicalReport[]; access: MedicalAccess }>(
+    `/api/v1/medical-reports/${encodeURIComponent(userId)}`,
+  );
+  return response.data;
+}
+
+export async function createMedicalReport(input: MedicalReportInput): Promise<{ report: MedicalReport }> {
+  const response = await apiClient.post<{ report: MedicalReport }>(
+    "/api/v1/medical-reports",
+    input,
+  );
+  return response.data;
+}
+
+export async function updateMedicalReport(
+  reportId: string,
+  input: Partial<Omit<MedicalReportInput, "targetUserId">>,
+): Promise<{ report: MedicalReport }> {
+  const response = await apiClient.patch<{ report: MedicalReport }>(
+    `/api/v1/medical-reports/${encodeURIComponent(reportId)}`,
+    input,
+  );
+  return response.data;
+}
+
+export async function deleteMedicalReport(reportId: string): Promise<void> {
+  await apiClient.delete(`/api/v1/medical-reports/${encodeURIComponent(reportId)}`);
+}
