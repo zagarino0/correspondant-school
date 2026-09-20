@@ -558,6 +558,32 @@ export function ParentDashboard({ firstName }: ParentDashboardProps) {
               : undefined,
         },
         {
+          id: "medical-reports",
+          title: "Rapports médicaux",
+          value:
+            medicalAllowed === null
+              ? "…"
+              : medicalAllowed && selectedChild
+                ? "Consulter"
+                : "—",
+          description:
+            medicalAllowed === null
+              ? "Vérification de l’accès médical."
+              : !medicalAllowed
+                ? "Les rapports médicaux ne sont pas disponibles pour ce compte."
+                : selectedChild
+                  ? `Consulter les rapports médicaux de ${selectedChild.firstName}.`
+                  : "Sélectionnez un enfant pour consulter ses rapports.",
+          onPress:
+            medicalAllowed && selectedChild
+              ? () =>
+                  router.push({
+                    pathname: "/(app)/medical-reports",
+                    params: { userId: selectedChild.id },
+                  })
+              : undefined,
+        },
+        {
           id: "schedule",
           title: "Emploi du temps",
           value: selectedChild?.enrollment?.class.name ?? "—",
