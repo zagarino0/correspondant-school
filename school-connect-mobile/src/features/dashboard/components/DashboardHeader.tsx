@@ -94,13 +94,6 @@ export function DashboardHeader({ firstName, role }: DashboardHeaderProps) {
         </View>
       </View>
 
-      {unreadMessages > 0 ? (
-        <View style={styles.messageHint}>
-          <Text style={styles.messageHintText}>
-            {unreadMessages} nouveau{unreadMessages > 1 ? "x" : ""} message{unreadMessages > 1 ? "s" : ""}
-          </Text>
-        </View>
-      ) : null}
     </View>
   );
 }
