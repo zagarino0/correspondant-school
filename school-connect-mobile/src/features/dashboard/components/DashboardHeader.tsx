@@ -41,7 +41,6 @@ export function DashboardHeader({ firstName, role }: DashboardHeaderProps) {
       } catch {
         if (!mounted) return;
         setUnreadAnnouncements(0);
-        setUnreadMessages(0);
       }
     }
 
