@@ -241,6 +241,12 @@ export default function MedicalScreen() {
           <Text style={styles.kicker}>SANTÉ</Text>
           <Text style={styles.headerTitle}>Fiches médicales</Text>
         </View>
+        <Pressable
+          style={styles.historyButton}
+          onPress={() => router.push("/(app)/medical-history")}
+        >
+          <Text style={styles.historyButtonText}>Historique</Text>
+        </Pressable>
         <View style={styles.headerBadge}>
           <Text style={styles.headerBadgeText}>
             {access.mode === "PARENT" ? "Parent" : "Gestion"}
@@ -400,6 +406,8 @@ const styles = StyleSheet.create({
   kicker: { fontSize: 10, fontWeight: "900", letterSpacing: 1.5, color: "#344976" },
   headerTitle: { marginTop: 2, fontSize: 20, fontWeight: "800", color: "#111827" },
   headerBadge: { paddingHorizontal: 10, paddingVertical: 7, borderRadius: 9, backgroundColor: "#EEF2FF" },
+  historyButton: { paddingHorizontal: 11, paddingVertical: 8, borderRadius: 9, backgroundColor: "#F1F5F9" },
+  historyButtonText: { fontSize: 11, fontWeight: "900", color: "#344976" },
   headerBadgeText: { fontSize: 11, fontWeight: "800", color: "#344976" },
   body: { flex: 1, flexDirection: "row", gap: 14, padding: 14 },
   bodyMobile: { flexDirection: "column" },
