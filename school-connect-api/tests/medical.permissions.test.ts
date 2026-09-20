@@ -230,6 +230,15 @@ describe("medical permissions - real API integration", () => {
   });
 
   afterAll(async () => {
+    await prisma.medicalReport.deleteMany({
+      where: {
+        OR: [
+          { createdBy: { email: { in: Object.values(emails) } } },
+          { target: { email: { in: [email("student-a"), email("student-b")] } } },
+        ],
+      },
+    });
+
     await prisma.medicalHistory.deleteMany({
       where: {
         OR: [
@@ -495,4 +504,87 @@ describe("medical permissions - real API integration", () => {
     });
     expect(otherHistory.statusCode).toBe(403);
   });
+  it("5. Medical reports reuse the same authorization matrix", async () => {
+    const nurseToken = await login(emails.nurse);
+
+    const created = await app.inject({
+      method: "POST",
+      url: "/api/v1/medical-reports",
+      headers: {
+        ...auth(nurseToken),
+        "content-type": "application/json",
+      },
+      payload: {
+        targetUserId: studentBUserId,
+        type: "MEDICAL_INCIDENT",
+        title: "Incident médical de test",
+        reportDate: "2026-09-20T10:00:00.000Z",
+        status: "FINAL",
+        priority: "IMPORTANT",
+        reason: "Malaise pendant le cours",
+        observations: "Élève conscient et stable.",
+        actionsTaken: "Repos et surveillance.",
+        parentContacted: true,
+      },
+    });
+
+    expect(created.statusCode).toBe(201);
+    const reportId = created.json().report.id as string;
+
+    const nurseRead = await app.inject({
+      method: "GET",
+      url: `/api/v1/medical-reports/${studentBUserId}`,
+      headers: auth(nurseToken),
+    });
+    expect(nurseRead.statusCode).toBe(200);
+    expect(nurseRead.json().reports).toHaveLength(1);
+
+    const adminWithNurseToken = await login(emails.adminWithNurse);
+    const adminDenied = await app.inject({
+      method: "GET",
+      url: `/api/v1/medical-reports/${studentBUserId}`,
+      headers: auth(adminWithNurseToken),
+    });
+    expect(adminDenied.statusCode).toBe(403);
+
+    const parentToken = await login(emails.parent);
+    const parentRead = await app.inject({
+      method: "GET",
+      url: `/api/v1/medical-reports/${studentAUserId}`,
+      headers: auth(parentToken),
+    });
+    expect(parentRead.statusCode).toBe(200);
+    expect(parentRead.json().reports).toHaveLength(0);
+
+    const parentCreate = await app.inject({
+      method: "POST",
+      url: "/api/v1/medical-reports",
+      headers: {
+        ...auth(parentToken),
+        "content-type": "application/json",
+      },
+      payload: {
+        targetUserId: studentAUserId,
+        type: "FOLLOW_UP",
+        title: "Tentative parent",
+        reportDate: "2026-09-20T10:00:00.000Z",
+      },
+    });
+    expect(parentCreate.statusCode).toBe(403);
+
+    const crossSchool = await app.inject({
+      method: "GET",
+      url: `/api/v1/medical-reports/${studentAUserId}`,
+      headers: auth(nurseToken),
+    });
+    expect(crossSchool.statusCode).toBe(403);
+
+    const deleted = await app.inject({
+      method: "DELETE",
+      url: `/api/v1/medical-reports/${reportId}`,
+      headers: auth(nurseToken),
+    });
+    expect(deleted.statusCode).toBe(204);
+  });
+
 });
