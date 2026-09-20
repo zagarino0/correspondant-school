@@ -31,6 +31,134 @@ export const medicalRoutes: FastifyPluginAsync = async (fastify) => {
     },
   );
 
+
+  fastify.get(
+    "/dashboard",
+    { onRequest: [authenticate] },
+    async (request, reply) => {
+      const access = await getMedicalAccess(
+        fastify,
+        request.user.sub,
+        request.user.role,
+        request.user.schoolId ?? null,
+      );
+
+      if (!access.allowed || access.mode !== "FULL") {
+        return reply.status(403).send({
+          error: {
+            code: "MEDICAL_ACCESS_DENIED",
+            message: access.reason ?? "Accès médical refusé.",
+          },
+        });
+      }
+
+      const schoolId = request.user.schoolId;
+      if (!schoolId) {
+        return reply.status(400).send({
+          error: {
+            code: "SCHOOL_REQUIRED",
+            message: "Un établissement est requis.",
+          },
+        });
+      }
+
+      const [
+        totalStudents, studentRecords, totalAdults, adultRecords,
+        studentAllergies, studentConditions, adultAllergies, adultConditions,
+        recentChanges,
+      ] = await Promise.all([
+        fastify.prisma.user.count({
+          where: { schoolId, role: "STUDENT", status: "ACTIVE" },
+        }),
+        fastify.prisma.studentMedicalRecord.count({
+          where: { student: { schoolId, user: { status: "ACTIVE" } } },
+        }),
+        fastify.prisma.user.count({
+          where: {
+            schoolId,
+            status: "ACTIVE",
+            OR: [{ role: "TEACHER" }, { role: "STAFF" }],
+          },
+        }),
+        fastify.prisma.adultMedicalRecord.count({
+          where: {
+            user: {
+              schoolId,
+              status: "ACTIVE",
+              OR: [{ role: "TEACHER" }, { role: "STAFF" }],
+            },
+          },
+        }),
+        fastify.prisma.studentMedicalRecord.count({
+          where: {
+            student: { schoolId, user: { status: "ACTIVE" } },
+            allergies: { not: null },
+          },
+        }),
+        fastify.prisma.studentMedicalRecord.count({
+          where: {
+            student: { schoolId, user: { status: "ACTIVE" } },
+            medicalConditions: { not: null },
+          },
+        }),
+        fastify.prisma.adultMedicalRecord.count({
+          where: {
+            user: {
+              schoolId,
+              status: "ACTIVE",
+              OR: [{ role: "TEACHER" }, { role: "STAFF" }],
+            },
+            allergies: { not: null },
+          },
+        }),
+        fastify.prisma.adultMedicalRecord.count({
+          where: {
+            user: {
+              schoolId,
+              status: "ACTIVE",
+              OR: [{ role: "TEACHER" }, { role: "STAFF" }],
+            },
+            medicalConditions: { not: null },
+          },
+        }),
+        fastify.prisma.medicalHistory.count({
+          where: {
+            target: { schoolId },
+            createdAt: {
+              gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+            },
+          },
+        }),
+      ]);
+
+      const totalPeople = totalStudents + totalAdults;
+      const completedRecords = studentRecords + adultRecords;
+
+      return {
+        access,
+        scope: { schoolId },
+        people: {
+          students: totalStudents,
+          adults: totalAdults,
+          total: totalPeople,
+        },
+        records: {
+          completed: completedRecords,
+          missing: Math.max(0, totalPeople - completedRecords),
+          completionRate:
+            totalPeople > 0
+              ? Math.round((completedRecords / totalPeople) * 100)
+              : 100,
+        },
+        vigilance: {
+          allergies: studentAllergies + adultAllergies,
+          medicalConditions: studentConditions + adultConditions,
+        },
+        recentChanges,
+      };
+    },
+  );
+
   fastify.get(
     "/people",
     { onRequest: [authenticate] },
