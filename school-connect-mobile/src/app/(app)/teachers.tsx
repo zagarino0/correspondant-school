@@ -302,30 +302,30 @@ export default function TeachersScreen() {
 
                                   {isClassExpanded ? (
                                     <>
-                                      <View style={styles.teacherListHeader}>
-                                        <Text style={[styles.teacherListHeaderText, styles.numberColumn]}>N°</Text>
-                                        <Text style={[styles.teacherListHeaderText, styles.teacherNameColumn]}>Nom et prénom</Text>
-                                        <Text style={[styles.teacherListHeaderText, styles.emailColumn]}>Contact</Text>
-                                      </View>
-
-                                      {classGroup.teachers.map((teacher, index) => (
-                                        <View
-                                          key={classGroup.classId + "-" + teacher.id}
-                                          style={styles.teacherRow}
-                                        >
-                                          <Text style={styles.numberText}>{index + 1}</Text>
-                                          <View style={styles.teacherNameColumn}>
-                                            <Text style={styles.teacherName} numberOfLines={1}>
-                                              {teacher.lastName} {teacher.firstName}
-                                            </Text>
+                                      <View style={styles.teacherCards}>
+                                        {classGroup.teachers.map((teacher, index) => (
+                                          <View
+                                            key={classGroup.classId + "-" + teacher.id}
+                                            style={styles.teacherCard}
+                                          >
+                                            <View style={styles.teacherIdentity}>
+                                              <View style={styles.teacherNumberBadge}>
+                                                <Text style={styles.teacherNumberBadgeText}>
+                                                  {String(index + 1).padStart(2, "0")}
+                                                </Text>
+                                              </View>
+                                              <View style={styles.teacherIdentityText}>
+                                                <Text style={styles.teacherName} numberOfLines={2}>
+                                                  {teacher.lastName} {teacher.firstName}
+                                                </Text>
+                                                <Text style={styles.teacherContact} numberOfLines={1}>
+                                                  {teacher.email}
+                                                </Text>
+                                              </View>
+                                            </View>
                                           </View>
-                                          <View style={styles.emailColumnCell}>
-                                            <Text style={styles.email} numberOfLines={1}>{teacher.email}</Text>
-                                          </View>
-                                        </View>
-                                      ))}
-                                    </>
-                                  ) : null}
+                                        ))}
+                                      </View>                                  ) : null}
                                 </View>
                               );
                             })}
@@ -360,8 +360,8 @@ const styles = StyleSheet.create({
   expandIcon: { fontSize: 11, fontWeight: "900", color: "#344976" },
   categoryBadge: { minWidth: 34, height: 34, paddingHorizontal: 8, borderRadius: 17, alignItems: "center", justifyContent: "center", backgroundColor: "#344976" },
   categoryBadgeText: { fontSize: 11, fontWeight: "900", color: "#FFFFFF" },
-  levelGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between" },
-  levelCard: { width: "48.8%", marginBottom: 12, padding: 10, borderRadius: 14, borderWidth: 1, borderColor: "#D9DEE5", backgroundColor: "#FFFFFF" },
+  levelGrid: { flexDirection: "column" },
+  levelCard: { width: "100%", marginBottom: 12, padding: 10, borderRadius: 14, borderWidth: 1, borderColor: "#D9DEE5", backgroundColor: "#FFFFFF" },
   levelHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 2, paddingVertical: 2 },
   levelHeaderText: { flex: 1 },
   levelTitle: { fontSize: 15, fontWeight: "900", color: "#344976" },
@@ -369,9 +369,9 @@ const styles = StyleSheet.create({
   classGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between" },
   classCard: { width: "100%", marginBottom: 9, borderRadius: 11, borderWidth: 1, borderColor: "#E2E8F0", backgroundColor: "#F8FAFC", overflow: "hidden" },
   classCardHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 9, paddingVertical: 9, backgroundColor: "#344976" },
-  classHeaderIdentity: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 6 },
+  classHeaderIdentity: { flex: 1, flexDirection: "row", alignItems: "center", gap: 8 },
   classTitle: { flex: 1, fontSize: 13, fontWeight: "900", color: "#FFFFFF" },
-  classCount: { fontSize: 9, fontWeight: "800", color: "#E5E7EB" },
+  classCount: { flexShrink: 0, fontSize: 9, fontWeight: "800", color: "#E5E7EB" },
   classExpandIcon: { marginLeft: 6, fontSize: 10, fontWeight: "900", color: "#FFFFFF" },
   teacherCards: { padding: 9, gap: 8 },
   teacherCard: {
