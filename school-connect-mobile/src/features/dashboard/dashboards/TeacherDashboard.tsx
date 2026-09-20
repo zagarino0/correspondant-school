@@ -394,24 +394,6 @@ export function TeacherDashboard({ firstName }: TeacherDashboardProps) {
         },
       ],
     },
-    {
-      id: "teacher-communication",
-      title: "Communication",
-      cards: [
-        {
-          id: "announcements",
-          title: "Annonces",
-          description: "Consulter les informations scolaires.",
-          onPress: () => router.push("/(app)/announcements"),
-        },
-        {
-          id: "messages",
-          title: "Messages",
-          description: "Échanger avec les parents et l'établissement.",
-          onPress: () => router.push("/(app)/messages"),
-        },
-      ],
-    },
   ];
 
   const activityEmptyText = useMemo(() => {
