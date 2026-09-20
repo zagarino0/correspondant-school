@@ -126,3 +126,36 @@ export type SchoolAdminSchedulesResponse = {
   };
   schedules: SchoolAdminSchedule[];
 };
+
+
+export type CreateStudentInput = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  studentNumber: string;
+  dateOfBirth?: string | null;
+  classId: string;
+  gender: "MALE" | "FEMALE";
+};
+
+export type BulkStudentInput = Omit<CreateStudentInput, "classId"> & {
+  classId?: string;
+  className?: string;
+};
+
+export type UpdatePersonnelInput = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password?: string;
+  function: StaffFunction;
+};
+
+export type BulkPersonnelInput = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  function: StaffFunction;
+};
