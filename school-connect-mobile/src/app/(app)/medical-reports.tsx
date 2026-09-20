@@ -298,7 +298,7 @@ export default function MedicalReportsScreen() {
 
         <View style={[styles.contentPanel, wide && styles.panelWide]}>
           <Text style={styles.sectionTitle}>
-            {selectedName ? ${selectedName.firstName} ${selectedName.lastName} : "Sélectionnez une personne"}
+            {selectedName ? `${selectedName.firstName} ${selectedName.lastName}` : "Sélectionnez une personne"}
           </Text>
 
           {selectedUserId ? (
