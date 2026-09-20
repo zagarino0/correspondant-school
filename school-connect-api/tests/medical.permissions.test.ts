@@ -385,6 +385,21 @@ describe("medical permissions - real API integration", () => {
 
     expect(ownSchool.statusCode).toBe(200);
 
+    // The fixture creates the initial medical record directly in Prisma.
+    // Create an audited change through the real API before asserting history.
+    const update = await app.inject({
+      method: "PATCH",
+      url: `/api/v1/medical/${studentBUserId}`,
+      headers: {
+        ...auth(token),
+        "content-type": "application/json",
+      },
+      payload: {
+        notes: "Updated by nurse",
+      },
+    });
+    expect(update.statusCode).toBe(200);
+
     const otherSchool = await app.inject({
       method: "GET",
       url: `/api/v1/medical/${studentAUserId}`,
