@@ -55,7 +55,7 @@ export default function PersonnelScreen(){
 
 const styles=StyleSheet.create({
   screen:{flex:1,backgroundColor:"#F8FAFC"},content:{padding:16,paddingBottom:32},center:{flex:1,alignItems:"center",justifyContent:"center"},
-  header:{flexDirection:"row",alignItems:"center",justifyContent:"space-between",marginBottom:18,gap:12},headerText:{flex:1},title:{fontSize:24,fontWeight:"800",color:"#344976"},subtitle:{marginTop:4,fontSize:13,color:"#6B7280"},
+  header:{flexDirection:"row",alignItems:"center",justifyContent:"space-between",marginBottom:18,gap:12,flexWrap:"wrap"},headerText:{flex:1},title:{fontSize:24,fontWeight:"800",color:"#344976"},subtitle:{marginTop:4,fontSize:13,color:"#6B7280"},
   actions:{flexDirection:"row",gap:8},secondaryButton:{paddingHorizontal:13,paddingVertical:10,borderRadius:12,borderWidth:1,borderColor:"#344976",backgroundColor:"#FFF"},secondaryText:{color:"#344976",fontWeight:"800"},
   addButton:{paddingHorizontal:14,paddingVertical:10,borderRadius:12,backgroundColor:"#344976"},addButtonText:{color:"#FFF",fontWeight:"800"},
   group:{marginBottom:16,borderRadius:16,borderWidth:1,borderColor:"#D9DEE5",backgroundColor:"#FFF",overflow:"hidden"},groupHeader:{padding:14,backgroundColor:"#EEF2F7",flexDirection:"row",justifyContent:"space-between",alignItems:"center"},groupTitle:{fontSize:17,fontWeight:"800",color:"#344976"},
