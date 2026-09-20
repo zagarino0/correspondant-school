@@ -18,6 +18,21 @@ export type SchoolAdminDashboardResponse = {
     classes: number;
     staff: number;
   };
+  classes: Array<{
+    id: string;
+    name: string;
+    level: string | null;
+    studentCount: number;
+  }>;
+  personnel: Array<{
+    id: string;
+    assignmentId: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    function: string;
+    status: string;
+  }>;
   attendance: {
     present: number;
     absent: number;
