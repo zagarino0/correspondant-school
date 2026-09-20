@@ -146,3 +146,29 @@ export async function getMedicalHistory(userId: string): Promise<{ history: Medi
   );
   return response.data;
 }
+
+
+export type MedicalDashboard = {
+  access: MedicalAccess;
+  scope: { schoolId: string };
+  people: {
+    students: number;
+    adults: number;
+    total: number;
+  };
+  records: {
+    completed: number;
+    missing: number;
+    completionRate: number;
+  };
+  vigilance: {
+    allergies: number;
+    medicalConditions: number;
+  };
+  recentChanges: number;
+};
+
+export async function getMedicalDashboard(): Promise<MedicalDashboard> {
+  const response = await apiClient.get<MedicalDashboard>("/api/v1/medical/dashboard");
+  return response.data;
+}
