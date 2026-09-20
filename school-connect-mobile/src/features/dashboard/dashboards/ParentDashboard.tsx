@@ -60,7 +60,8 @@ function ScheduleGrid({
   error: boolean;
 }) {
   const { width } = useWindowDimensions();
-  const isCompact = width < 600;
+  const isPhone = width < 600;
+  const isTablet = width < 900;
 
   if (loading) {
     return (
@@ -108,8 +109,7 @@ function ScheduleGrid({
             key={day.key}
             style={[
               styles.scheduleDay,
-              isCompact ? styles.scheduleDayCompact : null,
-              !isCompact ? styles.scheduleDayWide : null,
+              isPhone ? styles.scheduleDayPhone : isTablet ? styles.scheduleDayTablet : styles.scheduleDayWide,
               isToday ? styles.scheduleDayToday : null,
             ]}
           >
@@ -591,8 +591,9 @@ const styles = StyleSheet.create({
     color: "#374151",
   },
   scheduleGrid: {
-    flexDirection: "column",
-    gap: 10,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
   },
   scheduleDay: {
     borderRadius: 12,
@@ -601,12 +602,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#F9FAFB",
     overflow: "hidden",
   },
-  scheduleDayCompact: {
-    width: "100%",
-  },
-  scheduleDayWide: {
-    width: "48%",
-  },
+  scheduleDayPhone: { width: "100%", marginBottom: 10 },
+  scheduleDayTablet: { width: "48.5%", marginBottom: 10 },
+  scheduleDayWide: { width: "31.8%", marginBottom: 10 },
   scheduleDayToday: {
     borderColor: "#2563EB",
     backgroundColor: "#EFF6FF",
