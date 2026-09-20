@@ -3,6 +3,8 @@ import { router } from "expo-router";
 import {
   ActivityIndicator,
   Alert,
+  FlatList,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -51,6 +53,36 @@ export default function ScheduleCreateScreen() {
   const [room, setRoom] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [classDropdownOpen, setClassDropdownOpen] = useState(false);
+  const [teacherDropdownOpen, setTeacherDropdownOpen] = useState(false);
+  const [classSearch, setClassSearch] = useState("");
+  const [teacherSearch, setTeacherSearch] = useState("");
+
+  const selectedClass = useMemo(
+    () => dashboard?.classes.find((item) => item.id === classId) ?? null,
+    [dashboard?.classes, classId],
+  );
+
+  const selectedTeacher = useMemo(
+    () => teachers.find((item) => item.id === teacherId) ?? null,
+    [teachers, teacherId],
+  );
+
+  const filteredClasses = useMemo(() => {
+    const query = classSearch.trim().toLowerCase();
+    if (!query) return dashboard?.classes ?? [];
+    return (dashboard?.classes ?? []).filter((item) =>
+      item.name.toLowerCase().includes(query),
+    );
+  }, [dashboard?.classes, classSearch]);
+
+  const filteredTeachers = useMemo(() => {
+    const query = teacherSearch.trim().toLowerCase();
+    if (!query) return teachers;
+    return teachers.filter((item) =>
+      (item.firstName + " " + item.lastName).toLowerCase().includes(query),
+    );
+  }, [teachers, teacherSearch]);
 
   const selectedDaySchedules = useMemo(
     () => schedules.filter((item) => item.dayOfWeek === selectedDay),
@@ -144,24 +176,26 @@ export default function ScheduleCreateScreen() {
       </View>
 
       <Text style={styles.label}>Classe</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-        {(dashboard?.classes ?? []).map((item) => (
-          <Pressable key={item.id} onPress={() => setClassId(item.id)} style={[styles.chip, item.id === classId && styles.chipActive]}>
-            <Text style={[styles.chipText, item.id === classId && styles.chipTextActive]}>{item.name}</Text>
-          </Pressable>
-        ))}
-      </ScrollView>
+      <Pressable onPress={() => { setClassSearch(""); setClassDropdownOpen(true); }} style={styles.selectButton}>
+        <View style={styles.selectTextWrap}>
+          <Text style={selectedClass ? styles.selectValue : styles.selectPlaceholder}>
+            {selectedClass?.name ?? "Sélectionner une classe"}
+          </Text>
+          {selectedClass?.level ? <Text style={styles.selectMeta}>{selectedClass.level}</Text> : null}
+        </View>
+        <Text style={styles.selectChevron}>⌄</Text>
+      </Pressable>
 
       <Text style={styles.label}>Enseignant</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-        {teachers.map((teacher) => (
-          <Pressable key={teacher.id} onPress={() => setTeacherId(teacher.id)} style={[styles.chip, teacher.id === teacherId && styles.chipActive]}>
-            <Text style={[styles.chipText, teacher.id === teacherId && styles.chipTextActive]}>
-              {teacher.firstName} {teacher.lastName}
-            </Text>
-          </Pressable>
-        ))}
-      </ScrollView>
+      <Pressable onPress={() => { setTeacherSearch(""); setTeacherDropdownOpen(true); }} style={styles.selectButton}>
+        <View style={styles.selectTextWrap}>
+          <Text style={selectedTeacher ? styles.selectValue : styles.selectPlaceholder}>
+            {selectedTeacher ? selectedTeacher.firstName + " " + selectedTeacher.lastName : "Sélectionner un enseignant"}
+          </Text>
+          {selectedTeacher?.email ? <Text style={styles.selectMeta}>{selectedTeacher.email}</Text> : null}
+        </View>
+        <Text style={styles.selectChevron}>⌄</Text>
+      </Pressable>
 
       <Text style={styles.label}>Matière</Text>
       <TextInput value={subject} onChangeText={setSubject} placeholder="Ex. Mathématiques" style={styles.input} />
@@ -186,8 +220,81 @@ export default function ScheduleCreateScreen() {
     </View>
   );
 
+  const dropdown = (
+    <Modal
+      visible={classDropdownOpen || teacherDropdownOpen}
+      transparent
+      animationType="fade"
+      onRequestClose={() => { setClassDropdownOpen(false); setTeacherDropdownOpen(false); }}
+    >
+      <View style={styles.modalBackdrop}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={() => { setClassDropdownOpen(false); setTeacherDropdownOpen(false); }} />
+        <View style={[styles.dropdownCard, isMobile && styles.dropdownCardMobile]}>
+          <View style={styles.dropdownHeader}>
+            <View style={styles.flex}>
+              <Text style={styles.dropdownTitle}>{classDropdownOpen ? "Sélectionner une classe" : "Sélectionner un enseignant"}</Text>
+              <Text style={styles.dropdownMeta}>
+                {classDropdownOpen ? filteredClasses.length + " classe(s)" : filteredTeachers.length + " enseignant(s)"}
+              </Text>
+            </View>
+            <Pressable onPress={() => { setClassDropdownOpen(false); setTeacherDropdownOpen(false); }} style={styles.dropdownClose}>
+              <Text style={styles.dropdownCloseText}>×</Text>
+            </Pressable>
+          </View>
+
+          <TextInput
+            value={classDropdownOpen ? classSearch : teacherSearch}
+            onChangeText={classDropdownOpen ? setClassSearch : setTeacherSearch}
+            placeholder={classDropdownOpen ? "Rechercher une classe…" : "Rechercher un enseignant…"}
+            placeholderTextColor="#9CA3AF"
+            autoFocus
+            style={styles.dropdownSearch}
+          />
+
+          {classDropdownOpen ? (
+            <FlatList
+              data={filteredClasses}
+              keyExtractor={(item) => item.id}
+              keyboardShouldPersistTaps="handled"
+              style={styles.dropdownList}
+              renderItem={({ item }) => (
+                <Pressable onPress={() => { setClassId(item.id); setClassDropdownOpen(false); }} style={[styles.dropdownItem, item.id === classId && styles.dropdownItemActive]}>
+                  <View style={styles.flex}>
+                    <Text style={[styles.dropdownItemTitle, item.id === classId && styles.dropdownItemTitleActive]}>{item.name}</Text>
+                    {item.level ? <Text style={[styles.dropdownItemMeta, item.id === classId && styles.dropdownItemMetaActive]}>{item.level}</Text> : null}
+                  </View>
+                  {item.id === classId ? <Text style={styles.checkMark}>✓</Text> : null}
+                </Pressable>
+              )}
+              ListEmptyComponent={<Text style={styles.dropdownEmpty}>Aucune classe trouvée.</Text>}
+            />
+          ) : (
+            <FlatList
+              data={filteredTeachers}
+              keyExtractor={(item) => item.id}
+              keyboardShouldPersistTaps="handled"
+              style={styles.dropdownList}
+              renderItem={({ item }) => (
+                <Pressable onPress={() => { setTeacherId(item.id); setTeacherDropdownOpen(false); }} style={[styles.dropdownItem, item.id === teacherId && styles.dropdownItemActive]}>
+                  <View style={styles.flex}>
+                    <Text style={[styles.dropdownItemTitle, item.id === teacherId && styles.dropdownItemTitleActive]}>{item.firstName} {item.lastName}</Text>
+                    {item.email ? <Text style={[styles.dropdownItemMeta, item.id === teacherId && styles.dropdownItemMetaActive]}>{item.email}</Text> : null}
+                  </View>
+                  {item.id === teacherId ? <Text style={styles.checkMark}>✓</Text> : null}
+                </Pressable>
+              )}
+              ListEmptyComponent={<Text style={styles.dropdownEmpty}>Aucun enseignant trouvé.</Text>}
+            />
+          )}
+        </View>
+      </View>
+    </Modal>
+  );
+
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={[styles.content, isMobile && styles.contentMobile]}>
+    <>
+      {dropdown}
+      <ScrollView style={styles.screen} contentContainerStyle={[styles.content, isMobile && styles.contentMobile]}>
       <View style={styles.header}>
         <View style={styles.flex}>
           <Text style={styles.eyebrow}>ADMINISTRATION</Text>
@@ -245,7 +352,8 @@ export default function ScheduleCreateScreen() {
 
         {form}
       </View>
-    </ScrollView>
+      </ScrollView>
+    </>
   );
 }
 
@@ -296,6 +404,12 @@ const styles = StyleSheet.create({
   dayBadge: { minWidth: 46, height: 46, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: "#344976" },
   dayBadgeText: { color: "#FFF", fontWeight: "800", fontSize: 12 },
   label: { marginTop: 13, marginBottom: 7, fontSize: 12, fontWeight: "700", color: "#374151" },
+  selectButton: { minHeight: 54, borderWidth: 1, borderColor: "#D9DEE5", borderRadius: 11, paddingHorizontal: 13, paddingVertical: 8, backgroundColor: "#FFF", flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
+  selectTextWrap: { flex: 1, minWidth: 0 },
+  selectValue: { fontSize: 13, fontWeight: "700", color: "#111827" },
+  selectPlaceholder: { fontSize: 13, color: "#9CA3AF" },
+  selectMeta: { marginTop: 3, fontSize: 10, color: "#6B7280" },
+  selectChevron: { fontSize: 20, lineHeight: 20, color: "#344976", fontWeight: "800" },
   chips: { gap: 7, paddingVertical: 2 },
   chip: { paddingHorizontal: 11, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: "#D9DEE5", backgroundColor: "#FFF" },
   chipActive: { backgroundColor: "#344976", borderColor: "#344976" },
@@ -307,4 +421,22 @@ const styles = StyleSheet.create({
   saveButton: { marginTop: 20, minHeight: 48, paddingHorizontal: 14, borderRadius: 11, backgroundColor: "#344976", alignItems: "center", justifyContent: "center" },
   saveText: { color: "#FFF", fontWeight: "800", fontSize: 13 },
   disabled: { opacity: 0.55 },
+  modalBackdrop: { flex: 1, backgroundColor: "rgba(15, 23, 42, 0.42)", alignItems: "center", justifyContent: "center", padding: 20 },
+  dropdownCard: { width: "100%", maxWidth: 560, maxHeight: "82%", backgroundColor: "#FFF", borderRadius: 18, borderWidth: 1, borderColor: "#E5E7EB", padding: 18, shadowColor: "#000", shadowOpacity: 0.12, shadowRadius: 20, shadowOffset: { width: 0, height: 8 }, elevation: 8 },
+  dropdownCardMobile: { maxHeight: "88%", padding: 14 },
+  dropdownHeader: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 12 },
+  dropdownTitle: { fontSize: 17, fontWeight: "800", color: "#111827" },
+  dropdownMeta: { marginTop: 3, fontSize: 11, color: "#6B7280" },
+  dropdownClose: { width: 36, height: 36, borderRadius: 10, backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center" },
+  dropdownCloseText: { fontSize: 25, lineHeight: 27, color: "#374151" },
+  dropdownSearch: { height: 46, borderWidth: 1, borderColor: "#D9DEE5", borderRadius: 11, paddingHorizontal: 12, backgroundColor: "#F8FAFC", color: "#111827", marginBottom: 10 },
+  dropdownList: { maxHeight: 430 },
+  dropdownItem: { minHeight: 58, paddingHorizontal: 12, paddingVertical: 9, borderRadius: 11, borderWidth: 1, borderColor: "#E5E7EB", backgroundColor: "#FFF", flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 7 },
+  dropdownItemActive: { backgroundColor: "#344976", borderColor: "#344976" },
+  dropdownItemTitle: { fontSize: 13, fontWeight: "700", color: "#111827" },
+  dropdownItemTitleActive: { color: "#FFF" },
+  dropdownItemMeta: { marginTop: 3, fontSize: 10, color: "#6B7280" },
+  dropdownItemMetaActive: { color: "#E5E7EB" },
+  checkMark: { color: "#FFF", fontSize: 17, fontWeight: "900" },
+  dropdownEmpty: { padding: 20, textAlign: "center", color: "#6B7280", fontSize: 12 },
 });
