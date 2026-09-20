@@ -288,6 +288,281 @@ export const medicalRoutes: FastifyPluginAsync = async (fastify) => {
     },
   );
 
+
+  const medicalEventSchema = z.object({
+    targetUserId: z.string().min(1),
+    type: z.enum(["CONSULTATION", "MEDICAL_VISIT", "FOLLOW_UP", "MEDICATION", "VIGILANCE"]),
+    title: z.string().trim().min(1).max(200),
+    description: z.string().trim().max(4000).optional().nullable(),
+    startAt: z.string().datetime(),
+    endAt: z.string().datetime().optional().nullable(),
+    status: z.enum(["PLANNED", "COMPLETED", "CANCELLED"]).default("PLANNED"),
+    priority: z.enum(["NORMAL", "IMPORTANT", "URGENT"]).default("NORMAL"),
+    notes: z.string().trim().max(6000).optional().nullable(),
+  });
+
+  fastify.get(
+    "/calendar",
+    { onRequest: [authenticate] },
+    async (request, reply) => {
+      const access = await getMedicalAccess(
+        fastify,
+        request.user.sub,
+        request.user.role,
+        request.user.schoolId ?? null,
+      );
+
+      if (!access.allowed || access.mode !== "FULL") {
+        return reply.status(403).send({
+          error: {
+            code: "MEDICAL_CALENDAR_ACCESS_DENIED",
+            message: access.reason ?? "Accès au calendrier médical refusé.",
+          },
+        });
+      }
+
+      const schoolId = request.user.schoolId;
+      if (!schoolId) {
+        return reply.status(400).send({
+          error: { code: "SCHOOL_REQUIRED", message: "Un établissement est requis." },
+        });
+      }
+
+      const query = request.query as { start?: string; end?: string };
+      const now = new Date();
+      const start = query.start ? new Date(query.start) : new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const end = query.end ? new Date(query.end) : new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+      if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start >= end) {
+        return reply.status(400).send({
+          error: { code: "INVALID_DATE_RANGE", message: "Période de calendrier invalide." },
+        });
+      }
+
+      const events = await fastify.prisma.medicalEvent.findMany({
+        where: {
+          schoolId,
+          startAt: { gte: start, lt: end },
+        },
+        include: {
+          target: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              role: true,
+              studentProfile: { select: { id: true, studentNumber: true } },
+            },
+          },
+          createdBy: {
+            select: { id: true, firstName: true, lastName: true, role: true },
+          },
+        },
+        orderBy: { startAt: "asc" },
+      });
+
+      return { events };
+    },
+  );
+
+  fastify.post(
+    "/calendar",
+    { onRequest: [authenticate] },
+    async (request, reply) => {
+      const access = await getMedicalAccess(
+        fastify,
+        request.user.sub,
+        request.user.role,
+        request.user.schoolId ?? null,
+      );
+
+      if (!access.allowed || access.mode !== "FULL" || !request.user.schoolId) {
+        return reply.status(403).send({
+          error: {
+            code: "MEDICAL_CALENDAR_WRITE_DENIED",
+            message: access.reason ?? "Création d'un suivi médical refusée.",
+          },
+        });
+      }
+
+      const parsed = medicalEventSchema.safeParse(request.body);
+      if (!parsed.success) {
+        return reply.status(400).send({
+          error: {
+            code: "VALIDATION_ERROR",
+            message: "Données du suivi médical invalides.",
+            details: parsed.error.flatten().fieldErrors,
+          },
+        });
+      }
+
+      const data = parsed.data;
+      const startAt = new Date(data.startAt);
+      const endAt = data.endAt ? new Date(data.endAt) : null;
+
+      if (endAt && endAt <= startAt) {
+        return reply.status(400).send({
+          error: { code: "INVALID_EVENT_TIME", message: "La fin doit être postérieure au début." },
+        });
+      }
+
+      const { target } = await canAccessTarget(
+        fastify,
+        request.user.sub,
+        request.user.role,
+        request.user.schoolId,
+        data.targetUserId,
+      );
+
+      if (!target) {
+        return reply.status(403).send({
+          error: { code: "TARGET_ACCESS_DENIED", message: "La personne ciblée n'est pas accessible." },
+        });
+      }
+
+      const event = await fastify.prisma.medicalEvent.create({
+        data: {
+          schoolId: request.user.schoolId,
+          targetUserId: data.targetUserId,
+          createdByUserId: request.user.sub,
+          type: data.type,
+          title: data.title,
+          description: data.description ?? null,
+          startAt,
+          endAt,
+          status: data.status,
+          priority: data.priority,
+          notes: data.notes ?? null,
+        },
+      });
+
+      return reply.status(201).send({ event });
+    },
+  );
+
+  fastify.patch(
+    "/calendar/:eventId",
+    { onRequest: [authenticate] },
+    async (request, reply) => {
+      const access = await getMedicalAccess(
+        fastify,
+        request.user.sub,
+        request.user.role,
+        request.user.schoolId ?? null,
+      );
+
+      if (!access.allowed || access.mode !== "FULL" || !request.user.schoolId) {
+        return reply.status(403).send({
+          error: {
+            code: "MEDICAL_CALENDAR_WRITE_DENIED",
+            message: access.reason ?? "Modification du calendrier médical refusée.",
+          },
+        });
+      }
+
+      const { eventId } = request.params as { eventId: string };
+      const existing = await fastify.prisma.medicalEvent.findFirst({
+        where: { id: eventId, schoolId: request.user.schoolId },
+      });
+
+      if (!existing) {
+        return reply.status(404).send({
+          error: { code: "EVENT_NOT_FOUND", message: "Suivi médical introuvable." },
+        });
+      }
+
+      const partialSchema = medicalEventSchema.partial();
+      const parsed = partialSchema.safeParse(request.body);
+      if (!parsed.success) {
+        return reply.status(400).send({
+          error: {
+            code: "VALIDATION_ERROR",
+            message: "Données du suivi médical invalides.",
+            details: parsed.error.flatten().fieldErrors,
+          },
+        });
+      }
+
+      const data = parsed.data;
+      if (data.targetUserId) {
+        const { target } = await canAccessTarget(
+          fastify,
+          request.user.sub,
+          request.user.role,
+          request.user.schoolId,
+          data.targetUserId,
+        );
+        if (!target) {
+          return reply.status(403).send({
+            error: { code: "TARGET_ACCESS_DENIED", message: "La personne ciblée n'est pas accessible." },
+          });
+        }
+      }
+
+      const startAt = data.startAt ? new Date(data.startAt) : existing.startAt;
+      const endAt = data.endAt === undefined ? existing.endAt : data.endAt ? new Date(data.endAt) : null;
+
+      if (endAt && endAt <= startAt) {
+        return reply.status(400).send({
+          error: { code: "INVALID_EVENT_TIME", message: "La fin doit être postérieure au début." },
+        });
+      }
+
+      const event = await fastify.prisma.medicalEvent.update({
+        where: { id: eventId },
+        data: {
+          ...(data.targetUserId !== undefined ? { targetUserId: data.targetUserId } : {}),
+          ...(data.type !== undefined ? { type: data.type } : {}),
+          ...(data.title !== undefined ? { title: data.title } : {}),
+          ...(data.description !== undefined ? { description: data.description } : {}),
+          ...(data.startAt !== undefined ? { startAt } : {}),
+          ...(data.endAt !== undefined ? { endAt } : {}),
+          ...(data.status !== undefined ? { status: data.status } : {}),
+          ...(data.priority !== undefined ? { priority: data.priority } : {}),
+          ...(data.notes !== undefined ? { notes: data.notes } : {}),
+        },
+      });
+
+      return { event };
+    },
+  );
+
+  fastify.delete(
+    "/calendar/:eventId",
+    { onRequest: [authenticate] },
+    async (request, reply) => {
+      const access = await getMedicalAccess(
+        fastify,
+        request.user.sub,
+        request.user.role,
+        request.user.schoolId ?? null,
+      );
+
+      if (!access.allowed || access.mode !== "FULL" || !request.user.schoolId) {
+        return reply.status(403).send({
+          error: {
+            code: "MEDICAL_CALENDAR_WRITE_DENIED",
+            message: access.reason ?? "Suppression du calendrier médical refusée.",
+          },
+        });
+      }
+
+      const { eventId } = request.params as { eventId: string };
+      const existing = await fastify.prisma.medicalEvent.findFirst({
+        where: { id: eventId, schoolId: request.user.schoolId },
+      });
+
+      if (!existing) {
+        return reply.status(404).send({
+          error: { code: "EVENT_NOT_FOUND", message: "Suivi médical introuvable." },
+        });
+      }
+
+      await fastify.prisma.medicalEvent.delete({ where: { id: eventId } });
+      return { success: true };
+    },
+  );
+
   fastify.get(
     "/:userId",
     { onRequest: [authenticate] },
