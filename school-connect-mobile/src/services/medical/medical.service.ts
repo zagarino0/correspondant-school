@@ -172,3 +172,87 @@ export async function getMedicalDashboard(): Promise<MedicalDashboard> {
   const response = await apiClient.get<MedicalDashboard>("/api/v1/medical/dashboard");
   return response.data;
 }
+
+
+export type MedicalEventType =
+  | "CONSULTATION"
+  | "MEDICAL_VISIT"
+  | "FOLLOW_UP"
+  | "MEDICATION"
+  | "VIGILANCE";
+
+export type MedicalEventStatus = "PLANNED" | "COMPLETED" | "CANCELLED";
+export type MedicalEventPriority = "NORMAL" | "IMPORTANT" | "URGENT";
+
+export type MedicalEvent = {
+  id: string;
+  schoolId: string;
+  targetUserId: string | null;
+  createdByUserId: string;
+  type: MedicalEventType;
+  title: string;
+  description: string | null;
+  startAt: string;
+  endAt: string | null;
+  status: MedicalEventStatus;
+  priority: MedicalEventPriority;
+  notes: string | null;
+  target: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    role: string;
+    studentProfile: { id: string; studentNumber: string } | null;
+  } | null;
+  createdBy: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    role: string;
+  };
+};
+
+export type MedicalEventInput = {
+  targetUserId: string;
+  type: MedicalEventType;
+  title: string;
+  description?: string | null;
+  startAt: string;
+  endAt?: string | null;
+  status?: MedicalEventStatus;
+  priority?: MedicalEventPriority;
+  notes?: string | null;
+};
+
+export async function getMedicalEvents(
+  start?: string,
+  end?: string,
+): Promise<{ events: MedicalEvent[] }> {
+  const response = await apiClient.get<{ events: MedicalEvent[] }>("/api/v1/medical/calendar", {
+    params: { start, end },
+  });
+  return response.data;
+}
+
+export async function createMedicalEvent(input: MedicalEventInput): Promise<{ event: MedicalEvent }> {
+  const response = await apiClient.post<{ event: MedicalEvent }>(
+    "/api/v1/medical/calendar",
+    input,
+  );
+  return response.data;
+}
+
+export async function updateMedicalEvent(
+  eventId: string,
+  input: Partial<MedicalEventInput>,
+): Promise<{ event: MedicalEvent }> {
+  const response = await apiClient.patch<{ event: MedicalEvent }>(
+    `/api/v1/medical/calendar/${encodeURIComponent(eventId)}`,
+    input,
+  );
+  return response.data;
+}
+
+export async function deleteMedicalEvent(eventId: string): Promise<void> {
+  await apiClient.delete(`/api/v1/medical/calendar/${encodeURIComponent(eventId)}`);
+}
