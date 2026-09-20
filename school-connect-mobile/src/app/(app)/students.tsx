@@ -415,103 +415,48 @@ export default function StudentsScreen() {
 
                                   {isClassExpanded ? (
                                     <>
-                                      <View style={styles.studentListHeader}>
-                                        <Text
-                                          style={[
-                                            styles.studentListHeaderText,
-                                            styles.studentNumberCol,
-                                          ]}
-                                        >
-                                          N°
-                                        </Text>
-                                        <Text
-                                          style={[
-                                            styles.studentListHeaderText,
-                                            styles.studentNameCol,
-                                          ]}
-                                        >
-                                          Élève
-                                        </Text>
-                                        <Text
-                                          style={[
-                                            styles.studentListHeaderText,
-                                            styles.studentGenderCol,
-                                          ]}
-                                        >
-                                          S.
-                                        </Text>
-                                        <Text
-                                          style={[
-                                            styles.studentListHeaderText,
-                                            styles.studentMatriculeCol,
-                                          ]}
-                                        >
-                                          Mat.
-                                        </Text>
-                                        <View style={styles.studentActionCol} />
-                                      </View>
-
-                                      {classGroup.students.map((student) => (
-                                        <View
-                                          key={student.id}
-                                          style={styles.studentRow}
-                                        >
-                                          <View style={styles.studentNumberCol}>
-                                            <Text style={styles.positionText}>
-                                              {student.classPosition ?? "—"}
-                                            </Text>
+                                      <View style={styles.studentCards}>
+                                        {classGroup.students.map((student) => (
+                                          <View key={student.id} style={styles.studentCard}>
+                                            <View style={styles.studentCardTop}>
+                                              <View style={styles.studentIdentity}>
+                                                <View style={styles.studentPositionBadge}>
+                                                  <Text style={styles.studentPositionBadgeText}>
+                                                    {student.classPosition ?? "—"}
+                                                  </Text>
+                                                </View>
+                                                <View style={styles.studentIdentityText}>
+                                                  <Text style={styles.studentName} numberOfLines={2}>
+                                                    {student.lastName} {student.firstName}
+                                                  </Text>
+                                                  <Text style={styles.studentMeta}>
+                                                    {student.gender === "MALE" ? "Garçon" : student.gender === "FEMALE" ? "Fille" : "Sexe non renseigné"}
+                                                  </Text>
+                                                </View>
+                                              </View>
+                                              <Pressable
+                                                onPress={() => router.push({
+                                                  pathname: "/(app)/students/[studentId]",
+                                                  params: { studentId: student.id },
+                                                })}
+                                                style={styles.editButton}
+                                              >
+                                                <Text style={styles.editButtonText}>Modifier</Text>
+                                              </Pressable>
+                                            </View>
+                                            <View style={styles.studentCardBottom}>
+                                              <View style={styles.studentInfoItem}>
+                                                <Text style={styles.studentInfoLabel}>Matricule</Text>
+                                                <Text style={styles.studentInfoValue} numberOfLines={1}>{student.studentNumber}</Text>
+                                              </View>
+                                              <View style={styles.studentInfoItem}>
+                                                <Text style={styles.studentInfoLabel}>Position</Text>
+                                                <Text style={styles.studentInfoValue}>{student.classPosition ?? "—"}</Text>
+                                              </View>
+                                            </View>
                                           </View>
-
-                                          <View style={styles.studentNameCol}>
-                                            <Text
-                                              style={styles.studentName}
-                                              numberOfLines={1}
-                                            >
-                                              {student.lastName} {student.firstName}
-                                            </Text>
-                                          </View>
-
-                                          <View style={styles.studentGenderCol}>
-                                            <Text style={styles.genderText}>
-                                              {student.gender === "MALE"
-                                                ? "G"
-                                                : student.gender === "FEMALE"
-                                                  ? "F"
-                                                  : "—"}
-                                            </Text>
-                                          </View>
-
-                                          <View style={styles.studentMatriculeCol}>
-                                            <Text
-                                              style={styles.studentNumber}
-                                              numberOfLines={1}
-                                            >
-                                              {student.studentNumber}
-                                            </Text>
-                                          </View>
-
-                                          <View style={styles.studentActionCol}>
-                                            <Pressable
-                                              onPress={() =>
-                                                router.push({
-                                                  pathname:
-                                                    "/(app)/students/[studentId]",
-                                                  params: {
-                                                    studentId: student.id,
-                                                  },
-                                                })
-                                              }
-                                              style={styles.editButton}
-                                            >
-                                              <Text style={styles.editButtonText}>
-                                                Modifier
-                                              </Text>
-                                            </Pressable>
-                                          </View>
-                                        </View>
-                                      ))}
-                                    </>
-                                  ) : null}
+                                        ))}
+                                      </View>                                  ) : null}
                                 </View>
                               );
                             })}
@@ -649,12 +594,7 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     backgroundColor: "#344976",
   },
-  classHeaderIdentity: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 6,
-  },
+  classHeaderIdentity: { flex: 1, flexDirection: "row", alignItems: "center", gap: 8 },
   classTitle: { flex: 1, fontSize: 13, fontWeight: "900", color: "#FFFFFF" },
   classCount: { fontSize: 9, fontWeight: "800", color: "#D1D5DB" },
   classExpandIcon: {
