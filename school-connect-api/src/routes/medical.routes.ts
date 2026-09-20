@@ -15,195 +15,7 @@ const medicalUpdateSchema = z.object({
   notes: z.string().trim().max(6000).optional().nullable(),
 });
 
-type MedicalAccess = {
-  allowed: boolean;
-  role: string;
-  mode: "FULL" | "PARENT";
-  reason?: string;
-};
-
-async function getMedicalAccess(
-  fastify: Parameters<FastifyPluginAsync>[0],
-  userId: string,
-  role: string,
-  schoolId: string | null,
-): Promise<MedicalAccess> {
-  if (role === "STAFF") {
-    const staff = await fastify.prisma.staffProfile.findUnique({
-      where: { userId },
-      select: {
-        function: true,
-        user: { select: { status: true, schoolId: true } },
-        assignments: {
-          where: { active: true },
-          select: { schoolId: true },
-        },
-      },
-    });
-
-    const allowed =
-      staff?.function === "INFIRMIER" &&
-      staff.user.status === "ACTIVE" &&
-      !!schoolId &&
-      staff.assignments.some((assignment) => assignment.schoolId === schoolId);
-
-    return {
-      allowed,
-      role,
-      mode: "FULL",
-      ...(allowed
-        ? {}
-        : { reason: "Accès réservé au personnel infirmier actif." }),
-    };
-  }
-
-  if (role === "SCHOOL_ADMIN") {
-    if (!schoolId) {
-      return {
-        allowed: false,
-        role,
-        mode: "FULL",
-        reason: "Aucun établissement associé.",
-      };
-    }
-
-    const medicalStaff = await fastify.prisma.staffAssignment.count({
-      where: {
-        schoolId,
-        active: true,
-        staff: {
-          function: "INFIRMIER",
-          user: { status: "ACTIVE" },
-        },
-      },
-    });
-
-    return {
-      allowed: medicalStaff === 0,
-      role,
-      mode: "FULL",
-      ...(medicalStaff === 0
-        ? {}
-        : {
-            reason:
-              "Un infirmier actif est affecté à cet établissement. La gestion médicale lui est réservée.",
-          }),
-    };
-  }
-
-  if (role === "PARENT") {
-    return {
-      allowed: true,
-      role,
-      mode: "PARENT",
-    };
-  }
-
-  return {
-    allowed: false,
-    role,
-    mode: "FULL",
-    reason: "Ce rôle n'a pas accès aux données médicales.",
-  };
-}
-
-async function canAccessTarget(
-  fastify: Parameters<FastifyPluginAsync>[0],
-  requesterId: string,
-  requesterRole: string,
-  requesterSchoolId: string | null,
-  targetUserId: string,
-): Promise<{ access: MedicalAccess; target: { id: string; role: string; schoolId: string | null; studentId: string | null } | null }> {
-  const access = await getMedicalAccess(
-    fastify,
-    requesterId,
-    requesterRole,
-    requesterSchoolId,
-  );
-
-  const target = await fastify.prisma.user.findUnique({
-    where: { id: targetUserId },
-    select: {
-      id: true,
-      role: true,
-      schoolId: true,
-      studentProfile: { select: { id: true } },
-    },
-  });
-
-  if (!target) {
-    return { access, target: null };
-  }
-
-  if (access.allowed && access.mode === "FULL") {
-    if (!requesterSchoolId || target.schoolId !== requesterSchoolId) {
-      return {
-        access: {
-          ...access,
-          allowed: false,
-          reason: "La fiche appartient à un autre établissement.",
-        },
-        target: null,
-      };
-    }
-
-    if (!["TEACHER", "STAFF", "STUDENT"].includes(target.role)) {
-      return {
-        access: {
-          ...access,
-          allowed: false,
-          reason: "Cette fiche n'est pas un dossier médical géré par le module.",
-        },
-        target: null,
-      };
-    }
-
-    return {
-      access,
-      target: {
-        id: target.id,
-        role: target.role,
-        schoolId: target.schoolId,
-        studentId: target.studentProfile?.id ?? null,
-      },
-    };
-  }
-
-  if (requesterRole === "PARENT") {
-    const relation = target.studentProfile
-      ? await fastify.prisma.parentStudent.findFirst({
-          where: {
-            parentId: requesterId,
-            studentId: target.studentProfile.id,
-          },
-          select: { id: true },
-        })
-      : null;
-
-    if (!relation) {
-      return {
-        access: {
-          ...access,
-          allowed: false,
-          reason: "Cette fiche ne correspond pas à l'un de vos enfants.",
-        },
-        target: null,
-      };
-    }
-
-    return {
-      access,
-      target: {
-        id: target.id,
-        role: target.role,
-        schoolId: target.schoolId,
-        studentId: target.studentProfile?.id ?? null,
-      },
-    };
-  }
-
-  return { access, target: null };
-}
+import { canAccessTarget, getMedicalAccess } from "../authorization/medical-access.js";
 
 export const medicalRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.get(
@@ -470,9 +282,6 @@ export const medicalRoutes: FastifyPluginAsync = async (fastify) => {
 
       const data = parsed.data;
 
-      // With exactOptionalPropertyTypes enabled, Prisma nullable fields must
-      // not receive explicit undefined values. Build the payload by copying
-      // only fields that are actually present in the request.
       const medicalData = Object.fromEntries(
         Object.entries(data).filter(([, value]) => value !== undefined),
       ) as {
@@ -487,29 +296,63 @@ export const medicalRoutes: FastifyPluginAsync = async (fastify) => {
         notes?: string | null;
       };
 
-      if (target.studentId) {
-        const record = await fastify.prisma.studentMedicalRecord.upsert({
-          where: { studentId: target.studentId },
-          create: {
-            studentId: target.studentId,
-            ...medicalData,
-          },
-          update: medicalData,
-        });
+      const fieldEntries = Object.entries(medicalData);
 
-        return { record, recordType: "STUDENT" };
+      if (target.studentId) {
+        const result = await fastify.prisma.$transaction(async (tx) => {
+          const previous = await tx.studentMedicalRecord.findUnique({
+            where: { studentId: target.studentId! },
+          });
+          const record = await tx.studentMedicalRecord.upsert({
+            where: { studentId: target.studentId! },
+            create: { studentId: target.studentId!, ...medicalData },
+            update: medicalData,
+          });
+          const action = previous ? "UPDATED" : "CREATED";
+          const history = fieldEntries
+            .filter(([field, value]) => !previous || !Object.is(previous[field as keyof typeof previous], value))
+            .map(([field, value]) => ({
+              targetUserId: userId,
+              actorUserId: request.user.sub,
+              action,
+              field,
+              previousValue: previous ? String(previous[field as keyof typeof previous] ?? "") : null,
+              newValue: value === null ? null : String(value),
+            }));
+          if (history.length > 0) {
+            await tx.medicalHistory.createMany({ data: history });
+          }
+          return { record, historyCount: history.length };
+        });
+        return { record: result.record, recordType: "STUDENT", historyCount: result.historyCount };
       }
 
-      const record = await fastify.prisma.adultMedicalRecord.upsert({
-        where: { userId },
-        create: {
-          userId,
-          ...medicalData,
-        },
-        update: medicalData,
+      const result = await fastify.prisma.$transaction(async (tx) => {
+        const previous = await tx.adultMedicalRecord.findUnique({
+          where: { userId },
+        });
+        const record = await tx.adultMedicalRecord.upsert({
+          where: { userId },
+          create: { userId, ...medicalData },
+          update: medicalData,
+        });
+        const action = previous ? "UPDATED" : "CREATED";
+        const history = fieldEntries
+          .filter(([field, value]) => !previous || !Object.is(previous[field as keyof typeof previous], value))
+          .map(([field, value]) => ({
+            targetUserId: userId,
+            actorUserId: request.user.sub,
+            action,
+            field,
+            previousValue: previous ? String(previous[field as keyof typeof previous] ?? "") : null,
+            newValue: value === null ? null : String(value),
+          }));
+        if (history.length > 0) {
+          await tx.medicalHistory.createMany({ data: history });
+        }
+        return { record, historyCount: history.length };
       });
-
-      return { record, recordType: "ADULT" };
+      return { record: result.record, recordType: "ADULT", historyCount: result.historyCount };
     },
   );
 };
