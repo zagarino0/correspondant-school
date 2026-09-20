@@ -59,10 +59,12 @@ export default function MedicalReportsScreen() {
   const { width } = useWindowDimensions();
   const wide = width >= 850;
 
+  const initialUserId = typeof params.userId === "string" ? params.userId : null;
+
   const [access, setAccess] = useState<MedicalAccess | null>(null);
   const [people, setPeople] = useState<MedicalPerson[]>([]);
   const [children, setChildren] = useState<MedicalChild[]>([]);
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(params.userId ?? null);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(initialUserId);
   const [reports, setReports] = useState<MedicalReport[]>([]);
   const [selectedReport, setSelectedReport] = useState<MedicalReport | null>(null);
   const [search, setSearch] = useState("");
