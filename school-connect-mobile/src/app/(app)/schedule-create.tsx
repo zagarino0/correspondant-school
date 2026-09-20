@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import {
   createSchoolSchedule,
+  deleteSchoolSchedule,
   getSchoolAdminDashboard,
   getSchoolAdminSchedules,
 } from "../../services/school-admin/school-admin.service";
@@ -344,6 +345,43 @@ export default function ScheduleCreateScreen() {
                     <Text style={styles.scheduleClass}>{item.class.name} · {item.teacher.firstName} {item.teacher.lastName}</Text>
                     {item.room ? <Text style={styles.scheduleRoom}>Salle {item.room}</Text> : null}
                   </View>
+                  <View style={styles.scheduleActions}>
+                    <Pressable
+                      onPress={() => router.push({ pathname: "/schedule-edit", params: { scheduleId: item.id } })}
+                      style={styles.editScheduleButton}
+                    >
+                      <Text style={styles.editScheduleText}>Modifier</Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => {
+                        Alert.alert(
+                          "Supprimer le créneau",
+                          `Supprimer « ${item.subject} » de l'emploi du temps ?`,
+                          [
+                            { text: "Annuler", style: "cancel" },
+                            {
+                              text: "Supprimer",
+                              style: "destructive",
+                              onPress: async () => {
+                                try {
+                                  await deleteSchoolSchedule(item.id);
+                                  await load();
+                                } catch (error: any) {
+                                  Alert.alert(
+                                    "Suppression impossible",
+                                    error?.response?.data?.error?.message ?? "Une erreur est survenue.",
+                                  );
+                                }
+                              },
+                            },
+                          ],
+                        );
+                      }}
+                      style={styles.deleteScheduleButton}
+                    >
+                      <Text style={styles.deleteScheduleText}>Supprimer</Text>
+                    </Pressable>
+                  </View>
                 </View>
               ))}
             </View>
@@ -396,6 +434,11 @@ const styles = StyleSheet.create({
   scheduleSubject: { fontSize: 14, fontWeight: "800", color: "#111827" },
   scheduleClass: { marginTop: 4, fontSize: 12, color: "#4B5563" },
   scheduleRoom: { marginTop: 3, fontSize: 11, color: "#6B7280" },
+  scheduleActions: { alignItems: "flex-end", justifyContent: "center", gap: 6, marginLeft: 8 },
+  editScheduleButton: { paddingHorizontal: 9, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: "#D9DEE5", backgroundColor: "#FFF" },
+  editScheduleText: { fontSize: 10, fontWeight: "800", color: "#344976" },
+  deleteScheduleButton: { paddingHorizontal: 9, paddingVertical: 6, borderRadius: 8, backgroundColor: "#FEF2F2", borderWidth: 1, borderColor: "#FECACA" },
+  deleteScheduleText: { fontSize: 10, fontWeight: "800", color: "#B91C1C" },
   formCard: { padding: 18, borderRadius: 18, borderWidth: 1, borderColor: "#E5E7EB", backgroundColor: "#FFF", gap: 2 },
   formHeader: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 10 },
   kicker: { fontSize: 10, fontWeight: "800", letterSpacing: 1.4, color: "#344976" },
