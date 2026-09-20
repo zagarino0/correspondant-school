@@ -233,13 +233,8 @@ describe("medical permissions - real API integration", () => {
     await prisma.medicalHistory.deleteMany({
       where: {
         OR: [
-          { actorUserId: { in: [
-            ...Object.values(emails),
-          ] } },
-          { targetUserId: { in: [
-            email("student-a"),
-            email("student-b"),
-          ] } },
+          { actor: { email: { in: Object.values(emails) } } },
+          { target: { email: { in: [email("student-a"), email("student-b")] } } },
         ],
       },
     });
