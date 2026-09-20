@@ -18,6 +18,10 @@ export type MedicalRecord = {
   userId?: string;
   studentId?: string;
   bloodGroup: string | null;
+  temperature: number | null;
+  weightKg: number | null;
+  bloodPressureSystolic: number | null;
+  bloodPressureDiastolic: number | null;
   allergies: string | null;
   medicalConditions: string | null;
   medications: string | null;
@@ -62,6 +66,10 @@ export type MedicalDetailsResponse = {
 
 export type MedicalUpdateInput = {
   bloodGroup?: string | null;
+  temperature?: number | null;
+  weightKg?: number | null;
+  bloodPressureSystolic?: number | null;
+  bloodPressureDiastolic?: number | null;
   allergies?: string | null;
   medicalConditions?: string | null;
   medications?: string | null;
