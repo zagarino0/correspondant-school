@@ -7,6 +7,7 @@ import {
   Text,
   TextInput,
   View,
+  useWindowDimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
 
@@ -49,6 +50,7 @@ function roleLabel(role: string, fn: string | null): string {
 
 export default function MedicalScreen() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
   const user = useAuthStore((state) => state.user);
   const [access, setAccess] = useState<Awaited<ReturnType<typeof getMedicalAccess>> | null>(null);
   const [people, setPeople] = useState<MedicalPerson[]>([]);
@@ -245,8 +247,8 @@ export default function MedicalScreen() {
         </View>
       </View>
 
-      <View style={styles.body}>
-        <View style={styles.listPanel}>
+      <View style={[styles.body, width < 760 ? styles.bodyMobile : null]}>
+        <View style={[styles.listPanel, width < 760 ? styles.listPanelMobile : null]}>
           <TextInput
             value={search}
             onChangeText={setSearch}
@@ -289,7 +291,7 @@ export default function MedicalScreen() {
           </ScrollView>
         </View>
 
-        <ScrollView style={styles.detailPanel} contentContainerStyle={styles.detailContent}>
+        <ScrollView style={[styles.detailPanel, width < 760 ? styles.detailPanelMobile : null]} contentContainerStyle={styles.detailContent}>
           {detailLoading ? (
             <View style={styles.detailState}>
               <ActivityIndicator color="#344976" />
@@ -395,7 +397,9 @@ const styles = StyleSheet.create({
   headerBadge: { paddingHorizontal: 10, paddingVertical: 7, borderRadius: 9, backgroundColor: "#EEF2FF" },
   headerBadgeText: { fontSize: 11, fontWeight: "800", color: "#344976" },
   body: { flex: 1, flexDirection: "row", gap: 14, padding: 14 },
+  bodyMobile: { flexDirection: "column" },
   listPanel: { width: 330, maxWidth: "38%", padding: 12, borderRadius: 16, backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#E2E8F0" },
+  listPanelMobile: { width: "100%", maxWidth: "100%", height: 235 },
   search: { minHeight: 44, paddingHorizontal: 13, borderRadius: 10, backgroundColor: "#F8FAFC", borderWidth: 1, borderColor: "#E2E8F0", color: "#111827" },
   personItem: { marginTop: 7, padding: 10, flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 11 },
   personItemSelected: { backgroundColor: "#EEF2F7" },
@@ -406,6 +410,7 @@ const styles = StyleSheet.create({
   personMeta: { marginTop: 3, fontSize: 11, color: "#64748B" },
   empty: { marginTop: 20, paddingHorizontal: 8, fontSize: 13, color: "#64748B", textAlign: "center" },
   detailPanel: { flex: 1, borderRadius: 16, backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#E2E8F0" },
+  detailPanelMobile: { width: "100%" },
   detailContent: { padding: 18, paddingBottom: 40 },
   detailState: { minHeight: 300, alignItems: "center", justifyContent: "center", padding: 28 },
   personHeader: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 12 },
