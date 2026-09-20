@@ -287,6 +287,10 @@ export type MedicalReport = {
   status: MedicalReportStatus;
   priority: MedicalReportPriority;
   reason: string | null;
+  temperature: number | null;
+  weightKg: number | null;
+  bloodPressureSystolic: number | null;
+  bloodPressureDiastolic: number | null;
   observations: string | null;
   actionsTaken: string | null;
   outcome: string | null;
@@ -321,6 +325,10 @@ export type MedicalReportInput = {
   status?: MedicalReportStatus;
   priority?: MedicalReportPriority;
   reason?: string | null;
+  temperature?: number | null;
+  weightKg?: number | null;
+  bloodPressureSystolic?: number | null;
+  bloodPressureDiastolic?: number | null;
   observations?: string | null;
   actionsTaken?: string | null;
   outcome?: string | null;
