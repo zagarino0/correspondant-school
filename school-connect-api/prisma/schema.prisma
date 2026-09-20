@@ -121,6 +121,8 @@ model User {
 
   staffProfile StaffProfile?
 
+  adultMedicalRecord AdultMedicalRecord?
+
   parentLinks ParentStudent[] @relation("ParentLinks")
 
   teacherClassAssignments TeacherClass[] @relation("TeacherClassAssignments")
@@ -263,6 +265,27 @@ model StudentMedicalRecord {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model AdultMedicalRecord {
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  bloodGroup            String?
+  allergies             String?
+  medicalConditions     String?
+  medications           String?
+  emergencyContactName  String?
+  emergencyContactPhone String?
+  doctorName            String?
+  doctorPhone           String?
+  notes                 String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }
 
 model StudentEnrollment {
