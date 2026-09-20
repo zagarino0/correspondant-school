@@ -187,6 +187,234 @@ export async function schoolAdminDashboardRoutes(
     },
   );
 
+
+  app.patch(
+    "/personnel/:assignmentId",
+    { onRequest: schoolAdminGuard },
+    async (request, reply) => {
+      if (request.user.role !== "SCHOOL_ADMIN" && request.user.role !== "SUPER_ADMIN") {
+        return reply.code(403).send({ error: { code: "FORBIDDEN", message: "School administrator access required." } });
+      }
+
+      const schoolId = request.user.schoolId;
+      if (!schoolId) {
+        return reply.code(400).send({ error: { code: "SCHOOL_REQUIRED", message: "A school is required." } });
+      }
+
+      const { assignmentId } = request.params as { assignmentId: string };
+      const schema = z.object({
+        firstName: z.string().trim().min(1),
+        lastName: z.string().trim().min(1),
+        email: z.string().trim().email(),
+        password: z.string().min(6).optional(),
+        function: z.enum(["ADMINISTRATION", "SURVEILLANT", "SECRETARIAT", "COMPTABILITE", "INFIRMIER"]),
+      });
+      const parsed = schema.safeParse(request.body);
+
+      if (!parsed.success) {
+        return reply.code(400).send({ error: { code: "VALIDATION_ERROR", message: "Données du personnel invalides." } });
+      }
+
+      const assignment = await app.prisma.staffAssignment.findFirst({
+        where: {
+          id: assignmentId,
+          schoolId,
+          active: true,
+          staff: { user: { schoolId, role: "STAFF" } },
+        },
+        select: {
+          id: true,
+          staffId: true,
+          staff: { select: { userId: true } },
+        },
+      });
+
+      if (!assignment) {
+        return reply.code(404).send({ error: { code: "PERSONNEL_NOT_FOUND", message: "Personnel introuvable." } });
+      }
+
+      const email = parsed.data.email.toLowerCase();
+      const emailOwner = await app.prisma.user.findUnique({
+        where: { email },
+        select: { id: true },
+      });
+
+      if (emailOwner && emailOwner.id !== assignment.staff.userId) {
+        return reply.code(409).send({ error: { code: "EMAIL_ALREADY_EXISTS", message: "Cette adresse email est déjà utilisée." } });
+      }
+
+      const updated = await app.prisma.$transaction(async (tx) => {
+        const user = await tx.user.update({
+          where: { id: assignment.staff.userId },
+          data: {
+            firstName: parsed.data.firstName,
+            lastName: parsed.data.lastName,
+            email,
+            ...(parsed.data.password ? { passwordHash: await bcrypt.hash(parsed.data.password, 12) } : {}),
+            status: "ACTIVE",
+          },
+          select: { id: true, firstName: true, lastName: true, email: true, status: true },
+        });
+
+        const profile = await tx.staffProfile.update({
+          where: { id: assignment.staffId },
+          data: { function: parsed.data.function },
+          select: { function: true },
+        });
+
+        return { ...user, function: profile.function };
+      });
+
+      return reply.send({ staff: updated });
+    },
+  );
+
+  app.delete(
+    "/personnel/:assignmentId",
+    { onRequest: schoolAdminGuard },
+    async (request, reply) => {
+      if (request.user.role !== "SCHOOL_ADMIN" && request.user.role !== "SUPER_ADMIN") {
+        return reply.code(403).send({ error: { code: "FORBIDDEN", message: "School administrator access required." } });
+      }
+
+      const schoolId = request.user.schoolId;
+      if (!schoolId) {
+        return reply.code(400).send({ error: { code: "SCHOOL_REQUIRED", message: "A school is required." } });
+      }
+
+      const { assignmentId } = request.params as { assignmentId: string };
+      const assignment = await app.prisma.staffAssignment.findFirst({
+        where: {
+          id: assignmentId,
+          schoolId,
+          active: true,
+          staff: { user: { schoolId, role: "STAFF" } },
+        },
+        select: { id: true, staff: { select: { userId: true } } },
+      });
+
+      if (!assignment) {
+        return reply.code(404).send({ error: { code: "PERSONNEL_NOT_FOUND", message: "Personnel introuvable." } });
+      }
+
+      await app.prisma.$transaction([
+        app.prisma.staffAssignment.update({
+          where: { id: assignment.id },
+          data: { active: false, endDate: new Date() },
+        }),
+        app.prisma.user.update({
+          where: { id: assignment.staff.userId },
+          data: { status: "INACTIVE" },
+        }),
+      ]);
+
+      return reply.send({ success: true, assignmentId });
+    },
+  );
+
+  app.post(
+    "/personnel/bulk",
+    { onRequest: schoolAdminGuard },
+    async (request, reply) => {
+      if (request.user.role !== "SCHOOL_ADMIN" && request.user.role !== "SUPER_ADMIN") {
+        return reply.code(403).send({ error: { code: "FORBIDDEN", message: "School administrator access required." } });
+      }
+
+      const schoolId = request.user.schoolId;
+      if (!schoolId) {
+        return reply.code(400).send({ error: { code: "SCHOOL_REQUIRED", message: "A school is required." } });
+      }
+
+      const schema = z.object({
+        personnel: z.array(
+          z.object({
+            firstName: z.string().trim().min(1),
+            lastName: z.string().trim().min(1),
+            email: z.string().trim().email(),
+            password: z.string().min(6),
+            function: z.enum(["ADMINISTRATION", "SURVEILLANT", "SECRETARIAT", "COMPTABILITE", "INFIRMIER"]),
+          }),
+        ).min(1).max(500),
+      });
+
+      const parsed = schema.safeParse(request.body);
+      if (!parsed.success) {
+        return reply.code(400).send({ error: { code: "VALIDATION_ERROR", message: "Le fichier doit contenir entre 1 et 500 membres du personnel valides." } });
+      }
+
+      const rows = parsed.data.personnel;
+      const emails = rows.map((row) => row.email.toLowerCase());
+
+      if (new Set(emails).size !== emails.length) {
+        return reply.code(409).send({ error: { code: "DUPLICATE_EMAIL_IN_FILE", message: "Le fichier contient des emails en double." } });
+      }
+
+      const existingUsers = await app.prisma.user.findMany({
+        where: { email: { in: emails } },
+        select: { email: true },
+      });
+
+      if (existingUsers.length) {
+        return reply.code(409).send({
+          error: {
+            code: "EMAIL_ALREADY_EXISTS",
+            message: `Email(s) déjà utilisé(s): ${existingUsers.map((item) => item.email).join(", ")}`,
+          },
+        });
+      }
+
+      try {
+        const created = await app.prisma.$transaction(async (tx) => {
+          const result = [];
+
+          for (const row of rows) {
+            const user = await tx.user.create({
+              data: {
+                schoolId,
+                email: row.email.toLowerCase(),
+                firstName: row.firstName.trim(),
+                lastName: row.lastName.trim(),
+                passwordHash: await bcrypt.hash(row.password, 12),
+                role: "STAFF",
+                status: "ACTIVE",
+              },
+            });
+
+            const profile = await tx.staffProfile.create({
+              data: { userId: user.id, function: row.function },
+            });
+
+            const assignment = await tx.staffAssignment.create({
+              data: {
+                staffId: profile.id,
+                schoolId,
+                startDate: new Date(),
+                active: true,
+              },
+            });
+
+            result.push({
+              id: user.id,
+              assignmentId: assignment.id,
+              firstName: user.firstName,
+              lastName: user.lastName,
+              email: user.email,
+              function: profile.function,
+            });
+          }
+
+          return result;
+        });
+
+        return reply.code(201).send({ success: true, created: created.length, personnel: created });
+      } catch (error) {
+        return reply.status(400).send({
+          error: { code: "BULK_IMPORT_FAILED", message: error instanceof Error ? error.message : "Import du personnel impossible." },
+        });
+      }
+    },
+  );
+
   app.patch(
     "/classes/:classId",
     { onRequest: schoolAdminGuard },
