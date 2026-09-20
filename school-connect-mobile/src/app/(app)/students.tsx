@@ -456,7 +456,8 @@ export default function StudentsScreen() {
                                             </View>
                                           </View>
                                         ))}
-                                      </View>                                  ) : null}
+                                      </View>
+                                    </> ) : null}
                                 </View>
                               );
                             })}
