@@ -1,4 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
 
 import { DashboardHeader } from "../../features/dashboard/components/DashboardHeader";
@@ -9,10 +11,22 @@ import { StudentDashboard } from "../../features/dashboard/dashboards/StudentDas
 import { SuperAdminDashboard } from "../../features/dashboard/dashboards/SuperAdminDashboard";
 import { TeacherDashboard } from "../../features/dashboard/dashboards/TeacherDashboard";
 import { useAuthStore } from "../../stores/authStore";
+import { getUnreadMessageCount } from "../../services/messages/message.service";
 
 export default function AppHomeScreen() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
+  const [unreadMessages, setUnreadMessages] = useState(0);
+
+  useEffect(() => {
+    let mounted = true;
+    void getUnreadMessageCount().then((count) => {
+      if (mounted) setUnreadMessages(count);
+    }).catch(() => {
+      if (mounted) setUnreadMessages(0);
+    });
+    return () => { mounted = false; };
+  }, []);
 
   const renderDashboard = () => {
     if (!user) return null;
@@ -39,7 +53,7 @@ export default function AppHomeScreen() {
 
       <View style={styles.bottomNavigation}>
         <Pressable style={[styles.navItem, styles.navItemActive]} accessibilityRole="button" accessibilityLabel="Accueil">
-          <Text style={[styles.navIcon, styles.navIconActive]}>⌂</Text>
+          <Ionicons name="home-outline" size={21} color="#344976" />
           <Text style={[styles.navLabel, styles.navLabelActive]}>Accueil</Text>
         </Pressable>
 
@@ -50,7 +64,8 @@ export default function AppHomeScreen() {
           accessibilityLabel="Messages"
         >
           <View style={styles.navIconWrap}>
-            <Text style={styles.navIcon}>✉</Text>
+            <Ionicons name="mail-outline" size={21} color="#475569" />
+            {unreadMessages > 0 ? <View style={styles.messageBadge}><Text style={styles.messageBadgeText}>{unreadMessages > 99 ? "99+" : unreadMessages}</Text></View> : null}
           </View>
           <Text style={styles.navLabel}>Messages</Text>
         </Pressable>
@@ -61,7 +76,7 @@ export default function AppHomeScreen() {
           accessibilityRole="button"
           accessibilityLabel="Assistant"
         >
-          <Text style={styles.navIcon}>✦</Text>
+          <Ionicons name="sparkles-outline" size={21} color="#475569" />
           <Text style={styles.navLabel}>Assistant</Text>
         </Pressable>
       </View>
@@ -105,9 +120,22 @@ const styles = StyleSheet.create({
   navItemActive: {
     backgroundColor: "#EEF2F7",
   },
-  navIconWrap: {
-    position: "relative",
+  navIconWrap: { position: "relative" },
+  messageBadge: {
+    position: "absolute",
+    top: -7,
+    right: -10,
+    minWidth: 17,
+    height: 17,
+    paddingHorizontal: 3,
+    borderRadius: 9,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#DC2626",
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
   },
+  messageBadgeText: { color: "#FFFFFF", fontSize: 8, fontWeight: "900" },
   navIcon: {
     fontSize: 21,
     color: "#475569",
