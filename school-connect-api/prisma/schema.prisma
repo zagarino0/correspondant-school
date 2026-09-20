@@ -123,6 +123,9 @@ model User {
 
   adultMedicalRecord AdultMedicalRecord?
 
+  medicalHistoryTargets MedicalHistory[] @relation("MedicalHistoryTarget")
+  medicalHistoryActors  MedicalHistory[] @relation("MedicalHistoryActor")
+
   parentLinks ParentStudent[] @relation("ParentLinks")
 
   teacherClassAssignments TeacherClass[] @relation("TeacherClassAssignments")
@@ -642,4 +645,26 @@ model RefreshToken {
   @@index([userId])
   @@index([expiresAt])
   
+}
+
+
+model MedicalHistory {
+  id String @id @default(cuid())
+
+  targetUserId String
+  actorUserId  String
+
+  action String
+  field String
+
+  previousValue String?
+  newValue      String?
+
+  target User @relation("MedicalHistoryTarget", fields: [targetUserId], references: [id], onDelete: Cascade)
+  actor  User @relation("MedicalHistoryActor", fields: [actorUserId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+
+  @@index([targetUserId, createdAt])
+  @@index([actorUserId, createdAt])
 }
