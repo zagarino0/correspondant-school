@@ -100,6 +100,13 @@ export function NurseDashboard({ firstName }: NurseDashboardProps) {
           onPress: () => router.push("/(app)/medical"),
         },
         {
+          id: "medical-reports",
+          title: "Rapports médicaux",
+          value: "Nouveau",
+          description: "Documenter les passages, incidents, consultations et suivis médicaux.",
+          onPress: () => router.push("/(app)/medical-reports"),
+        },
+        {
           id: "medical-history",
           title: "Historique",
           value: loading ? "…" : error ? "—" : String(dashboard?.recentChanges ?? 0),
