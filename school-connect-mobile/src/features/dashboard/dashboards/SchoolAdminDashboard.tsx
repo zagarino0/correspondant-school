@@ -2,14 +2,15 @@ import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
 import {
   ActivityIndicator,
+  Pressable,
   StyleSheet,
   Text,
   View,
 } from "react-native";
 
 import { RoleDashboard } from "./RoleDashboard";
-import { getSchoolAdminDashboard } from "../../../services/school-admin/school-admin.service";
-import type { SchoolAdminDashboardResponse } from "../../../services/school-admin/school-admin.types";
+import { getSchoolAdminDashboard, getSchoolAdminSchedules } from "../../../services/school-admin/school-admin.service";
+import type { SchoolAdminDashboardResponse, ScheduleDay, SchoolAdminSchedule } from "../../../services/school-admin/school-admin.types";
 
 type SchoolAdminDashboardProps = {
   firstName: string;
@@ -23,6 +24,7 @@ export function SchoolAdminDashboard({
     useState<SchoolAdminDashboardResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [schedules, setSchedules] = useState<SchoolAdminSchedule[]>([]);
 
   useEffect(() => {
     let mounted = true;
@@ -32,10 +34,14 @@ export function SchoolAdminDashboard({
         setLoading(true);
         setError(null);
 
-        const data = await getSchoolAdminDashboard();
+        const [data, scheduleData] = await Promise.all([
+          getSchoolAdminDashboard(),
+          getSchoolAdminSchedules(),
+        ]);
 
         if (mounted) {
           setDashboard(data);
+          setSchedules(scheduleData.schedules);
         }
       } catch {
         if (mounted) {
@@ -81,12 +87,22 @@ export function SchoolAdminDashboard({
 
   const { counts, attendance, classes, personnel } = dashboard;
 
+  const scheduleDays: Array<{ key: ScheduleDay; label: string; short: string }> = [
+    { key: "MONDAY", label: "Lundi", short: "Lun" },
+    { key: "TUESDAY", label: "Mardi", short: "Mar" },
+    { key: "WEDNESDAY", label: "Mercredi", short: "Mer" },
+    { key: "THURSDAY", label: "Jeudi", short: "Jeu" },
+    { key: "FRIDAY", label: "Vendredi", short: "Ven" },
+    { key: "SATURDAY", label: "Samedi", short: "Sam" },
+  ];
+
   return (
-    <RoleDashboard
-      firstName={firstName}
-      title="Administration de l'établissement"
-      subtitle="Pilotez les effectifs, les classes, le personnel et le suivi des présences."
-      sections={[
+    <>
+      <RoleDashboard
+        firstName={firstName}
+        title="Administration de l'établissement"
+        subtitle="Pilotez les effectifs, les classes, le personnel et le suivi des présences."
+        sections={[
         {
           id: "school-management",
           title: "Vue d'ensemble",
@@ -163,8 +179,44 @@ export function SchoolAdminDashboard({
             },
           ],
         },
-      ]}
-    />
+        ]}
+      />
+
+      <View style={styles.timetableSection}>
+        <View style={styles.timetableHeader}>
+          <View style={styles.timetableCopy}>
+            <Text style={styles.timetableKicker}>ORGANISATION</Text>
+            <Text style={styles.timetableTitle}>Emploi du temps</Text>
+            <Text style={styles.timetableSubtitle}>
+              Construisez rapidement les créneaux de l'année active.
+            </Text>
+          </View>
+          <Pressable
+            style={styles.timetableButton}
+            onPress={() => router.push("/(app)/schedule-create")}
+          >
+            <Text style={styles.timetableButtonText}>+ Créer un créneau</Text>
+          </Pressable>
+        </View>
+
+        <View style={styles.dayGrid}>
+          {scheduleDays.map((day) => {
+            const count = schedules.filter((item) => item.dayOfWeek === day.key).length;
+            return (
+              <Pressable
+                key={day.key}
+                style={styles.dayCard}
+                onPress={() => router.push("/(app)/schedule-create")}
+              >
+                <Text style={styles.dayShort}>{day.short}</Text>
+                <Text style={styles.dayLabel}>{day.label}</Text>
+                <Text style={styles.dayCount}>{count} cours</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
+    </>
   );
 }
 
@@ -187,5 +239,85 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#111827",
     textAlign: "center",
+  },
+  timetableSection: {
+    marginHorizontal: 16,
+    marginTop: -12,
+    marginBottom: 24,
+    padding: 16,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    backgroundColor: "#FFFFFF",
+  },
+  timetableHeader: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
+    gap: 14,
+  },
+  timetableCopy: { flex: 1, minWidth: 0 },
+  timetableKicker: {
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 1.4,
+    color: "#344976",
+  },
+  timetableTitle: {
+    marginTop: 4,
+    fontSize: 19,
+    fontWeight: "800",
+    color: "#111827",
+  },
+  timetableSubtitle: {
+    marginTop: 4,
+    fontSize: 12,
+    lineHeight: 18,
+    color: "#6B7280",
+  },
+  timetableButton: {
+    paddingHorizontal: 13,
+    paddingVertical: 10,
+    borderRadius: 11,
+    backgroundColor: "#344976",
+  },
+  timetableButtonText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  dayGrid: {
+    marginTop: 14,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 9,
+  },
+  dayCard: {
+    flexGrow: 1,
+    flexBasis: 120,
+    minWidth: 95,
+    minHeight: 78,
+    padding: 12,
+    borderRadius: 13,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    backgroundColor: "#F8FAFC",
+  },
+  dayShort: {
+    fontSize: 10,
+    fontWeight: "800",
+    color: "#344976",
+    textTransform: "uppercase",
+  },
+  dayLabel: {
+    marginTop: 5,
+    fontSize: 14,
+    fontWeight: "800",
+    color: "#111827",
+  },
+  dayCount: {
+    marginTop: 7,
+    fontSize: 11,
+    color: "#6B7280",
   },
 });
