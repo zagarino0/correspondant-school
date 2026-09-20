@@ -82,6 +82,10 @@ export default function MedicalReportsScreen() {
   const [outcome, setOutcome] = useState("");
   const [recommendations, setRecommendations] = useState("");
   const [parentContacted, setParentContacted] = useState(false);
+  const [temperature, setTemperature] = useState("");
+  const [weightKg, setWeightKg] = useState("");
+  const [bloodPressureSystolic, setBloodPressureSystolic] = useState("");
+  const [bloodPressureDiastolic, setBloodPressureDiastolic] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -174,6 +178,10 @@ export default function MedicalReportsScreen() {
         priority,
         status: "FINAL",
         reason: reason.trim() || null,
+        temperature: temperature.trim() === "" ? null : Number(temperature.replace(",", ".")),
+        weightKg: weightKg.trim() === "" ? null : Number(weightKg.replace(",", ".")),
+        bloodPressureSystolic: bloodPressureSystolic.trim() === "" ? null : Number(bloodPressureSystolic),
+        bloodPressureDiastolic: bloodPressureDiastolic.trim() === "" ? null : Number(bloodPressureDiastolic),
         observations: observations.trim() || null,
         actionsTaken: actionsTaken.trim() || null,
         outcome: outcome.trim() || null,
@@ -185,6 +193,10 @@ export default function MedicalReportsScreen() {
       setSelectedReport(result.report);
       setTitle("");
       setReason("");
+      setTemperature("");
+      setWeightKg("");
+      setBloodPressureSystolic("");
+      setBloodPressureDiastolic("");
       setObservations("");
       setActionsTaken("");
       setOutcome("");
@@ -343,6 +355,22 @@ export default function MedicalReportsScreen() {
                   </View>
 
                   <Text style={styles.badge}>{selectedReport.priority}</Text>
+                  <View style={styles.vitalsSummary}>
+                    <View style={styles.vitalSummaryItem}>
+                      <Text style={styles.vitalSummaryLabel}>Température</Text>
+                      <Text style={styles.vitalSummaryValue}>{selectedReport.temperature ?? "—"} °C</Text>
+                    </View>
+                    <View style={styles.vitalSummaryItem}>
+                      <Text style={styles.vitalSummaryLabel}>Poids</Text>
+                      <Text style={styles.vitalSummaryValue}>{selectedReport.weightKg ?? "—"} kg</Text>
+                    </View>
+                    <View style={styles.vitalSummaryItemWide}>
+                      <Text style={styles.vitalSummaryLabel}>Tension</Text>
+                      <Text style={styles.vitalSummaryValue}>
+                        {selectedReport.bloodPressureSystolic ?? "—"} / {selectedReport.bloodPressureDiastolic ?? "—"} mmHg
+                      </Text>
+                    </View>
+                  </View>
                   {[
                     ["Motif", selectedReport.reason],
                     ["Observations", selectedReport.observations],
@@ -383,6 +411,28 @@ export default function MedicalReportsScreen() {
                   </View>
                   <TextInput value={title} onChangeText={setTitle} placeholder="Titre du rapport" placeholderTextColor="#94A3B8" style={styles.input} />
                   <TextInput value={reason} onChangeText={setReason} placeholder="Motif" placeholderTextColor="#94A3B8" style={styles.input} />
+                  <Text style={styles.formSectionLabel}>Constantes vitales</Text>
+                  <View style={styles.vitalsFormRow}>
+                    <View style={styles.vitalField}>
+                      <Text style={styles.vitalFieldLabel}>Température</Text>
+                      <TextInput value={temperature} onChangeText={setTemperature} placeholder="36.8" placeholderTextColor="#94A3B8" keyboardType="decimal-pad" style={styles.compactInput} />
+                      <Text style={styles.vitalUnit}>°C</Text>
+                    </View>
+                    <View style={styles.vitalField}>
+                      <Text style={styles.vitalFieldLabel}>Poids</Text>
+                      <TextInput value={weightKg} onChangeText={setWeightKg} placeholder="62.5" placeholderTextColor="#94A3B8" keyboardType="decimal-pad" style={styles.compactInput} />
+                      <Text style={styles.vitalUnit}>kg</Text>
+                    </View>
+                    <View style={styles.vitalField}>
+                      <Text style={styles.vitalFieldLabel}>Tension</Text>
+                      <View style={styles.bpRow}>
+                        <TextInput value={bloodPressureSystolic} onChangeText={setBloodPressureSystolic} placeholder="120" placeholderTextColor="#94A3B8" keyboardType="number-pad" style={styles.bpInput} />
+                        <Text style={styles.bpSlash}>/</Text>
+                        <TextInput value={bloodPressureDiastolic} onChangeText={setBloodPressureDiastolic} placeholder="80" placeholderTextColor="#94A3B8" keyboardType="number-pad" style={styles.bpInput} />
+                      </View>
+                      <Text style={styles.vitalUnit}>mmHg</Text>
+                    </View>
+                  </View>
                   <TextInput value={observations} onChangeText={setObservations} placeholder="Observations" placeholderTextColor="#94A3B8" style={[styles.input, styles.multiline]} multiline />
                   <TextInput value={actionsTaken} onChangeText={setActionsTaken} placeholder="Actions effectuées" placeholderTextColor="#94A3B8" style={[styles.input, styles.multiline]} multiline />
                   <TextInput value={outcome} onChangeText={setOutcome} placeholder="Évolution / résultat" placeholderTextColor="#94A3B8" style={[styles.input, styles.multiline]} multiline />
@@ -433,15 +483,15 @@ const styles = StyleSheet.create({
   lock: { fontSize: 34 },
   title: { fontSize: 22, fontWeight: "900", color: "#111827", textAlign: "center" },
   muted: { color: "#64748B", fontSize: 13, lineHeight: 19 },
-  header: { padding: 20, borderBottomWidth: 1, borderBottomColor: "#E2E8F0", backgroundColor: "#FFFFFF", flexDirection: "row", gap: 12, alignItems: "center" },
+  header: { padding: 14, borderBottomWidth: 1, borderBottomColor: "#E2E8F0", backgroundColor: "#FFFFFF", flexDirection: "row", gap: 12, alignItems: "center" },
   eyebrow: { color: "#344976", fontSize: 11, fontWeight: "900", letterSpacing: 1.2 },
-  headerTitle: { marginTop: 3, fontSize: 24, fontWeight: "900", color: "#111827" },
-  headerSubtitle: { marginTop: 4, color: "#64748B", fontSize: 13 },
+  headerTitle: { marginTop: 2, fontSize: 21, fontWeight: "900", color: "#111827" },
+  headerSubtitle: { marginTop: 2, color: "#64748B", fontSize: 12 },
   body: { flex: 1, padding: 14 },
-  bodyWide: { flexDirection: "row", gap: 14 },
-  panelWide: { flex: 1, maxWidth: 560 },
-  peoplePanel: { maxHeight: 300, backgroundColor: "#FFFFFF", borderRadius: 16, padding: 14, borderWidth: 1, borderColor: "#E2E8F0" },
-  contentPanel: { flex: 1, backgroundColor: "#FFFFFF", borderRadius: 16, padding: 16, borderWidth: 1, borderColor: "#E2E8F0" },
+  bodyWide: { flexDirection: "row", gap: 12 },
+  panelWide: { flex: 1 },
+  peoplePanel: { width: 280, maxHeight: "100%", backgroundColor: "#FFFFFF", borderRadius: 14, padding: 12, borderWidth: 1, borderColor: "#E2E8F0" },
+  contentPanel: { flex: 1, minWidth: 0, backgroundColor: "#FFFFFF", borderRadius: 14, padding: 14, borderWidth: 1, borderColor: "#E2E8F0" },
   sectionTitle: { fontSize: 17, fontWeight: "900", color: "#111827", marginBottom: 10 },
   subTitle: { fontSize: 14, fontWeight: "900", color: "#111827" },
   search: { height: 42, borderWidth: 1, borderColor: "#CBD5E1", borderRadius: 10, paddingHorizontal: 12, color: "#111827", marginBottom: 8 },
@@ -457,7 +507,7 @@ const styles = StyleSheet.create({
   reportChipActive: { borderColor: "#344976", backgroundColor: "#F1F4F9" },
   reportChipTitle: { fontSize: 12, fontWeight: "800", color: "#111827" },
   reportChipMeta: { fontSize: 10, color: "#64748B", marginTop: 4 },
-  detailCard: { marginTop: 14, padding: 14, borderRadius: 14, backgroundColor: "#F8FAFC", borderWidth: 1, borderColor: "#E2E8F0" },
+  detailCard: { marginTop: 10, padding: 12, borderRadius: 14, backgroundColor: "#F8FAFC", borderWidth: 1, borderColor: "#E2E8F0" },
   detailTitle: { fontSize: 17, fontWeight: "900", color: "#111827" },
   detailMeta: { color: "#64748B", fontSize: 11, marginTop: 4 },
   badge: { alignSelf: "flex-start", marginTop: 10, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999, backgroundColor: "#E7EBF2", color: "#344976", fontSize: 10, fontWeight: "900" },
@@ -466,22 +516,36 @@ const styles = StyleSheet.create({
   detailValue: { marginTop: 3, fontSize: 13, lineHeight: 19, color: "#1E293B" },
   detailFooter: { marginTop: 14, paddingTop: 10, borderTopWidth: 1, borderTopColor: "#E2E8F0", color: "#64748B", fontSize: 11 },
   deleteText: { color: "#B91C1C", fontSize: 11, fontWeight: "900" },
-  formCard: { marginTop: 14, padding: 14, borderRadius: 14, borderWidth: 1, borderColor: "#E2E8F0" },
-  optionRow: { flexDirection: "row", flexWrap: "wrap", gap: 7, marginTop: 10, marginBottom: 10 },
-  option: { paddingHorizontal: 10, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: "#CBD5E1", backgroundColor: "#FFFFFF" },
+  formCard: { marginTop: 10, padding: 12, borderRadius: 14, borderWidth: 1, borderColor: "#E2E8F0" },
+  optionRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 7, marginBottom: 7 },
+  option: { paddingHorizontal: 9, paddingVertical: 6, borderRadius: 10, borderWidth: 1, borderColor: "#CBD5E1", backgroundColor: "#FFFFFF" },
   optionActive: { backgroundColor: "#344976", borderColor: "#344976" },
   optionText: { fontSize: 11, fontWeight: "800", color: "#475569" },
   optionTextActive: { color: "#FFFFFF" },
-  input: { minHeight: 44, borderWidth: 1, borderColor: "#CBD5E1", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, color: "#111827", marginTop: 8, backgroundColor: "#FFFFFF" },
-  multiline: { minHeight: 82, textAlignVertical: "top" },
+  input: { minHeight: 40, borderWidth: 1, borderColor: "#CBD5E1", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, color: "#111827", marginTop: 8, backgroundColor: "#FFFFFF" },
+  multiline: { minHeight: 58, textAlignVertical: "top" },
   checkRow: { flexDirection: "row", alignItems: "center", gap: 9, marginTop: 12 },
   checkbox: { width: 20, height: 20, borderRadius: 5, borderWidth: 1, borderColor: "#94A3B8", alignItems: "center", justifyContent: "center" },
   checkboxActive: { backgroundColor: "#344976", borderColor: "#344976" },
   check: { color: "#FFFFFF", fontWeight: "900" },
   checkLabel: { color: "#334155", fontSize: 12, fontWeight: "700" },
-  primaryButton: { marginTop: 14, alignSelf: "flex-start", backgroundColor: "#344976", paddingHorizontal: 15, paddingVertical: 11, borderRadius: 10 },
+  primaryButton: { marginTop: 10, alignSelf: "flex-start", backgroundColor: "#344976", paddingHorizontal: 15, paddingVertical: 11, borderRadius: 10 },
   primaryText: { color: "#FFFFFF", fontWeight: "900", fontSize: 12 },
   secondaryButton: { borderWidth: 1, borderColor: "#CBD5E1", paddingHorizontal: 12, paddingVertical: 9, borderRadius: 10 },
   secondaryText: { color: "#344976", fontSize: 12, fontWeight: "900" },
-  readOnly: { marginTop: 14, padding: 12, borderRadius: 10, backgroundColor: "#F1F5F9", color: "#64748B", fontSize: 12, lineHeight: 18 },
+  readOnly: { marginTop: 10, padding: 10, borderRadius: 10, backgroundColor: "#F1F5F9", color: "#64748B", fontSize: 12, lineHeight: 18 },
+  vitalsSummary: { flexDirection: "row", gap: 8, marginTop: 10, padding: 9, borderRadius: 10, backgroundColor: "#EEF2F8" },
+  vitalSummaryItem: { flex: 1, minWidth: 0 },
+  vitalSummaryItemWide: { flex: 1.35, minWidth: 0 },
+  vitalSummaryLabel: { fontSize: 9, fontWeight: "900", color: "#64748B", textTransform: "uppercase" },
+  vitalSummaryValue: { marginTop: 2, fontSize: 12, fontWeight: "900", color: "#344976" },
+  formSectionLabel: { marginTop: 8, fontSize: 10, fontWeight: "900", color: "#64748B", textTransform: "uppercase" },
+  vitalsFormRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 6, marginBottom: 2 },
+  vitalField: { flex: 1, minWidth: 150, position: "relative" },
+  vitalFieldLabel: { fontSize: 10, fontWeight: "800", color: "#475569", marginBottom: 4 },
+  compactInput: { height: 36, borderWidth: 1, borderColor: "#CBD5E1", borderRadius: 8, paddingHorizontal: 9, paddingRight: 34, color: "#111827", backgroundColor: "#FFFFFF" },
+  vitalUnit: { position: "absolute", right: 9, bottom: 9, fontSize: 10, fontWeight: "800", color: "#64748B" },
+  bpRow: { flexDirection: "row", alignItems: "center", gap: 5 },
+  bpInput: { flex: 1, minWidth: 0, height: 36, borderWidth: 1, borderColor: "#CBD5E1", borderRadius: 8, paddingHorizontal: 8, color: "#111827", backgroundColor: "#FFFFFF" },
+  bpSlash: { color: "#64748B", fontWeight: "900" },
 });
