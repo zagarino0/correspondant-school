@@ -19,6 +19,7 @@ import {
   getStudentGrades,
   type ParentGrade,
 } from "../../../services/grades/grade.service";
+import { getMedicalAccess } from "../../../services/medical/medical.service";
 
 type ParentDashboardProps = {
   firstName: string;
@@ -193,6 +194,7 @@ export function ParentDashboard({ firstName }: ParentDashboardProps) {
   const [scheduleError, setScheduleError] = useState(false);
   const [childrenLoading, setChildrenLoading] = useState(true);
   const [childrenError, setChildrenError] = useState(false);
+  const [medicalAllowed, setMedicalAllowed] = useState<boolean | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -231,6 +233,22 @@ export function ParentDashboard({ firstName }: ParentDashboardProps) {
     }
 
     void loadChildren();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    void getMedicalAccess()
+      .then((access) => {
+        if (isMounted) setMedicalAllowed(access.allowed);
+      })
+      .catch(() => {
+        if (isMounted) setMedicalAllowed(false);
+      });
 
     return () => {
       isMounted = false;
@@ -516,17 +534,28 @@ export function ParentDashboard({ firstName }: ParentDashboardProps) {
         {
           id: "medical-record",
           title: "Fiche médicale",
-          value: selectedChild ? "Consulter" : "—",
-          description: selectedChild
-            ? `Informations médicales de ${selectedChild.firstName}.`
-            : "Sélectionnez un enfant pour consulter sa fiche médicale.",
-          onPress: selectedChild
-            ? () =>
-                router.push({
-                  pathname: "/(app)/medical-record",
-                  params: { studentId: selectedChild.id },
-                })
-            : undefined,
+          value:
+            medicalAllowed === null
+              ? "…"
+              : medicalAllowed && selectedChild
+                ? "Consulter"
+                : "—",
+          description:
+            medicalAllowed === null
+              ? "Vérification de l’accès médical."
+              : !medicalAllowed
+                ? "L’accès à la fiche médicale n’est pas disponible pour ce compte."
+                : selectedChild
+                  ? `Informations médicales de ${selectedChild.firstName}.`
+                  : "Sélectionnez un enfant pour consulter sa fiche médicale.",
+          onPress:
+            medicalAllowed && selectedChild
+              ? () =>
+                  router.push({
+                    pathname: "/(app)/medical",
+                    params: { userId: selectedChild.id },
+                  })
+              : undefined,
         },
         {
           id: "schedule",
