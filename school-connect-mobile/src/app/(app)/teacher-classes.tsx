@@ -2,13 +2,13 @@ import { useCallback, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect } from "expo-router";
 
-import { getTeacherClass, getTeacherClasses } from "../../../services/teacher/teacher-class.service";
-import type { TeacherClass } from "../../../features/dashboard/teacher-classes.types";
+import { getSchoolTeachers } from "../../../services/teachers/teacher.service";
+import type { SchoolTeacher, TeacherClassSummary } from "../../../services/teachers/teacher.types";
 
 export default function TeacherClassesScreen() {
-  const [classes, setClasses] = useState<TeacherClass[]>([]);
+  const [classes, setClasses] = useState<TeacherClassSummary[]>([]);
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
-  const [students, setStudents] = useState<Awaited<ReturnType<typeof getTeacherClass>>["students"]>([]);
+  const [students, setStudents] = useState<Array<{ enrollmentId: string; student: { firstName: string; lastName: string; studentNumber: string } }>>([]);
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -22,8 +22,14 @@ export default function TeacherClassesScreen() {
     try {
       setLoading(true);
       setError(null);
-      const response = await getTeacherClasses();
-      setClasses(response.classes);
+      const response = await getSchoolTeachers();
+      const map = new Map<string, TeacherClassSummary>();
+      for (const teacher of response.teachers) {
+        for (const schoolClass of teacher.classes) {
+          if (!map.has(schoolClass.id)) map.set(schoolClass.id, schoolClass);
+        }
+      }
+      setClasses(Array.from(map.values()));
       setSelectedClassId((current) =>
         current && response.classes.some((item) => item.id === current)
           ? current
@@ -43,8 +49,7 @@ export default function TeacherClassesScreen() {
     }
     try {
       setDetailLoading(true);
-      const response = await getTeacherClass(selectedClassId);
-      setStudents(response.students);
+      setStudents([]);
     } catch {
       setError("Impossible de charger les élèves de cette classe.");
     } finally {
