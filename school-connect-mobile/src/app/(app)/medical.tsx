@@ -51,7 +51,6 @@ function roleLabel(role: string, fn: string | null): string {
 export default function MedicalScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const user = useAuthStore((state) => state.user);
   const [access, setAccess] = useState<Awaited<ReturnType<typeof getMedicalAccess>> | null>(null);
   const [people, setPeople] = useState<MedicalPerson[]>([]);
   const [children, setChildren] = useState<MedicalChild[]>([]);
