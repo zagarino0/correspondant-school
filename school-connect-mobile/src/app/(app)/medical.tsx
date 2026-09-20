@@ -24,6 +24,18 @@ import {
   type MedicalUpdateInput,
 } from "../../services/medical/medical.service";
 
+const VITAL_CONFIG: Array<{
+  key: "temperature" | "weightKg" | "bloodPressureSystolic" | "bloodPressureDiastolic";
+  label: string;
+  placeholder: string;
+  suffix: string;
+}> = [
+  { key: "temperature", label: "Température", placeholder: "Ex. 36.8", suffix: "°C" },
+  { key: "weightKg", label: "Poids", placeholder: "Ex. 62.5", suffix: "kg" },
+  { key: "bloodPressureSystolic", label: "Tension systolique", placeholder: "Ex. 120", suffix: "mmHg" },
+  { key: "bloodPressureDiastolic", label: "Tension diastolique", placeholder: "Ex. 80", suffix: "mmHg" },
+];
+
 const FIELD_CONFIG: Array<{
   key: keyof MedicalUpdateInput;
   label: string;
@@ -126,6 +138,10 @@ export default function MedicalScreen() {
         setDetails(response);
         setDraft({
           bloodGroup: response.record?.bloodGroup ?? "",
+          temperature: response.record?.temperature ?? null,
+          weightKg: response.record?.weightKg ?? null,
+          bloodPressureSystolic: response.record?.bloodPressureSystolic ?? null,
+          bloodPressureDiastolic: response.record?.bloodPressureDiastolic ?? null,
           allergies: response.record?.allergies ?? "",
           medicalConditions: response.record?.medicalConditions ?? "",
           medications: response.record?.medications ?? "",
@@ -186,6 +202,10 @@ export default function MedicalScreen() {
       const response = await updateMedicalRecord(selectedUserId, {
         ...draft,
         bloodGroup: draft.bloodGroup?.trim() || null,
+        temperature: draft.temperature === null || draft.temperature === undefined || Number.isNaN(Number(draft.temperature)) ? null : Number(draft.temperature),
+        weightKg: draft.weightKg === null || draft.weightKg === undefined || Number.isNaN(Number(draft.weightKg)) ? null : Number(draft.weightKg),
+        bloodPressureSystolic: draft.bloodPressureSystolic === null || draft.bloodPressureSystolic === undefined || Number.isNaN(Number(draft.bloodPressureSystolic)) ? null : Number(draft.bloodPressureSystolic),
+        bloodPressureDiastolic: draft.bloodPressureDiastolic === null || draft.bloodPressureDiastolic === undefined || Number.isNaN(Number(draft.bloodPressureDiastolic)) ? null : Number(draft.bloodPressureDiastolic),
         allergies: draft.allergies?.trim() || null,
         medicalConditions: draft.medicalConditions?.trim() || null,
         medications: draft.medications?.trim() || null,
@@ -352,7 +372,47 @@ export default function MedicalScreen() {
               </View>
 
               <View style={styles.formCard}>
-                <Text style={styles.sectionTitle}>Fiche médicale</Text>
+                <View style={styles.sectionHeading}>
+                  <View style={styles.sectionHeadingCopy}>
+                    <Text style={styles.sectionTitle}>Constantes vitales</Text>
+                    <Text style={styles.sectionHint}>Mesures relevées lors du suivi médical.</Text>
+                  </View>
+                  <View style={styles.sectionIcon}><Text style={styles.sectionIconText}>+</Text></View>
+                </View>
+
+                <View style={styles.vitalsGrid}>
+                  {VITAL_CONFIG.map((field) => (
+                    <View key={field.key} style={styles.vitalCard}>
+                      <Text style={styles.vitalLabel}>{field.label}</Text>
+                      <View style={styles.vitalInputRow}>
+                        <TextInput
+                          value={draft[field.key] === null || draft[field.key] === undefined ? "" : String(draft[field.key])}
+                          onChangeText={(value) =>
+                            setDraft((current) => ({
+                              ...current,
+                              [field.key]: value.trim() === "" ? null : Number(value.replace(",", ".")),
+                            }))
+                          }
+                          placeholder={field.placeholder}
+                          placeholderTextColor="#94A3B8"
+                          editable={canEdit}
+                          keyboardType="decimal-pad"
+                          style={[styles.vitalInput, !canEdit ? styles.inputReadOnly : null]}
+                        />
+                        <Text style={styles.vitalSuffix}>{field.suffix}</Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+
+                <View style={styles.sectionDivider} />
+
+                <View style={styles.sectionHeading}>
+                  <View style={styles.sectionHeadingCopy}>
+                    <Text style={styles.sectionTitle}>Informations médicales</Text>
+                    <Text style={styles.sectionHint}>Antécédents, traitements et contacts utiles.</Text>
+                  </View>
+                </View>
 
                 {FIELD_CONFIG.map((field) => (
                   <View key={field.key} style={styles.field}>
@@ -449,6 +509,18 @@ const styles = StyleSheet.create({
   alertText: { marginTop: 4, fontSize: 12, lineHeight: 18, color: "#9A3412" },
   formCard: { marginTop: 14, padding: 16, borderRadius: 14, borderWidth: 1, borderColor: "#E2E8F0", backgroundColor: "#FFFFFF" },
   sectionTitle: { fontSize: 17, fontWeight: "900", color: "#111827" },
+  sectionHeading: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 },
+  sectionHeadingCopy: { flex: 1 },
+  sectionHint: { marginTop: 4, fontSize: 11, lineHeight: 17, color: "#64748B" },
+  sectionIcon: { width: 34, height: 34, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: "#EEF2F7" },
+  sectionIconText: { fontSize: 18, fontWeight: "900", color: "#344976" },
+  vitalsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 14 },
+  vitalCard: { flexGrow: 1, flexBasis: 150, minWidth: 140, padding: 11, borderRadius: 12, backgroundColor: "#F8FAFC", borderWidth: 1, borderColor: "#E2E8F0" },
+  vitalLabel: { fontSize: 11, fontWeight: "800", color: "#475569" },
+  vitalInputRow: { flexDirection: "row", alignItems: "center", marginTop: 7 },
+  vitalInput: { flex: 1, minHeight: 40, paddingHorizontal: 10, borderWidth: 1, borderColor: "#CBD5E1", borderRadius: 9, backgroundColor: "#FFFFFF", color: "#111827", fontSize: 14, fontWeight: "800" },
+  vitalSuffix: { marginLeft: 7, minWidth: 38, fontSize: 11, fontWeight: "900", color: "#64748B" },
+  sectionDivider: { height: 1, backgroundColor: "#E2E8F0", marginVertical: 18 },
   field: { marginTop: 13 },
   fieldLabel: { marginBottom: 6, fontSize: 12, fontWeight: "800", color: "#475569" },
   input: { minHeight: 44, paddingHorizontal: 12, paddingVertical: 10, borderWidth: 1, borderColor: "#D1D5DB", borderRadius: 10, backgroundColor: "#FFFFFF", color: "#111827", fontSize: 13 },
