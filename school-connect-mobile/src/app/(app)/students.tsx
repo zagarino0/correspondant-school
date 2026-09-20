@@ -549,12 +549,10 @@ const styles = StyleSheet.create({
   },
   categoryBadgeText: { fontSize: 11, fontWeight: "900", color: "#FFFFFF" },
   levelGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
+    flexDirection: "column",
   },
   levelCard: {
-    width: "48.8%",
+    width: "100%",
     marginBottom: 12,
     padding: 10,
     borderRadius: 14,
