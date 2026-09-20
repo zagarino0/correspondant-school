@@ -79,7 +79,7 @@ export function SchoolAdminDashboard({
     );
   }
 
-  const { counts, attendance, communication } = dashboard;
+  const { counts, attendance } = dashboard;
 
   return (
     <RoleDashboard
