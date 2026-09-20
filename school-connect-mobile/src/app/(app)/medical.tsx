@@ -116,6 +116,8 @@ export default function MedicalScreen() {
 
     let mounted = true;
     async function loadDetails() {
+      if (!selectedUserId) return;
+
       try {
         setDetailLoading(true);
         setError(null);
@@ -261,12 +263,16 @@ export default function MedicalScreen() {
               <Text style={styles.empty}>Aucune personne trouvée.</Text>
             ) : (
               listItems.map((item) => {
-                const id = "userId" in item ? item.userId : item.id;
-                const label = `${item.firstName} ${item.lastName}`;
-                const meta =
-                  "studentNumber" in item
-                    ? `Élève · ${item.studentNumber}`
-                    : `${roleLabel(item.role, item.function)}${item.studentNumber ? ` · ${item.studentNumber}` : ""}`;
+                const isChild = access.mode === "PARENT";
+                const id = isChild
+                  ? (item as MedicalChild).userId
+                  : (item as MedicalPerson).id;
+                const firstName = item.firstName;
+                const lastName = item.lastName;
+                const label = `${firstName} ${lastName}`;
+                const meta = isChild
+                  ? `Élève · ${(item as MedicalChild).studentNumber}`
+                  : `${roleLabel((item as MedicalPerson).role, (item as MedicalPerson).function)}${(item as MedicalPerson).studentNumber ? ` · ${(item as MedicalPerson).studentNumber}` : ""}`;
 
                 return (
                   <Pressable
