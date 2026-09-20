@@ -33,27 +33,36 @@ export function MedicalAccessCard() {
     );
   }
 
-  if (!allowed) return null;
+  const accessGranted = allowed === true;
 
   return (
     <Pressable
-      style={styles.card}
-      onPress={() => router.push("/(app)/medical")}
+      style={[styles.card, !accessGranted ? styles.cardDisabled : null]}
+      onPress={accessGranted ? () => router.push("/(app)/medical") : undefined}
       accessibilityRole="button"
-      accessibilityLabel="Ouvrir les fiches médicales"
+      accessibilityLabel={
+        accessGranted
+          ? "Ouvrir les fiches médicales"
+          : "Accès médical non disponible"
+      }
+      disabled={!accessGranted}
     >
-      <View style={styles.icon}>
+      <View style={[styles.icon, !accessGranted ? styles.iconDisabled : null]}>
         <Text style={styles.iconText}>+</Text>
       </View>
       <View style={styles.copy}>
         <Text style={styles.title}>Fiches médicales</Text>
         <Text style={styles.description}>
-          {mode === "PARENT"
-            ? "Consulter la fiche médicale de votre enfant."
-            : "Consulter et gérer les dossiers médicaux autorisés."}
+          {accessGranted
+            ? mode === "PARENT"
+              ? "Consulter la fiche médicale de votre enfant."
+              : "Consulter et gérer les dossiers médicaux autorisés."
+            : "Accès non disponible pour ce compte dans les conditions actuelles."}
         </Text>
       </View>
-      <Text style={styles.arrow}>›</Text>
+      <Text style={accessGranted ? styles.arrow : styles.lockText}>
+        {accessGranted ? "›" : "Accès restreint"}
+      </Text>
     </Pressable>
   );
 }
@@ -76,6 +85,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
   },
+  cardDisabled: {
+    backgroundColor: "#F8FAFC",
+    borderColor: "#E5E7EB",
+  },
   icon: {
     width: 42,
     height: 42,
@@ -83,6 +96,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#EEF2F7",
+  },
+  iconDisabled: {
+    backgroundColor: "#F1F5F9",
   },
   iconText: {
     fontSize: 22,
@@ -93,4 +109,12 @@ const styles = StyleSheet.create({
   title: { fontSize: 14, fontWeight: "900", color: "#111827" },
   description: { marginTop: 4, fontSize: 12, lineHeight: 17, color: "#64748B" },
   arrow: { fontSize: 26, color: "#344976" },
+  lockText: {
+    maxWidth: 86,
+    fontSize: 9,
+    lineHeight: 12,
+    fontWeight: "800",
+    textAlign: "right",
+    color: "#64748B",
+  },
 });
