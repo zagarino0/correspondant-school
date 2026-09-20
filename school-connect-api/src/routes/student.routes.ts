@@ -560,7 +560,7 @@ const studentRoutes: FastifyPluginAsync = async (fastify) => {
             firstName: z.string().trim().min(1).max(100),
             lastName: z.string().trim().min(1).max(100),
             studentNumber: z.string().trim().min(1).max(50),
-            dateOfBirth: z.string().datetime().nullable().optional(),
+            dateOfBirth: z.string().trim().nullable().optional(),
             classId: z.string().min(1).optional(),
             className: z.string().trim().min(1).optional(),
             gender: z.enum(["MALE", "FEMALE"]),
@@ -687,7 +687,15 @@ const studentRoutes: FastifyPluginAsync = async (fastify) => {
                 studentNumber,
                 firstName,
                 lastName,
-                dateOfBirth: row.dateOfBirth ? new Date(row.dateOfBirth) : null,
+                dateOfBirth: row.dateOfBirth
+                  ? (() => {
+                      const parsedDate = new Date(row.dateOfBirth!);
+                      if (Number.isNaN(parsedDate.getTime())) {
+                        throw new Error(`Date de naissance invalide pour ${row.firstName} ${row.lastName}.`);
+                      }
+                      return parsedDate;
+                    })()
+                  : null,
                 gender: row.gender,
                 status: "ACTIVE",
               },
