@@ -75,9 +75,7 @@ async function processOne(
   const claim = await prisma.smsNotification.updateMany({
     where: {
       id,
-      status: {
-        in: ["PENDING", "FAILED"],
-      },
+      status: "PENDING",
       nextAttemptAt: {
         lte: new Date(),
       },
