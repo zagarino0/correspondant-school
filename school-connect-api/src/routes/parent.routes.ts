@@ -3,6 +3,39 @@ import type { FastifyPluginAsync } from "fastify";
 import { authenticate } from "../middleware/authenticate.js";
 
 export const parentRoutes: FastifyPluginAsync = async (fastify) => {
+
+  fastify.get(
+    "/parents/me/summons",
+    { onRequest: [authenticate] },
+    async (request, reply) => {
+      if (request.user.role !== "PARENT") {
+        return reply.status(403).send({
+          error: { code: "FORBIDDEN", message: "Parent access required." },
+        });
+      }
+
+      const summons = await fastify.prisma.parentSummons.findMany({
+        where: { parentId: request.user.sub },
+        orderBy: { createdAt: "desc" },
+        take: 20,
+        select: {
+          id: true,
+          studentId: true,
+          reason: true,
+          message: true,
+          status: true,
+          scheduledAt: true,
+          createdAt: true,
+          student: {
+            select: { id: true, firstName: true, lastName: true },
+          },
+        },
+      });
+
+      return reply.send({ summons });
+    },
+  );
+
   fastify.get(
     "/parents/me/children",
     {
