@@ -13,7 +13,7 @@ export async function getDashboard(): Promise<SurveillantDashboardResponse> {
   return response.data;
 }
 
-export async function getClasses(params?: { search?: string; limit?: number }): Promise<{
+export async function getClasses(params?: import("./surveillant.types").SurveillantClassFilters & { limit?: number }): Promise<{
   items: import("./surveillant.types").SurveillantClassOption[];
   total: number;
   hasMore: boolean;
