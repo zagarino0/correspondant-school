@@ -1,95 +1,57 @@
-import { useEffect, useState } from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
-
 import { RoleDashboard } from "./RoleDashboard";
 import { MedicalAccessCard } from "../components/MedicalAccessCard";
 import { NurseDashboard } from "./NurseDashboard";
-import { getMedicalAccess } from "../../../services/medical/medical.service";
+import { SurveillantDashboard } from "./SurveillantDashboard";
+import type { StaffFunction } from "../../../types/auth";
 
 type StaffDashboardProps = {
   firstName: string;
+  staffFunction?: StaffFunction | null;
 };
 
-export function StaffDashboard({ firstName }: StaffDashboardProps) {
-  const [isNurse, setIsNurse] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    let mounted = true;
-
-    void getMedicalAccess()
-      .then((access) => {
-        if (mounted) {
-          setIsNurse(access.allowed && access.mode === "FULL");
-        }
-      })
-      .catch(() => {
-        if (mounted) setIsNurse(false);
-      });
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  if (isNurse === null) {
-    return (
-      <View style={styles.loading}>
-        <ActivityIndicator size="large" color="#344976" />
-        <Text style={styles.loadingText}>Chargement de votre espace…</Text>
-      </View>
-    );
+export function StaffDashboard({
+  firstName,
+  staffFunction,
+}: StaffDashboardProps) {
+  if (staffFunction === "INFIRMIER") {
+    return <NurseDashboard firstName={firstName} />;
   }
 
-  if (isNurse) {
-    return <NurseDashboard firstName={firstName} />;
+  if (staffFunction === "SURVEILLANT") {
+    return <SurveillantDashboard firstName={firstName} />;
   }
 
   return (
     <>
       <RoleDashboard
-      firstName={firstName}
-      title="Espace personnel"
-      subtitle="accédez aux opérations qui vous concernent."
-      sections={[
-        {
-          id: "staff-operations",
-          title: "Opérations",
-          cards: [
-            {
-              id: "students",
-              title: "Élèves",
-              description: "Accéder aux informations des élèves.",
-            },
-            {
-              id: "attendance",
-              title: "Présences",
-              description: "Consulter et suivre les présences.",
-            },
-            {
-              id: "classes",
-              title: "Classes",
-              description: "Consulter les classes de l'établissement.",
-            },
-          ],
-        },
-      ]}
+        firstName={firstName}
+        title="Espace personnel"
+        subtitle="Accédez aux opérations qui vous concernent."
+        sections={[
+          {
+            id: "staff-operations",
+            title: "Opérations",
+            cards: [
+              {
+                id: "students",
+                title: "Élèves",
+                description: "Accéder aux informations des élèves.",
+              },
+              {
+                id: "attendance",
+                title: "Présences",
+                description: "Consulter et suivre les présences.",
+              },
+              {
+                id: "classes",
+                title: "Classes",
+                description: "Consulter les classes de l'établissement.",
+              },
+            ],
+          },
+        ]}
       />
       <MedicalAccessCard />
     </>
   );
 }
-
-
-const styles = StyleSheet.create({
-  loading: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 24,
-  },
-  loadingText: {
-    marginTop: 10,
-    fontSize: 13,
-    color: "#64748B",
-  },
-});
