@@ -394,6 +394,7 @@ model AttendanceEvent {
   attendance Attendance @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
   student    Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
   creator    User       @relation("AttendanceEventCreatedBy", fields: [createdBy], references: [id], onDelete: Restrict)
+  summons    ParentSummons[]
 
   createdAt DateTime @default(now())
 
@@ -404,18 +405,20 @@ model AttendanceEvent {
 }
 
 model ParentSummons {
-  id          String              @id @default(cuid())
-  studentId   String
-  parentId    String
-  createdBy   String
-  reason      String
-  message     String
-  status      ParentSummonsStatus @default(PENDING)
-  scheduledAt DateTime?
+  id               String              @id @default(cuid())
+  studentId        String
+  parentId         String
+  createdBy        String
+  attendanceEventId String?
+  reason           String
+  message          String
+  status           ParentSummonsStatus @default(PENDING)
+  scheduledAt      DateTime?
 
   student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
   parent  User    @relation("ParentSummonsParent", fields: [parentId], references: [id], onDelete: Cascade)
   creator User    @relation("ParentSummonsCreatedBy", fields: [createdBy], references: [id], onDelete: Restrict)
+  attendanceEvent AttendanceEvent? @relation(fields: [attendanceEventId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -423,6 +426,7 @@ model ParentSummons {
   @@index([studentId, createdAt])
   @@index([parentId, status])
   @@index([createdBy, createdAt])
+  @@index([attendanceEventId])
   @@index([status, createdAt])
 }
 
