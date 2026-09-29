@@ -22,6 +22,41 @@ export type RealtimeEvent =
       };
     }
   | {
+      type: "attendance:event";
+      payload: {
+        event: {
+          id: string;
+          attendanceId: string;
+          studentId: string;
+          type: "LATE_AUTHORIZED" | "LATE_NOT_AUTHORIZED" | "ABSENCE_JUSTIFIED" | "ABSENCE_UNJUSTIFIED";
+          note: string | null;
+          createdBy: string;
+          createdAt: string;
+        };
+        attendance: {
+          id: string;
+          studentId: string;
+          status: "PRESENT" | "ABSENT" | "LATE" | "EXCUSED";
+          arrivalTime: string | null;
+          reason: string | null;
+          note: string | null;
+        };
+      };
+    }
+  | {
+      type: "parent:summons:new";
+      payload: {
+        id: string;
+        studentId: string;
+        parentId?: string;
+        reason: string;
+        message: string;
+        status: "PENDING" | "ACCEPTED" | "DECLINED" | "COMPLETED";
+        scheduledAt?: string | null;
+        createdAt: string;
+      };
+    }
+  | {
       type: "error";
       payload: {
         code: string;
