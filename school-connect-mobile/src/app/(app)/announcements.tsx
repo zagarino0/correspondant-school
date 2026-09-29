@@ -10,6 +10,7 @@ import {
 import { useRouter } from "expo-router";
 import { createRealtimeConnection } from "../../services/realtime/websocket.service";
 import { getMySummons, updateSummonsStatus, type ParentSummons } from "../../services/parents/parent.service";
+import { getSummonsNotifications, markSummonsNotificationRead, type SurveillantSummonsNotification } from "../../services/surveillant/surveillant.service";
 
 import type { StudentAnnouncement } from "../../features/announcements/announcement.types";
 import {
@@ -79,6 +80,7 @@ export default function AnnouncementsScreen() {
   const router = useRouter();
   const [announcements, setAnnouncements] = useState<StudentAnnouncement[]>([]);
   const [summons, setSummons] = useState<ParentSummons[]>([]);
+  const [surveillantNotifications, setSurveillantNotifications] = useState<SurveillantSummonsNotification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -106,6 +108,17 @@ export default function AnnouncementsScreen() {
             setSummons([]);
           }
         }
+
+        try {
+          const notificationResponse = await getSummonsNotifications();
+          if (isMounted) {
+            setSurveillantNotifications(notificationResponse.items);
+          }
+        } catch {
+          if (isMounted) {
+            setSurveillantNotifications([]);
+          }
+        }
       } catch {
         if (isMounted) {
           setErrorMessage("Impossible de charger vos annonces.");
@@ -121,7 +134,7 @@ export default function AnnouncementsScreen() {
 
     const connection = createRealtimeConnection({
       onEvent: (event) => {
-        if (event.type === "parent:summons:new") {
+        if (event.type === "parent:summons:new" || event.type === "parent:summons:updated") {
           void loadAnnouncements();
         }
       },
@@ -204,7 +217,7 @@ export default function AnnouncementsScreen() {
         <View style={styles.stateContainer}>
           <Text style={styles.errorText}>{errorMessage}</Text>
         </View>
-      ) : announcements.length === 0 && summons.length === 0 ? (
+      ) : announcements.length === 0 && summons.length === 0 && surveillantNotifications.length === 0 ? (
         <View style={styles.stateContainer}>
           <Text style={styles.stateTitle}>Aucune annonce</Text>
           <Text style={styles.stateText}>
@@ -217,6 +230,60 @@ export default function AnnouncementsScreen() {
           contentContainerStyle={styles.contentContainer}
           showsVerticalScrollIndicator={false}
         >
+          {surveillantNotifications.map((notification) => (
+            <Pressable
+              key={notification.id}
+              onPress={async () => {
+                if (!notification.responseReadAt) {
+                  try {
+                    await markSummonsNotificationRead(notification.id);
+                    setSurveillantNotifications((current) =>
+                      current.map((item) =>
+                        item.id === notification.id
+                          ? { ...item, responseReadAt: new Date().toISOString() }
+                          : item,
+                      ),
+                    );
+                  } catch {}
+                }
+              }}
+              style={[styles.card, styles.responseCard, !notification.responseReadAt ? styles.unreadCard : null]}
+            >
+              <View style={styles.cardHeader}>
+                <View style={styles.cardTitleContainer}>
+                  <Text style={styles.title}>Réponse à une convocation</Text>
+                  {notification.scheduledAt ? (
+                    <Text style={styles.appointment}>
+                      Rendez-vous :{" "}
+                      <Text style={styles.appointmentStrong}>
+                        {formatDate(notification.scheduledAt)} à{" "}
+                        {new Date(notification.scheduledAt).toLocaleTimeString("fr-FR", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </Text>
+                    </Text>
+                  ) : null}
+                </View>
+                {!notification.responseReadAt ? (
+                  <Text style={styles.unreadLabel}>Nouveau</Text>
+                ) : null}
+              </View>
+              <Text style={styles.summonsStudent}>
+                {notification.student.firstName} {notification.student.lastName}
+              </Text>
+              <Text style={styles.summonsReason}>{notification.reason}</Text>
+              <Text style={notification.status === "ACCEPTED" ? styles.acceptedStatus : styles.declinedStatus}>
+                {notification.status === "ACCEPTED"
+                  ? "✓ Convocation acceptée par le parent"
+                  : "✕ Convocation refusée par le parent"}
+              </Text>
+              <Text style={styles.content}>
+                Le parent a répondu à la convocation envoyée pour cet élève.
+              </Text>
+            </Pressable>
+          ))}
+
           {summons.map((summon) => (
             <View key={summon.id} style={[styles.card, styles.summonsCard, summon.status === "PENDING" ? styles.unreadCard : null]}>
               <View style={styles.cardHeader}>
@@ -391,6 +458,22 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "600",
     color: "#374151",
+  },
+  responseCard: {
+    borderLeftWidth: 4,
+    borderLeftColor: "#344976",
+  },
+  acceptedStatus: {
+    marginTop: 10,
+    fontSize: 13,
+    fontWeight: "900",
+    color: "#166534",
+  },
+  declinedStatus: {
+    marginTop: 10,
+    fontSize: 13,
+    fontWeight: "900",
+    color: "#B91C1C",
   },
   summonsCard: {
     borderLeftWidth: 4,
