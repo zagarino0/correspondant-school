@@ -88,46 +88,45 @@ export default function AnnouncementsScreen() {
     let isMounted = true;
 
     async function loadAnnouncements() {
-      try {
-        setIsLoading(true);
-        setErrorMessage(null);
+      setIsLoading(true);
+      setErrorMessage(null);
 
-        const response = await getMyAnnouncements();
+      const [announcementResult, summonsResult, notificationResult] =
+        await Promise.allSettled([
+          getMyAnnouncements(),
+          getMySummons(),
+          getSummonsNotifications(),
+        ]);
 
-        if (isMounted) {
-          setAnnouncements(response.announcements);
-        }
+      if (!isMounted) return;
 
-        try {
-          const summonsResponse = await getMySummons();
-          if (isMounted) {
-            setSummons(summonsResponse.summons);
-          }
-        } catch {
-          if (isMounted) {
-            setSummons([]);
-          }
-        }
-
-        try {
-          const notificationResponse = await getSummonsNotifications();
-          if (isMounted) {
-            setSurveillantNotifications(notificationResponse.items);
-          }
-        } catch {
-          if (isMounted) {
-            setSurveillantNotifications([]);
-          }
-        }
-      } catch {
-        if (isMounted) {
-          setErrorMessage("Impossible de charger vos annonces.");
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+      if (announcementResult.status === "fulfilled") {
+        setAnnouncements(announcementResult.value.announcements);
+      } else {
+        setAnnouncements([]);
       }
+
+      if (summonsResult.status === "fulfilled") {
+        setSummons(summonsResult.value.summons);
+      } else {
+        setSummons([]);
+      }
+
+      if (notificationResult.status === "fulfilled") {
+        setSurveillantNotifications(notificationResult.value.items);
+      } else {
+        setSurveillantNotifications([]);
+      }
+
+      if (
+        announcementResult.status === "rejected" &&
+        summonsResult.status === "rejected" &&
+        notificationResult.status === "rejected"
+      ) {
+        setErrorMessage("Impossible de charger vos notifications.");
+      }
+
+      setIsLoading(false);
     }
 
     void loadAnnouncements();
