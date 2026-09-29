@@ -186,7 +186,7 @@ export function SurveillantDashboard({ firstName }: Props) {
   const defaultSummonsMessage = useCallback((reason: ParentSummonsReason, student: SurveillantAttendanceItem | null) => {
     const name = student ? `${student.student.firstName} ${student.student.lastName}` : "votre enfant";
     const className = controlSession?.className ?? "sa classe";
-    return `Bonjour,\\n\\nnous vous invitons à vous présenter à l’établissement concernant ${reason.toLowerCase()} de votre enfant ${name}, élève de ${className}.\\n\\nMerci de prendre connaissance de cette convocation.`;
+    return `Bonjour,\n\nnous vous invitons à vous présenter à l’établissement concernant ${reason.toLowerCase()} de votre enfant ${name}, élève de ${className}.\\n\\nMerci de prendre connaissance de cette convocation.`;
   }, [controlSession]);
 
   const openSummons = (item: SurveillantAttendanceItem) => {
@@ -221,8 +221,8 @@ export function SurveillantDashboard({ firstName }: Props) {
       setSummonsError("Le message au parent est obligatoire.");
       return;
     }
-    if ((summonsDate && !/^\\d{2}\\/\\d{2}\\/\\d{4}$/.test(summonsDate)) ||
-        (summonsTime && !/^\\d{2}:\\d{2}$/.test(summonsTime))) {
+    if ((summonsDate && !/^\d{2}\/\d{2}\/\d{4}$/.test(summonsDate)) ||
+        (summonsTime && !/^\d{2}:\d{2}$/.test(summonsTime))) {
       setSummonsError("Utilisez les formats JJ/MM/AAAA et HH:MM.");
       return;
     }
