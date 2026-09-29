@@ -51,6 +51,8 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
           email: true,
           firstName: true,
           lastName: true,
+          phone: true,
+          smsEnabled: true,
           role: true,
           status: true,
           schoolId: true,
