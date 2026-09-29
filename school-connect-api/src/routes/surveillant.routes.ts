@@ -48,6 +48,69 @@ function todayRange(date = new Date()) {
 
 export async function surveillantRoutes(fastify: FastifyInstance) {
   fastify.get(
+    "/notifications/summons",
+    {
+      onRequest: [authenticate],
+      preHandler: [authorize("parent-summons.read")],
+    },
+    async (request, reply) => {
+      const items = await fastify.prisma.parentSummons.findMany({
+        where: {
+          createdBy: request.user.sub,
+          status: { in: ["ACCEPTED", "DECLINED"] },
+        },
+        orderBy: { updatedAt: "desc" },
+        take: 20,
+        select: {
+          id: true,
+          studentId: true,
+          reason: true,
+          message: true,
+          status: true,
+          scheduledAt: true,
+          createdAt: true,
+          updatedAt: true,
+          responseReadAt: true,
+          student: {
+            select: { firstName: true, lastName: true },
+          },
+        },
+      });
+
+      const unreadCount = items.filter((item) => item.responseReadAt === null).length;
+      return reply.send({ items, unreadCount });
+    },
+  );
+
+  fastify.patch(
+    "/notifications/summons/:summonsId/read",
+    {
+      onRequest: [authenticate],
+      preHandler: [authorize("parent-summons.read")],
+    },
+    async (request, reply) => {
+      const { summonsId } = request.params as { summonsId: string };
+      const result = await fastify.prisma.parentSummons.updateMany({
+        where: {
+          id: summonsId,
+          createdBy: request.user.sub,
+          status: { in: ["ACCEPTED", "DECLINED"] },
+          responseReadAt: null,
+        },
+        data: { responseReadAt: new Date() },
+      });
+
+      if (result.count === 0) {
+        return reply.status(404).send({
+          error: { code: "NOTIFICATION_NOT_FOUND", message: "Notification not found." },
+        });
+      }
+
+      return reply.send({ success: true });
+    },
+  );
+
+  fastify.get(
     "/dashboard",
     {
       onRequest: [authenticate],
