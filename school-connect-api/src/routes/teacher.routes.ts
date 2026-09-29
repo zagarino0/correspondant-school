@@ -354,6 +354,15 @@ export async function teacherRoutes(
               reason: true,
               note: true,
               recordedBy: true,
+              events: {
+                orderBy: { createdAt: "desc" },
+                select: {
+                  id: true,
+                  type: true,
+                  note: true,
+                  createdAt: true,
+                },
+              },
             },
           },
         },
