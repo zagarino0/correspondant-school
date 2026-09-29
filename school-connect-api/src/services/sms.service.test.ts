@@ -120,6 +120,24 @@ describe("SMS queue lifecycle", () => {
     expect(rows[0]?.sentAt).toBeInstanceOf(Date);
   });
 
+  it("creates PENDING for an enabled valid Madagascar mobile", async () => {
+    const rows: SmsRow[] = [];
+    const prisma = createFakePrisma(rows);
+
+    await enqueueSmsNotification(prisma as never, {
+      recipientId: "parent-1",
+      studentId: "student-1",
+      parentSummonsId: "summons-1",
+      type: "SUMMONS",
+      phone: "032 12 34 567",
+      message: "Convocation",
+    });
+
+    expect(rows[0]?.status).toBe("PENDING");
+    expect(rows[0]?.recipientPhone).toBe("+261321234567");
+    expect(rows[0]?.parentSummonsId).toBe("summons-1");
+  });
+
   it("retries transient failures and then reaches SENT", async () => {
     const rows = [makeRow()];
     const prisma = createFakePrisma(rows);
