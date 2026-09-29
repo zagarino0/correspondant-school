@@ -183,11 +183,22 @@ export function SurveillantDashboard({ firstName }: Props) {
     }
   };
 
-  const defaultSummonsMessage = useCallback((reason: ParentSummonsReason, student: SurveillantAttendanceItem | null) => {
-    const name = student ? `${student.student.firstName} ${student.student.lastName}` : "votre enfant";
-    const className = controlSession?.className ?? "sa classe";
-    return `Bonjour,\n\nnous vous invitons à vous présenter à l’établissement concernant ${reason.toLowerCase()} de votre enfant ${name}, élève de ${className}.\n\nMerci de prendre connaissance de cette convocation.`;
-  }, [controlSession]);
+  const defaultSummonsMessage = useCallback(
+    (
+      reason: ParentSummonsReason,
+      student: SurveillantAttendanceItem | null,
+      date = summonsDate,
+      time = summonsTime,
+    ) => {
+      const name = student ? `${student.student.firstName} ${student.student.lastName}` : "votre enfant";
+      const className = controlSession?.className ?? "sa classe";
+      const appointment = date && time
+        ? ` le ${date} à ${time}`
+        : "";
+      return `Bonjour,\n\nNous vous invitons à vous présenter à l’établissement concernant ${reason.toLowerCase()} de votre enfant ${name}, élève de ${className}${appointment}.\n\nMerci de prendre connaissance de cette convocation.`;
+    },
+    [controlSession, summonsDate, summonsTime],
+  );
 
   const openSummons = (item: SurveillantAttendanceItem) => {
     const reason: ParentSummonsReason =
@@ -196,11 +207,22 @@ export function SurveillantDashboard({ firstName }: Props) {
         : item.status === "ABSENT"
           ? "Absence non justifiée"
           : "Retards répétés";
+    const now = new Date();
+    const autoDate = [
+      String(now.getDate()).padStart(2, "0"),
+      String(now.getMonth() + 1).padStart(2, "0"),
+      now.getFullYear(),
+    ].join("/");
+    const autoTime = [
+      String(now.getHours()).padStart(2, "0"),
+      String(now.getMinutes()).padStart(2, "0"),
+    ].join(":");
+
     setSummonsStudent(item);
     setSummonsReason(reason);
-    setSummonsMessage(defaultSummonsMessage(reason, item));
-    setSummonsDate("");
-    setSummonsTime("");
+    setSummonsDate(autoDate);
+    setSummonsTime(autoTime);
+    setSummonsMessage(defaultSummonsMessage(reason, item, autoDate, autoTime));
     setSummonsError(null);
     setSummonsVisible(true);
   };
@@ -602,6 +624,7 @@ export function SurveillantDashboard({ firstName }: Props) {
               />
 
               <Text style={styles.formLabel}>Date de convocation</Text>
+              <Text style={styles.formLabel}>Date de convocation</Text>
               <TextInput
                 value={summonsDate}
                 onChangeText={setSummonsDate}
@@ -612,6 +635,7 @@ export function SurveillantDashboard({ firstName }: Props) {
               />
 
               <Text style={styles.formLabel}>Heure</Text>
+              <Text style={styles.formLabel}>Heure de convocation</Text>
               <TextInput
                 value={summonsTime}
                 onChangeText={setSummonsTime}
