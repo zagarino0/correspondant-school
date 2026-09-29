@@ -222,11 +222,22 @@ export default function AnnouncementsScreen() {
               <View style={styles.cardHeader}>
                 <View style={styles.cardTitleContainer}>
                   <Text style={styles.title}>Convocation parentale</Text>
-                  <Text style={styles.date}>
-                    {summon.scheduledAt
-                      ? `Rendez-vous : ${formatDate(summon.scheduledAt)} à ${new Date(summon.scheduledAt).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}`
-                      : `Envoyée le ${formatDate(summon.createdAt)}`}
-                  </Text>
+                  {summon.scheduledAt ? (
+                    <Text style={styles.appointment}>
+                      Rendez-vous :{" "}
+                      <Text style={styles.appointmentStrong}>
+                        {formatDate(summon.scheduledAt)} à{" "}
+                        {new Date(summon.scheduledAt).toLocaleTimeString("fr-FR", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </Text>
+                    </Text>
+                  ) : (
+                    <Text style={styles.date}>
+                      Envoyée le {formatDate(summon.createdAt)}
+                    </Text>
+                  )}
                 </View>
                 {summon.status === "PENDING" ? (
                   <Text style={styles.unreadLabel}>À traiter</Text>
@@ -353,6 +364,16 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontSize: 12,
     color: "#6B7280",
+  },
+  appointment: {
+    marginTop: 6,
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#344976",
+  },
+  appointmentStrong: {
+    fontWeight: "900",
+    color: "#111827",
   },
   unreadLabel: {
     fontSize: 12,
