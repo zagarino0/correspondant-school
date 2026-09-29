@@ -193,9 +193,9 @@ export function SurveillantDashboard({ firstName }: Props) {
       const name = student ? `${student.student.firstName} ${student.student.lastName}` : "votre enfant";
       const className = controlSession?.className ?? "sa classe";
       const appointment = date && time
-        ? ` le ${date} à ${time}`
+        ? `\n\nRendez-vous : ${date} à ${time}`
         : "";
-      return `Bonjour,\n\nNous vous invitons à vous présenter à l’établissement concernant ${reason.toLowerCase()} de votre enfant ${name}, élève de ${className}${appointment}.\n\nMerci de prendre connaissance de cette convocation.`;
+      return `Bonjour,\n\nNous vous invitons à vous présenter à l’établissement concernant ${reason.toLowerCase()} de votre enfant ${name}, élève de ${className}.${appointment}\n\nMerci de prendre connaissance de cette convocation.`;
     },
     [controlSession, summonsDate, summonsTime],
   );
@@ -238,7 +238,7 @@ export function SurveillantDashboard({ firstName }: Props) {
   const submitSummons = async () => {
     if (!summonsStudent) return;
 
-    const message = summonsMessage.trim();
+    let message = summonsMessage.trim();
     if (!message) {
       setSummonsError("Le message au parent est obligatoire.");
       return;
@@ -265,6 +265,18 @@ export function SurveillantDashboard({ firstName }: Props) {
         return;
       }
       scheduledAt = date.toISOString();
+
+      const appointmentText = `Rendez-vous : ${summonsDate} à ${summonsTime}`;
+      const appointmentPattern = /Rendez-vous\s*:\s*\d{2}\/\d{2}\/\d{4}\s+à\s+\d{2}:\d{2}/i;
+      const legacyAppointmentPattern = /\ble\s+\d{2}\/\d{2}\/\d{4}\s+à\s+\d{2}:\d{2}/i;
+
+      if (appointmentPattern.test(message)) {
+        message = message.replace(appointmentPattern, appointmentText);
+      } else if (legacyAppointmentPattern.test(message)) {
+        message = message.replace(legacyAppointmentPattern, appointmentText);
+      } else {
+        message = `${message.replace(/\s+$/, "")}\n\n${appointmentText}`;
+      }
     } else if (summonsDate || summonsTime) {
       setSummonsError("Renseignez la date et l’heure ensemble.");
       return;
