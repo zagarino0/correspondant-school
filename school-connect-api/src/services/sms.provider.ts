@@ -96,9 +96,9 @@ class TwilioSmsProvider implements SmsProvider {
       );
     }
 
-    return {
-      providerMessageId: payload.sid,
-    };
+    return payload.sid
+      ? { providerMessageId: payload.sid }
+      : {};
   }
 }
 
