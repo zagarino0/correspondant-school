@@ -7,6 +7,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
   useWindowDimensions,
 } from "react-native";
@@ -15,11 +16,13 @@ import {
   createAttendanceEvent,
   createParentSummons,
   getAttendance,
+  getClasses,
   getDashboard,
 } from "../../../services/surveillant/surveillant.service";
 import type {
   AttendanceEventType,
   SurveillantAttendanceItem,
+  SurveillantClassOption,
   SurveillantDashboardResponse,
   SurveillantSession,
 } from "../../../services/surveillant/surveillant.types";
@@ -41,6 +44,11 @@ export function SurveillantDashboard({ firstName }: Props) {
   const [controlSession, setControlSession] = useState<SurveillantSession | null>(null);
   const [controlStudents, setControlStudents] = useState<SurveillantAttendanceItem[]>([]);
   const [controlLoading, setControlLoading] = useState(false);
+  const [classPickerVisible, setClassPickerVisible] = useState(false);
+  const [classSearch, setClassSearch] = useState("");
+  const [classOptions, setClassOptions] = useState<SurveillantClassOption[]>([]);
+  const [classPickerLoading, setClassPickerLoading] = useState(false);
+  const [classPickerHasMore, setClassPickerHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -82,6 +90,31 @@ export function SurveillantDashboard({ firstName }: Props) {
       setRefreshing(false);
     }
   }, [load]);
+
+  const openClassPicker = useCallback(async () => {
+    setClassPickerVisible(true);
+    setClassSearch("");
+    setClassPickerLoading(true);
+    try {
+      const result = await getClasses({ limit: 20 });
+      setClassOptions(result.items);
+      setClassPickerHasMore(result.hasMore);
+    } finally {
+      setClassPickerLoading(false);
+    }
+  }, []);
+
+  const searchClasses = useCallback(async (search: string) => {
+    setClassSearch(search);
+    setClassPickerLoading(true);
+    try {
+      const result = await getClasses({ search, limit: 20 });
+      setClassOptions(result.items);
+      setClassPickerHasMore(result.hasMore);
+    } finally {
+      setClassPickerLoading(false);
+    }
+  }, []);
 
   const openClassControl = useCallback(async (session: SurveillantSession) => {
     setControlSession(session);
@@ -219,6 +252,9 @@ export function SurveillantDashboard({ firstName }: Props) {
             ))
           )}
         </View>
+        <Pressable style={styles.secondaryButton} onPress={() => void openClassPicker()}>
+          <Text style={styles.secondaryButtonText}>Rechercher une classe</Text>
+        </Pressable>
 
         <SectionTitle title="RETARDS DU JOUR" />
         <View style={styles.card}>
@@ -255,6 +291,71 @@ export function SurveillantDashboard({ firstName }: Props) {
           )}
         </View>
       </ScrollView>
+
+      <Modal visible={classPickerVisible} transparent animationType="slide" onRequestClose={() => setClassPickerVisible(false)}>
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.modal, width >= 720 && styles.modalWide]}>
+            <View style={styles.modalHeader}>
+              <View style={styles.rowMain}>
+                <Text style={styles.modalTitle}>Rechercher une classe</Text>
+                <Text style={styles.rowMeta}>Les résultats sont chargés progressivement.</Text>
+              </View>
+              <Pressable onPress={() => setClassPickerVisible(false)}>
+                <Text style={styles.closeText}>Fermer</Text>
+              </Pressable>
+            </View>
+            <TextInput
+              value={classSearch}
+              onChangeText={(value) => void searchClasses(value)}
+              placeholder="Nom ou niveau de classe…"
+              placeholderTextColor="#94A3B8"
+              style={styles.searchInput}
+              autoFocus
+            />
+            {classPickerLoading ? (
+              <View style={styles.modalLoading}>
+                <ActivityIndicator color="#344976" />
+              </View>
+            ) : (
+              <ScrollView style={styles.modalList} keyboardShouldPersistTaps="handled">
+                {classOptions.map((item) => (
+                  <Pressable
+                    key={item.id}
+                    style={styles.classOption}
+                    onPress={() => {
+                      setClassPickerVisible(false);
+                      void openClassControl({
+                        scheduleId: "class:" + item.id,
+                        classId: item.id,
+                        className: item.name,
+                        subject: "",
+                        teacher: null,
+                        startTime: "",
+                        endTime: "",
+                        room: null,
+                      });
+                    }}
+                  >
+                    <View style={styles.rowMain}>
+                      <Text style={styles.rowTitle}>{item.name}</Text>
+                      <Text style={styles.rowMeta}>
+                        {item.level ? item.level + " · " : ""}{item.studentCount} élèves
+                      </Text>
+                    </View>
+                    <Text style={styles.selectText}>Contrôler</Text>
+                  </Pressable>
+                ))}
+                {classOptions.length === 0 && (
+                  <Text style={styles.emptyCard}>Aucune classe trouvée.</Text>
+                )}
+                {classPickerHasMore && (
+                  <Text style={styles.moreHint}>Affinez la recherche pour accéder aux autres classes.</Text>
+                )}
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      </Modal>
 
       <Modal visible={controlSession !== null} transparent animationType="slide" onRequestClose={closeClassControl}>
         <View style={styles.modalBackdrop}>
@@ -398,6 +499,12 @@ const styles = StyleSheet.create({
   rowMeta: { marginTop: 3, fontSize: 12, color: "#64748B" },
   smallButton: { paddingHorizontal: 12, paddingVertical: 9, borderRadius: 9, backgroundColor: "#344976" },
   smallButtonText: { color: "#FFFFFF", fontSize: 11, fontWeight: "900" },
+  secondaryButton: { alignSelf: "stretch", minHeight: 46, alignItems: "center", justifyContent: "center", borderRadius: 11, borderWidth: 1, borderColor: "#CBD5E1", backgroundColor: "#FFFFFF" },
+  secondaryButtonText: { color: "#344976", fontSize: 12, fontWeight: "900" },
+  searchInput: { minHeight: 46, marginBottom: 10, paddingHorizontal: 13, borderRadius: 10, borderWidth: 1, borderColor: "#CBD5E1", backgroundColor: "#FFFFFF", color: "#111827", fontSize: 13 },
+  classOption: { minHeight: 60, paddingHorizontal: 13, paddingVertical: 10, marginBottom: 7, flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 12, backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#E2E8F0" },
+  selectText: { color: "#344976", fontSize: 11, fontWeight: "900" },
+  moreHint: { paddingVertical: 12, textAlign: "center", color: "#64748B", fontSize: 11 },
   lateRow: { minHeight: 40, flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderBottomWidth: 1, borderBottomColor: "#EEF2F7" },
   lateStudent: { fontSize: 13, fontWeight: "700", color: "#111827" },
   lateTime: { fontSize: 12, color: "#64748B" },
