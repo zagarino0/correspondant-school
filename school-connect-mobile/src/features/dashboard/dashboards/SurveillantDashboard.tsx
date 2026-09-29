@@ -46,6 +46,8 @@ export function SurveillantDashboard({ firstName }: Props) {
   const [controlLoading, setControlLoading] = useState(false);
   const [classPickerVisible, setClassPickerVisible] = useState(false);
   const [classSearch, setClassSearch] = useState("");
+  const [classLevel, setClassLevel] = useState("");
+  const [classCategory, setClassCategory] = useState<"primaire" | "premier-cycle" | "deuxieme-cycle" | "">("");
   const [classOptions, setClassOptions] = useState<SurveillantClassOption[]>([]);
   const [classPickerLoading, setClassPickerLoading] = useState(false);
   const [classPickerHasMore, setClassPickerHasMore] = useState(false);
@@ -94,6 +96,8 @@ export function SurveillantDashboard({ firstName }: Props) {
   const openClassPicker = useCallback(async () => {
     setClassPickerVisible(true);
     setClassSearch("");
+    setClassLevel("");
+    setClassCategory("");
     setClassPickerLoading(true);
     try {
       const result = await getClasses({ limit: 20 });
@@ -104,17 +108,40 @@ export function SurveillantDashboard({ firstName }: Props) {
     }
   }, []);
 
-  const searchClasses = useCallback(async (search: string) => {
+  const searchClasses = useCallback(async (search: string, level = classLevel, category = classCategory) => {
     setClassSearch(search);
     setClassPickerLoading(true);
     try {
-      const result = await getClasses({ search, limit: 20 });
+      const result = await getClasses({
+        search,
+        level: level || undefined,
+        category: category || undefined,
+        limit: 20,
+      });
       setClassOptions(result.items);
       setClassPickerHasMore(result.hasMore);
     } finally {
       setClassPickerLoading(false);
     }
-  }, []);
+  }, [classCategory, classLevel]);
+
+  const applyClassFilters = useCallback(async (level: string, category: "" | "primaire" | "premier-cycle" | "deuxieme-cycle") => {
+    setClassLevel(level);
+    setClassCategory(category);
+    setClassPickerLoading(true);
+    try {
+      const result = await getClasses({
+        search: classSearch,
+        level: level || undefined,
+        category: category || undefined,
+        limit: 20,
+      });
+      setClassOptions(result.items);
+      setClassPickerHasMore(result.hasMore);
+    } finally {
+      setClassPickerLoading(false);
+    }
+  }, [classSearch]);
 
   const openClassControl = useCallback(async (session: SurveillantSession) => {
     setControlSession(session);
@@ -307,10 +334,33 @@ export function SurveillantDashboard({ firstName }: Props) {
             <TextInput
               value={classSearch}
               onChangeText={(value) => void searchClasses(value)}
-              placeholder="Nom ou niveau de classe…"
+              placeholder="Rechercher une classe…"
               placeholderTextColor="#94A3B8"
               style={styles.searchInput}
               autoFocus
+            />
+            <View style={styles.filterRow}>
+              {[
+                ["", "Toutes"],
+                ["primaire", "Primaire"],
+                ["premier-cycle", "Premier cycle"],
+                ["deuxieme-cycle", "Deuxième cycle"],
+              ].map(([value, label]) => (
+                <Pressable
+                  key={value}
+                  style={[styles.filterChip, classCategory === value && styles.filterChipActive]}
+                  onPress={() => void applyClassFilters(classLevel, value as "" | "primaire" | "premier-cycle" | "deuxieme-cycle")}
+                >
+                  <Text style={[styles.filterChipText, classCategory === value && styles.filterChipTextActive]}>{label}</Text>
+                </Pressable>
+              ))}
+            </View>
+            <TextInput
+              value={classLevel}
+              onChangeText={(value) => void applyClassFilters(value, classCategory)}
+              placeholder="Niveau exact (ex. 6e, 5e, CM2)…"
+              placeholderTextColor="#94A3B8"
+              style={styles.searchInput}
             />
             {classPickerLoading ? (
               <View style={styles.modalLoading}>
@@ -501,6 +551,11 @@ const styles = StyleSheet.create({
   smallButtonText: { color: "#FFFFFF", fontSize: 11, fontWeight: "900" },
   secondaryButton: { alignSelf: "stretch", minHeight: 46, alignItems: "center", justifyContent: "center", borderRadius: 11, borderWidth: 1, borderColor: "#CBD5E1", backgroundColor: "#FFFFFF" },
   secondaryButtonText: { color: "#344976", fontSize: 12, fontWeight: "900" },
+  filterRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 10 },
+  filterChip: { paddingHorizontal: 10, paddingVertical: 8, borderRadius: 999, borderWidth: 1, borderColor: "#CBD5E1", backgroundColor: "#FFFFFF" },
+  filterChipActive: { borderColor: "#344976", backgroundColor: "#344976" },
+  filterChipText: { fontSize: 10, fontWeight: "800", color: "#475569" },
+  filterChipTextActive: { color: "#FFFFFF" },
   searchInput: { minHeight: 46, marginBottom: 10, paddingHorizontal: 13, borderRadius: 10, borderWidth: 1, borderColor: "#CBD5E1", backgroundColor: "#FFFFFF", color: "#111827", fontSize: 13 },
   classOption: { minHeight: 60, paddingHorizontal: 13, paddingVertical: 10, marginBottom: 7, flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 12, backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#E2E8F0" },
   selectText: { color: "#344976", fontSize: 11, fontWeight: "900" },
