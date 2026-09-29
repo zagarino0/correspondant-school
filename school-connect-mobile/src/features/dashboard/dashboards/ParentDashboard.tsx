@@ -10,6 +10,8 @@ import {
   type ParentChild,
   type ParentChildSchedule,
   type ParentScheduleDay,
+  getMySummons,
+  type ParentSummons,
 } from "../../../services/parents/parent.service";
 import {
   getStudentAttendance,
@@ -196,6 +198,7 @@ export function ParentDashboard({ firstName }: ParentDashboardProps) {
   const [childrenLoading, setChildrenLoading] = useState(true);
   const [childrenError, setChildrenError] = useState(false);
   const [medicalAllowed, setMedicalAllowed] = useState<boolean | null>(null);
+  const [summons, setSummons] = useState<ParentSummons[]>([]);
 
   useEffect(() => {
     let isMounted = true;
@@ -237,6 +240,36 @@ export function ParentDashboard({ firstName }: ParentDashboardProps) {
 
     return () => {
       isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadSummons = async () => {
+      try {
+        const response = await getMySummons();
+        if (mounted) setSummons(response.summons);
+      } catch {
+        if (mounted) setSummons([]);
+      }
+    };
+
+    void loadSummons();
+
+    const connection = createRealtimeConnection({
+      onEvent: (event) => {
+        if (event.type === "parent:summons:new") {
+          void loadSummons();
+        }
+      },
+    });
+
+    connection.connect();
+
+    return () => {
+      mounted = false;
+      connection.close();
     };
   }, []);
 
@@ -516,6 +549,21 @@ export function ParentDashboard({ firstName }: ParentDashboardProps) {
       id: "parent-children",
       title: "Mes enfants",
       cards: childCards,
+    },
+    {
+      id: "parent-summons",
+      title: "Convocations",
+      cards: [
+        {
+          id: "summons",
+          title: "Convocations parentales",
+          value: summons.length > 0 ? String(summons.length) : "Aucune",
+          description:
+            summons[0]
+              ? `${summons[0].student.firstName} ${summons[0].student.lastName} · ${summons[0].reason}`
+              : "Aucune convocation en attente.",
+        },
+      ],
     },
     {
       id: "parent-follow-up",
