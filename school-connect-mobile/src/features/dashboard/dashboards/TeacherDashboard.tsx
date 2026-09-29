@@ -671,12 +671,25 @@ export function TeacherDashboard({ firstName }: TeacherDashboardProps) {
 
                           return (
                             <View key={student.enrollmentId} style={styles.studentRow}>
-                              <Text style={[styles.studentNameText, styles.studentNameColumn]}>
-                                {student.student.firstName} {student.student.lastName}
-                              </Text>
-                              <Text style={[styles.studentNumberText, styles.studentNumberColumn]}>
-                                {student.student.studentNumber}
-                              </Text>
+                              <View style={styles.studentNameColumn}>
+                                <Text style={styles.studentNameText}>
+                                  {student.student.firstName} {student.student.lastName}
+                                </Text>
+                                <Text style={styles.studentNumberText}>
+                                  {student.student.studentNumber}
+                                </Text>
+                                {student.attendance?.events?.[0] ? (
+                                  <Text style={{ marginTop: 3, fontSize: 10, color: "#344976", fontWeight: "700" }}>
+                                    {student.attendance.events[0].type === "LATE_AUTHORIZED"
+                                      ? "Retard · entrée autorisée"
+                                      : student.attendance.events[0].type === "LATE_NOT_AUTHORIZED"
+                                        ? "Retard · entrée non autorisée"
+                                        : student.attendance.events[0].type === "ABSENCE_JUSTIFIED"
+                                          ? "Absence · justifiée"
+                                          : "Absence · non justifiée"}
+                                  </Text>
+                                ) : null}
+                              </View>
 
                               <View style={styles.attendanceColumn}>
                                 <View style={styles.attendanceButtons}>
