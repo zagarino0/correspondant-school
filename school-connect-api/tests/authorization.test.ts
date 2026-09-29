@@ -166,7 +166,7 @@ describe("Surveillant RBAC", () => {
   it("autorise les convocations sans suppression", () => {
     expect(hasStaffPermission(surveillant, "parent-summons.read")).toBe(true);
     expect(hasStaffPermission(surveillant, "parent-summons.create")).toBe(true);
-    expect(hasStaffPermission(surveillant, "parent-summons.delete")).toBe(false);
+    expect(hasStaffPermission(surveillant, "parent-summons.update")).toBe(false);
   });
 
   it("autorise la messagerie et les annonces", () => {
