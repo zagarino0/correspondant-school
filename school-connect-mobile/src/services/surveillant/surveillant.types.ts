@@ -91,9 +91,17 @@ export type ParentSummons = {
   createdAt: string;
 };
 
+export type SurveillantClassCategory = "primaire" | "premier-cycle" | "deuxieme-cycle";
+
 export type SurveillantClassOption = {
   id: string;
   name: string;
   level: string | null;
   studentCount: number;
+};
+
+export type SurveillantClassFilters = {
+  search?: string;
+  level?: string;
+  category?: SurveillantClassCategory;
 };
