@@ -6,6 +6,13 @@ export type ParentAttendanceStatus =
   | "LATE"
   | "EXCUSED";
 
+export type AttendanceEvent = {
+  id: string;
+  type: "LATE_AUTHORIZED" | "LATE_NOT_AUTHORIZED" | "ABSENCE_JUSTIFIED" | "ABSENCE_UNJUSTIFIED";
+  note: string | null;
+  createdAt: string;
+};
+
 export type ParentAttendanceRecord = {
   id: string;
   date: string;
@@ -16,6 +23,7 @@ export type ParentAttendanceRecord = {
   recordedBy: string;
   createdAt: string;
   updatedAt: string;
+  events: AttendanceEvent[];
   recorder: {
     id: string;
     firstName: string;
