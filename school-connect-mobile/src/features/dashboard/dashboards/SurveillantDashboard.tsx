@@ -186,7 +186,7 @@ export function SurveillantDashboard({ firstName }: Props) {
   const defaultSummonsMessage = useCallback((reason: ParentSummonsReason, student: SurveillantAttendanceItem | null) => {
     const name = student ? `${student.student.firstName} ${student.student.lastName}` : "votre enfant";
     const className = controlSession?.className ?? "sa classe";
-    return `Bonjour,\n\nnous vous invitons à vous présenter à l’établissement concernant ${reason.toLowerCase()} de votre enfant ${name}, élève de ${className}.\\n\\nMerci de prendre connaissance de cette convocation.`;
+    return `Bonjour,\n\nnous vous invitons à vous présenter à l’établissement concernant ${reason.toLowerCase()} de votre enfant ${name}, élève de ${className}.\n\nMerci de prendre connaissance de cette convocation.`;
   }, [controlSession]);
 
   const openSummons = (item: SurveillantAttendanceItem) => {
@@ -515,7 +515,7 @@ export function SurveillantDashboard({ firstName }: Props) {
                     </View>
 
                     <View style={styles.studentActions}>
-                      {ACTIONS.map((action) => {
+                      {availableActions(item).map((action) => {
                         const active = item.events.some((event) => event.type === action.type);
                         return (
                           <Pressable
@@ -675,6 +675,26 @@ function attendanceLabel(item: SurveillantAttendanceItem) {
   if (item.status === "ABSENT") return "Absent";
   if (item.status === "LATE") return "Retard";
   return "Enregistré";
+}
+
+function availableActions(item: SurveillantAttendanceItem) {
+  if (item.status === "LATE") {
+    return ACTIONS.filter(
+      (action) =>
+        action.type === "LATE_AUTHORIZED" ||
+        action.type === "LATE_NOT_AUTHORIZED",
+    );
+  }
+
+  if (item.status === "ABSENT") {
+    return ACTIONS.filter(
+      (action) =>
+        action.type === "ABSENCE_JUSTIFIED" ||
+        action.type === "ABSENCE_UNJUSTIFIED",
+    );
+  }
+
+  return [];
 }
 
 function eventLabel(type: AttendanceEventType) {
