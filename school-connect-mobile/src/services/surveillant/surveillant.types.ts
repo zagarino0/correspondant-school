@@ -46,6 +46,19 @@ export type SurveillantDashboardResponse = {
     student: { id: string; firstName: string; lastName: string };
     attendance: { arrivalTime: string | null };
   }>;
+  absenceItems: Array<{
+    id: string;
+    attendanceId: string;
+    student: { id: string; firstName: string; lastName: string };
+    reason: string | null;
+    note: string | null;
+    latestEvent: {
+      id: string;
+      type: AttendanceEventType;
+      note: string | null;
+      createdAt: string;
+    } | null;
+  }>;
   upcomingSessions: Array<SurveillantSession & {
     attendance: SurveillantAttendanceSummary;
   }>;
