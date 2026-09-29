@@ -298,6 +298,7 @@ export function TeacherDashboard({ firstName }: TeacherDashboardProps) {
                             reason: null,
                             note: null,
                             recordedBy: "",
+                            events: [],
                           },
                     }
                   : row,
