@@ -90,3 +90,10 @@ export type ParentSummons = {
   scheduledAt?: string | null;
   createdAt: string;
 };
+
+export type SurveillantClassOption = {
+  id: string;
+  name: string;
+  level: string | null;
+  studentCount: number;
+};
