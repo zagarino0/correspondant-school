@@ -20,6 +20,7 @@ import {
   type ParentGrade,
 } from "../../../services/grades/grade.service";
 import { getMedicalAccess } from "../../../services/medical/medical.service";
+import { createRealtimeConnection } from "../../../services/realtime/websocket.service";
 
 type ParentDashboardProps = {
   firstName: string;
@@ -292,6 +293,36 @@ export function ParentDashboard({ firstName }: ParentDashboardProps) {
     return () => {
       isMounted = false;
     };
+  }, [selectedChildId]);
+
+  useEffect(() => {
+    if (!selectedChildId) return;
+
+    const connection = createRealtimeConnection({
+      onEvent: (event) => {
+        if (
+          event.type !== "attendance:event" &&
+          event.type !== "parent:summons:new"
+        ) {
+          return;
+        }
+
+        if (
+          event.type === "attendance:event" &&
+          event.payload.attendance.studentId !== selectedChildId
+        ) {
+          return;
+        }
+
+        void getStudentAttendance(selectedChildId)
+          .then((response) => setAttendance(response.attendance))
+          .catch(() => undefined);
+      },
+    });
+
+    connection.connect();
+
+    return () => connection.close();
   }, [selectedChildId]);
 
   useEffect(() => {
