@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { FastifyPluginAsync } from "fastify";
 
 import { authenticate } from "../middleware/authenticate.js";
+import { publishToUser } from "../realtime/message-events.js";
 
 export const parentRoutes: FastifyPluginAsync = async (fastify) => {
 
@@ -66,12 +67,45 @@ export const parentRoutes: FastifyPluginAsync = async (fastify) => {
           parentId: request.user.sub,
           status: "PENDING",
         },
-        data: { status: parsed.data.status },
+        data: { status: parsed.data.status, responseReadAt: null },
       });
 
       if (summons.count === 0) {
         return reply.status(404).send({
           error: { code: "SUMMONS_NOT_FOUND", message: "Pending summons not found." },
+        });
+      }
+
+      const updatedSummons = await fastify.prisma.parentSummons.findUnique({
+        where: { id: summonsId },
+        select: {
+          id: true,
+          studentId: true,
+          parentId: true,
+          createdBy: true,
+          reason: true,
+          message: true,
+          status: true,
+          scheduledAt: true,
+          createdAt: true,
+          updatedAt: true,
+          student: {
+            select: { firstName: true, lastName: true },
+          },
+        },
+      });
+
+      if (updatedSummons) {
+        publishToUser(updatedSummons.createdBy, "parent:summons:updated", {
+          id: updatedSummons.id,
+          studentId: updatedSummons.studentId,
+          student: updatedSummons.student,
+          status: updatedSummons.status,
+          reason: updatedSummons.reason,
+          message: updatedSummons.message,
+          scheduledAt: updatedSummons.scheduledAt,
+          createdAt: updatedSummons.createdAt,
+          updatedAt: updatedSummons.updatedAt,
         });
       }
 
