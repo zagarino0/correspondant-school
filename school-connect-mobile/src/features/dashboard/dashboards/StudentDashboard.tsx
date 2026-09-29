@@ -6,7 +6,7 @@ import { DashboardSection } from "../components/DashboardSection";
 import type { DashboardSectionData } from "../dashboard.types";
 import { getMyAssignments } from "../../../services/assignments/assignment.service";
 import { getMyNextSchedule } from "../../../services/schedule/schedule.service";
-import { getStudentAttendance, type ParentAttendanceRecord } from "../../../services/attendance/attendance.service";
+import { getMyAttendance, type ParentAttendanceRecord } from "../../../services/attendance/attendance.service";
 import { createRealtimeConnection } from "../../../services/realtime/websocket.service";
 import type { StudentSchedule } from "../../schedule/schedule.types";
 import { normalizeApiError } from "../../../services/api/errors";
@@ -107,7 +107,7 @@ export function StudentDashboard({
 
     const loadAttendance = async () => {
       try {
-        const response = await getStudentAttendance("me");
+        const response = await getMyAttendance();
         if (mounted) {
           setAttendance(response.attendance[0] ?? null);
         }
