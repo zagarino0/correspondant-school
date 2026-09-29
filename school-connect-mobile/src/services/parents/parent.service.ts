@@ -131,3 +131,26 @@ export async function getChildMedicalRecord(
 
   return response.data;
 }
+
+export type ParentSummons = {
+  id: string;
+  studentId: string;
+  reason: string;
+  message: string;
+  status: "PENDING" | "ACCEPTED" | "DECLINED" | "COMPLETED";
+  scheduledAt: string | null;
+  createdAt: string;
+  student: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  };
+};
+
+export async function getMySummons(): Promise<{ summons: ParentSummons[] }> {
+  const response = await apiClient.get<{ summons: ParentSummons[] }>(
+    "/api/v1/parents/me/summons",
+  );
+
+  return response.data;
+}
