@@ -1,0 +1,53 @@
+import { apiClient } from "../api/client";
+import type {
+  AttendanceEventType,
+  ParentSummons,
+  SurveillantAttendanceItem,
+  SurveillantDashboardResponse,
+} from "./surveillant.types";
+
+export async function getDashboard(): Promise<SurveillantDashboardResponse> {
+  const response = await apiClient.get<SurveillantDashboardResponse>(
+    "/api/v1/surveillant/dashboard",
+  );
+  return response.data;
+}
+
+export async function getAttendance(params?: {
+  date?: string;
+  classId?: string;
+}): Promise<{ date: string; attendance: SurveillantAttendanceItem[] }> {
+  const response = await apiClient.get(
+    "/api/v1/surveillant/attendance",
+    { params },
+  );
+  return response.data;
+}
+
+export async function createAttendanceEvent(
+  studentId: string,
+  attendanceId: string,
+  type: AttendanceEventType,
+  note?: string | null,
+): Promise<void> {
+  await apiClient.post(
+    `/api/v1/surveillant/events/${studentId}`,
+    { attendanceId, type, note: note ?? null },
+  );
+}
+
+export async function createParentSummons(
+  studentId: string,
+  payload: {
+    reason: string;
+    message: string;
+    scheduledAt?: string | null;
+    parentId?: string;
+  },
+): Promise<ParentSummons[]> {
+  const response = await apiClient.post<{ summons: ParentSummons[] }>(
+    `/api/v1/surveillant/summons/${studentId}`,
+    payload,
+  );
+  return response.data.summons;
+}
