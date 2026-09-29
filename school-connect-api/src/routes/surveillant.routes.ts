@@ -710,6 +710,7 @@ export async function surveillantRoutes(fastify: FastifyInstance) {
             parentSummonsId: summon.id,
             type: "SUMMONS",
             phone: parentLink?.parent.phone ?? null,
+            enabled: parentLink?.parent.smsEnabled ?? true,
             message: buildSummonsSmsMessage({
               studentFirstName: student.firstName,
               studentLastName: student.lastName,
