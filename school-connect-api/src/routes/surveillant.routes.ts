@@ -102,6 +102,7 @@ export async function surveillantRoutes(fastify: FastifyInstance) {
             take: 20,
             select: {
               id: true,
+              attendanceId: true,
               type: true,
               note: true,
               createdAt: true,
