@@ -13,6 +13,15 @@ export async function getDashboard(): Promise<SurveillantDashboardResponse> {
   return response.data;
 }
 
+export async function getClasses(params?: { search?: string; limit?: number }): Promise<{
+  items: import("./surveillant.types").SurveillantClassOption[];
+  total: number;
+  hasMore: boolean;
+}> {
+  const response = await apiClient.get("/api/v1/surveillant/classes", { params });
+  return response.data;
+}
+
 export async function getAttendance(params?: {
   date?: string;
   classId?: string;
