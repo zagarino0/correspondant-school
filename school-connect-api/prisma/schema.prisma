@@ -414,6 +414,7 @@ model ParentSummons {
   message          String
   status           ParentSummonsStatus @default(PENDING)
   scheduledAt      DateTime?
+  responseReadAt   DateTime?
 
   student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
   parent  User    @relation("ParentSummonsParent", fields: [parentId], references: [id], onDelete: Cascade)
