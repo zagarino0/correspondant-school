@@ -135,6 +135,7 @@ export async function getChildMedicalRecord(
 export type ParentSummons = {
   id: string;
   studentId: string;
+  attendanceEventId: string | null;
   reason: string;
   message: string;
   status: "PENDING" | "ACCEPTED" | "DECLINED" | "COMPLETED";
@@ -153,4 +154,12 @@ export async function getMySummons(): Promise<{ summons: ParentSummons[] }> {
   );
 
   return response.data;
+}
+
+
+export async function updateSummonsStatus(
+  summonsId: string,
+  status: "ACCEPTED" | "DECLINED",
+): Promise<void> {
+  await apiClient.patch(`/api/v1/parents/me/summons/${summonsId}`, { status });
 }
