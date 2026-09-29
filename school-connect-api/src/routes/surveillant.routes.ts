@@ -639,7 +639,17 @@ export async function surveillantRoutes(fastify: FastifyInstance) {
       const student = await fastify.prisma.student.findUnique({
         where: { id: studentId },
         include: {
-          parents: { select: { parentId: true } },
+          parents: {
+            select: {
+              parentId: true,
+              parent: {
+                select: {
+                  phone: true,
+                  smsEnabled: true,
+                },
+              },
+            },
+          },
         },
       });
 
