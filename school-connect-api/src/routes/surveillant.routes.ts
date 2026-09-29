@@ -6,6 +6,7 @@ import { authenticate } from "../middleware/authenticate.js";
 import { authorize } from "../middleware/authorize.js";
 import { authorizeStudentResource } from "../middleware/authorize-student-resource.js";
 import { publishToUser } from "../realtime/message-events.js";
+import { buildSummonsSmsMessage, enqueueSmsNotification } from "../services/sms.service.js";
 
 const eventTypeSchema = z.enum([
   "LATE_AUTHORIZED",
@@ -543,7 +544,12 @@ export async function surveillantRoutes(fastify: FastifyInstance) {
         include: {
           student: {
             include: {
-              parents: { select: { parentId: true } },
+              parents: {
+        select: {
+          parentId: true,
+          parent: { select: { phone: true, smsEnabled: true } },
+        },
+      },
               enrollments: {
                 where: { status: "ACTIVE" },
                 select: { classId: true },
@@ -666,9 +672,16 @@ export async function surveillantRoutes(fastify: FastifyInstance) {
 
       if (parentIds.length === 0) return reply.status(400).send({ error: { code: "NO_PARENT_LINKED", message: "No parent is linked to this student." } });
 
-      const summons = await fastify.prisma.$transaction(
-        parentIds.map((parentId) =>
-          fastify.prisma.parentSummons.create({
+      const summons = await fastify.prisma.$transaction(async (tx) => {
+        const createdSummons = [];
+
+        for (const parentId of parentIds) {
+          const parentLink = student.parents.find((parent) => parent.parentId === parentId);
+          const scheduledAt = parsed.data.scheduledAt
+            ? new Date(parsed.data.scheduledAt)
+            : null;
+
+          const summon = await tx.parentSummons.create({
             data: {
               studentId,
               parentId,
@@ -676,7 +689,7 @@ export async function surveillantRoutes(fastify: FastifyInstance) {
               attendanceEventId: attendanceEvent?.id ?? null,
               reason: parsed.data.reason,
               message: parsed.data.message,
-              scheduledAt: parsed.data.scheduledAt ? new Date(parsed.data.scheduledAt) : null,
+              scheduledAt,
             },
             select: {
               id: true,
@@ -689,9 +702,27 @@ export async function surveillantRoutes(fastify: FastifyInstance) {
               scheduledAt: true,
               createdAt: true,
             },
-          }),
-        ),
-      );
+          });
+
+          await enqueueSmsNotification(tx, {
+            recipientId: parentId,
+            studentId,
+            parentSummonsId: summon.id,
+            type: "SUMMONS",
+            phone: parentLink?.parent.phone ?? null,
+            message: buildSummonsSmsMessage({
+              studentFirstName: student.firstName,
+              studentLastName: student.lastName,
+              reason: parsed.data.reason,
+              scheduledAt,
+            }),
+          });
+
+          createdSummons.push(summon);
+        }
+
+        return createdSummons;
+      });
 
       const teacherIds = await fastify.prisma.teacherClass.findMany({
         where: {
