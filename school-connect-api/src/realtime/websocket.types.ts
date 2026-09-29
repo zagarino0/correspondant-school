@@ -1,7 +1,9 @@
 export type RealtimeEventType =
   | "message:new"
   | "message:delivered"
-  | "message:read";
+  | "message:read"
+  | "attendance:event"
+  | "parent:summons:new";
 
 export interface RealtimeMessage {
   id: string;
