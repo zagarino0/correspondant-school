@@ -28,6 +28,7 @@ import type {
   TeacherObservation,
 } from "../teacher-classes.types";
 import type { TeacherSchedule } from "../../schedule/schedule.types";
+import { createRealtimeConnection } from "../../../services/realtime/websocket.service";
 
 function getLocalDateKey(): string {
   const date = new Date();
@@ -174,6 +175,21 @@ export function TeacherDashboard({ firstName }: TeacherDashboardProps) {
       setActivityLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    const connection = createRealtimeConnection({
+      onEvent: (event) => {
+        if (event.type === "attendance:event" || event.type === "parent:summons:new") {
+          void loadDashboard();
+          void loadActivity();
+        }
+      },
+    });
+
+    connection.connect();
+
+    return () => connection.close();
+  }, [loadActivity, loadDashboard]);
 
   useFocusEffect(
     useCallback(() => {
