@@ -94,22 +94,24 @@ export async function surveillantRoutes(fastify: FastifyInstance) {
               room: true,
             },
           }),
-          fastify.prisma.attendanceEvent.findMany({
+          fastify.prisma.attendance.findMany({
             where: {
-              createdAt: { gte: start, lt: end },
+              date: { gte: start, lt: end },
+              status: "LATE",
               student: { schoolId },
-              type: { in: ["LATE_AUTHORIZED", "LATE_NOT_AUTHORIZED"] },
             },
-            orderBy: { createdAt: "desc" },
-            take: 20,
+            orderBy: { arrivalTime: "asc" },
+            take: 50,
             select: {
               id: true,
-              attendanceId: true,
-              type: true,
-              note: true,
-              createdAt: true,
+              studentId: true,
+              arrivalTime: true,
               student: { select: { id: true, firstName: true, lastName: true } },
-              attendance: { select: { arrivalTime: true } },
+              events: {
+                orderBy: { createdAt: "desc" },
+                take: 1,
+                select: { id: true, type: true, note: true, createdAt: true },
+              },
             },
           }),
         ]);
@@ -192,7 +194,15 @@ export async function surveillantRoutes(fastify: FastifyInstance) {
           ? sessions.find((item) => item.scheduleId === currentSession.id) ?? null
           : null,
         attendanceToControl: sessions.filter((item) => item.attendance.recorded),
-        lateArrivals: lateEvents,
+        lateArrivals: lateEvents.map((item) => ({
+          id: item.id,
+          attendanceId: item.id,
+          type: item.events[0]?.type ?? null,
+          note: item.events[0]?.note ?? null,
+          createdAt: item.events[0]?.createdAt ?? item.arrivalTime ?? start,
+          student: item.student,
+          attendance: { arrivalTime: item.arrivalTime },
+        })),
         absenceItems: attendance
           .filter((item) => item.status === "ABSENT")
           .map((item) => ({
