@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -27,6 +27,9 @@ export function SurveillantDashboard({ firstName }: Props) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [selectedAction, setSelectedAction] = useState<
+    "LATE_AUTHORIZED" | "LATE_NOT_AUTHORIZED" | "ABSENCE_JUSTIFIED" | "ABSENCE_UNJUSTIFIED"
+  >("LATE_AUTHORIZED");
 
   const load = useCallback(async () => {
     const next = await getDashboard();
@@ -86,6 +89,34 @@ export function SurveillantDashboard({ firstName }: Props) {
       setBusyId(null);
     }
   };
+
+  const actionItems = useMemo(() => {
+    if (!data) return [];
+
+    if (selectedAction === "LATE_AUTHORIZED" || selectedAction === "LATE_NOT_AUTHORIZED") {
+      return data.lateArrivals.filter((item) => item.type !== selectedAction);
+    }
+
+    return data.absenceItems.filter((item) => item.latestEvent?.type !== selectedAction);
+  }, [data, selectedAction]);
+
+  const actionCounts = useMemo(() => {
+    if (!data) {
+      return {
+        LATE_AUTHORIZED: 0,
+        LATE_NOT_AUTHORIZED: 0,
+        ABSENCE_JUSTIFIED: 0,
+        ABSENCE_UNJUSTIFIED: 0,
+      };
+    }
+
+    return {
+      LATE_AUTHORIZED: data.lateArrivals.filter((item) => item.type !== "LATE_AUTHORIZED").length,
+      LATE_NOT_AUTHORIZED: data.lateArrivals.filter((item) => item.type !== "LATE_NOT_AUTHORIZED").length,
+      ABSENCE_JUSTIFIED: data.absenceItems.filter((item) => item.latestEvent?.type !== "ABSENCE_JUSTIFIED").length,
+      ABSENCE_UNJUSTIFIED: data.absenceItems.filter((item) => item.latestEvent?.type !== "ABSENCE_UNJUSTIFIED").length,
+    };
+  }, [data]);
 
   const handleSummons = async (studentId: string) => {
     setBusyId(`summons:${studentId}`);
@@ -173,117 +204,111 @@ export function SurveillantDashboard({ firstName }: Props) {
         </View>
       )}
 
-      <SectionTitle title="RETARDS DU JOUR" />
-      {data.lateArrivals.length === 0 ? (
+      <SectionTitle title="ACTIONS DU SURVEILLANT" />
+      <View style={styles.actionGrid}>
+        <ActionCard
+          title="Retard autorisé"
+          count={actionCounts.LATE_AUTHORIZED}
+          active={selectedAction === "LATE_AUTHORIZED"}
+          onPress={() => setSelectedAction("LATE_AUTHORIZED")}
+        />
+        <ActionCard
+          title="Retard non autorisé"
+          count={actionCounts.LATE_NOT_AUTHORIZED}
+          active={selectedAction === "LATE_NOT_AUTHORIZED"}
+          onPress={() => setSelectedAction("LATE_NOT_AUTHORIZED")}
+        />
+        <ActionCard
+          title="Absence justifiée"
+          count={actionCounts.ABSENCE_JUSTIFIED}
+          active={selectedAction === "ABSENCE_JUSTIFIED"}
+          onPress={() => setSelectedAction("ABSENCE_JUSTIFIED")}
+        />
+        <ActionCard
+          title="Absence non justifiée"
+          count={actionCounts.ABSENCE_UNJUSTIFIED}
+          active={selectedAction === "ABSENCE_UNJUSTIFIED"}
+          onPress={() => setSelectedAction("ABSENCE_UNJUSTIFIED")}
+        />
+      </View>
+
+      <SectionTitle title="ÉLÈVES À TRAITER" />
+      {actionItems.length === 0 ? (
         <View style={styles.card}>
-          <Text style={styles.emptyCard}>Aucun retard enregistré.</Text>
+          <Text style={styles.emptyCard}>Aucun élève à traiter pour cette action.</Text>
         </View>
       ) : (
-        data.lateArrivals.map((item) => (
-          <View key={item.id} style={styles.eventCard}>
-            <View style={styles.eventMain}>
-              <Text style={styles.studentName}>
-                {item.student.firstName} {item.student.lastName}
-              </Text>
-              <Text style={styles.eventTime}>
-                Arrivée {item.attendance.arrivalTime
-                  ? new Date(item.attendance.arrivalTime).toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })
-                  : "—"}
-              </Text>
-            </View>
+        actionItems.map((item) => {
+          const student = item.student;
+          const attendanceId = item.attendanceId;
+          const isLate =
+            selectedAction === "LATE_AUTHORIZED" ||
+            selectedAction === "LATE_NOT_AUTHORIZED";
 
-            <View style={styles.actions}>
-              <Pressable
-                style={[styles.actionButton, styles.allowButton]}
-                disabled={busyId !== null}
-                onPress={() =>
-                  void handleEvent(item.student.id, item.attendanceId, "LATE_AUTHORIZED")
-                }
-              >
-                <Text style={styles.actionText}>Autoriser</Text>
-              </Pressable>
-              <Pressable
-                style={[styles.actionButton, styles.denyButton]}
-                disabled={busyId !== null}
-                onPress={() =>
-                  void handleEvent(item.student.id, item.attendanceId, "LATE_NOT_AUTHORIZED")
-                }
-              >
-                <Text style={styles.actionText}>Refuser</Text>
-              </Pressable>
-              <Pressable
-                style={styles.summonsButton}
-                disabled={busyId !== null}
-                onPress={() => void handleSummons(item.student.id)}
-              >
-                <Text style={styles.summonsText}>Convoquer</Text>
-              </Pressable>
-            </View>
-          </View>
-        ))
-      )}
-
-      <SectionTitle title="ABSENCES À TRAITER" />
-      {data.absenceItems.length === 0 ? (
-        <View style={styles.card}>
-          <Text style={styles.emptyCard}>Aucune absence à traiter.</Text>
-        </View>
-      ) : (
-        data.absenceItems.map((item) => (
-          <View key={item.id} style={styles.eventCard}>
-            <View style={styles.eventMain}>
-              <View style={styles.eventMainStudent}>
-                <Text style={styles.studentName}>
-                  {item.student.firstName} {item.student.lastName}
-                </Text>
-                <Text style={styles.eventTime}>
-                  Absence{item.reason ? " · " + item.reason : ""}
+          return (
+            <View key={item.id} style={styles.eventCard}>
+              <View style={styles.eventMain}>
+                <View style={styles.eventMainStudent}>
+                  <Text style={styles.studentName}>
+                    {student.firstName} {student.lastName}
+                  </Text>
+                  <Text style={styles.eventTime}>
+                    {isLate
+                      ? `Retard · arrivée ${item.attendance.arrivalTime
+                          ? new Date(item.attendance.arrivalTime).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
+                          : "—"}`
+                      : `Absence${item.reason ? " · " + item.reason : ""}`}
+                  </Text>
+                </View>
+                <Text style={styles.latestEvent}>
+                  {isLate
+                    ? item.type === "LATE_AUTHORIZED"
+                      ? "Autorisé"
+                      : item.type === "LATE_NOT_AUTHORIZED"
+                        ? "Non autorisé"
+                        : "À traiter"
+                    : item.latestEvent?.type === "ABSENCE_JUSTIFIED"
+                      ? "Justifiée"
+                      : item.latestEvent?.type === "ABSENCE_UNJUSTIFIED"
+                        ? "Non justifiée"
+                        : "À traiter"}
                 </Text>
               </View>
-              {item.latestEvent ? (
-                <Text style={styles.latestEvent}>
-                  {item.latestEvent.type === "ABSENCE_JUSTIFIED"
-                    ? "Justifiée"
-                    : item.latestEvent.type === "ABSENCE_UNJUSTIFIED"
-                      ? "Non justifiée"
-                      : ""}
-                </Text>
-              ) : null}
-            </View>
 
-            <View style={styles.actions}>
-              <Pressable
-                style={[styles.actionButton, styles.allowButton]}
-                disabled={busyId !== null}
-                onPress={() =>
-                  void handleEvent(item.student.id, item.attendanceId, "ABSENCE_JUSTIFIED")
-                }
-              >
-                <Text style={styles.actionText}>Absence justifiée</Text>
-              </Pressable>
-              <Pressable
-                style={[styles.actionButton, styles.denyButton]}
-                disabled={busyId !== null}
-                onPress={() =>
-                  void handleEvent(item.student.id, item.attendanceId, "ABSENCE_UNJUSTIFIED")
-                }
-              >
-                <Text style={styles.actionText}>Absence non justifiée</Text>
-              </Pressable>
-              <Pressable
-                style={styles.summonsButton}
-                disabled={busyId !== null}
-                onPress={() => void handleSummons(item.student.id)}
-              >
-                <Text style={styles.summonsText}>Convoquer le parent</Text>
-              </Pressable>
+              <View style={styles.actions}>
+                <Pressable
+                  style={[styles.actionButton, styles.primaryAction]}
+                  disabled={busyId !== null}
+                  onPress={() =>
+                    void handleEvent(student.id, attendanceId, selectedAction)
+                  }
+                >
+                  <Text style={styles.actionText}>
+                    {selectedAction === "LATE_AUTHORIZED"
+                      ? "Autoriser l'entrée"
+                      : selectedAction === "LATE_NOT_AUTHORIZED"
+                        ? "Refuser l'entrée"
+                        : selectedAction === "ABSENCE_JUSTIFIED"
+                          ? "Justifier l'absence"
+                          : "Déclarer non justifiée"}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  style={styles.summonsButton}
+                  disabled={busyId !== null}
+                  onPress={() => void handleSummons(student.id)}
+                >
+                  <Text style={styles.summonsText}>Convoquer le parent</Text>
+                </Pressable>
+              </View>
             </View>
-          </View>
-        ))
+          );
+        })
       )}
+
       <SectionTitle title="PRÉSENCES À OBSERVER" />
       {data.attendanceToControl.map((item) => (
         <View key={item.scheduleId} style={styles.rowCard}>
@@ -309,6 +334,35 @@ export function SurveillantDashboard({ firstName }: Props) {
         </View>
       ))}
     </ScrollView>
+  );
+}
+
+function ActionCard({
+  title,
+  count,
+  active,
+  onPress,
+}: {
+  title: string;
+  count: number;
+  active: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      style={[styles.actionCard, active && styles.actionCardActive]}
+      onPress={onPress}
+    >
+      <Text style={[styles.actionCardTitle, active && styles.actionCardTitleActive]}>
+        {title}
+      </Text>
+      <Text style={[styles.actionCardCount, active && styles.actionCardCountActive]}>
+        {count}
+      </Text>
+      <Text style={[styles.actionCardHint, active && styles.actionCardHintActive]}>
+        élèves à traiter
+      </Text>
+    </Pressable>
   );
 }
 
@@ -357,6 +411,16 @@ const styles = StyleSheet.create({
   actions: { flexDirection: "row", flexWrap: "wrap", gap: 7, marginTop: 12 },
   actionButton: { paddingHorizontal: 11, paddingVertical: 9, borderRadius: 9 },
   allowButton: { backgroundColor: "#344976" },
+  primaryAction: { backgroundColor: "#344976" },
+  actionGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  actionCard: { flexGrow: 1, flexBasis: "45%", minHeight: 104, padding: 14, borderRadius: 14, backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#E2E8F0" },
+  actionCardActive: { backgroundColor: "#344976", borderColor: "#344976" },
+  actionCardTitle: { fontSize: 13, fontWeight: "800", color: "#111827" },
+  actionCardTitleActive: { color: "#FFFFFF" },
+  actionCardCount: { marginTop: 12, fontSize: 24, fontWeight: "900", color: "#344976" },
+  actionCardCountActive: { color: "#FFFFFF" },
+  actionCardHint: { marginTop: 2, fontSize: 10, color: "#64748B" },
+  actionCardHintActive: { color: "#E2E8F0" },
   denyButton: { backgroundColor: "#475569" },
   actionText: { color: "#FFFFFF", fontSize: 11, fontWeight: "800" },
   summonsButton: { paddingHorizontal: 11, paddingVertical: 9, borderRadius: 9, borderWidth: 1, borderColor: "#344976" },
