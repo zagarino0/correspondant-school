@@ -1,3 +1,10 @@
+export type StaffFunction =
+  | "ADMINISTRATION"
+  | "SURVEILLANT"
+  | "SECRETARIAT"
+  | "COMPTABILITE"
+  | "INFIRMIER";
+
 export type UserRole =
   | "SUPER_ADMIN"
   | "SCHOOL_ADMIN"
@@ -13,6 +20,7 @@ export type AuthUser = {
   lastName: string;
   role: UserRole;
   schoolId?: string | null;
+  staffFunction?: StaffFunction | null;
 };
 
 export type AuthSession = {
