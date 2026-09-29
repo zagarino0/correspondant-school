@@ -7,6 +7,644 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model School {
+  id               String            @id @default(cuid())
+  code             String            @unique
+  name             String
+  status           SchoolStatus      @default(ACTIVE)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  academicYears    AcademicYear[]
+  announcements    Announcement[]
+  conversations    Conversation[]
+  medicalEvents    MedicalEvent[]
+  medicalReports   MedicalReport[]
+  schedules        Schedule[]
+  classes          SchoolClass[]
+  staffAssignments StaffAssignment[]
+  students         Student[]
+  users            User[]
+}
+
+model User {
+  id                       String                    @id @default(cuid())
+  schoolId                 String?
+  email                    String                    @unique
+  passwordHash             String
+  firstName                String
+  lastName                 String
+  role                     UserRole                  @default(PARENT)
+  status                   UserStatus                @default(ACTIVE)
+  createdAt                DateTime                  @default(now())
+  updatedAt                DateTime                  @updatedAt
+  phone                    String?
+  smsEnabled               Boolean                   @default(true)
+  adultMedicalRecord       AdultMedicalRecord?
+  createdAnnouncements     Announcement[]            @relation("AnnouncementCreatedBy")
+  announcementRecipients   AnnouncementRecipient[]
+  createdAssignments       Assignment[]              @relation("AssignmentCreatedBy")
+  recordedAttendances      Attendance[]              @relation("AttendanceRecordedBy")
+  attendanceEvents         AttendanceEvent[]         @relation("AttendanceEventCreatedBy")
+  conversationParticipants ConversationParticipant[]
+  recordedGrades           Grade[]                   @relation("GradeRecordedBy")
+  lessonObservations       LessonObservation[]
+  medicalEventsCreated     MedicalEvent[]            @relation("MedicalEventCreator")
+  medicalEventsTarget      MedicalEvent[]            @relation("MedicalEventTarget")
+  medicalHistoryActors     MedicalHistory[]          @relation("MedicalHistoryActor")
+  medicalHistoryTargets    MedicalHistory[]          @relation("MedicalHistoryTarget")
+  medicalReportsCreated    MedicalReport[]           @relation("MedicalReportCreator")
+  medicalReportsTarget     MedicalReport[]           @relation("MedicalReportTarget")
+  sentMessages             Message[]                 @relation("MessageSender")
+  parentLinks              ParentStudent[]           @relation("ParentLinks")
+  parentSummonsCreated     ParentSummons[]           @relation("ParentSummonsCreatedBy")
+  parentSummonsReceived    ParentSummons[]           @relation("ParentSummonsParent")
+  refreshTokens            RefreshToken[]
+  schedules                Schedule[]
+  smsNotifications         SmsNotification[]         @relation("SmsNotificationRecipient")
+  staffProfile             StaffProfile?
+  studentProfile           Student?
+  teacherClassAssignments  TeacherClass[]            @relation("TeacherClassAssignments")
+  school                   School?                   @relation(fields: [schoolId], references: [id])
+
+  @@index([schoolId])
+  @@index([role])
+  @@index([status])
+}
+
+model AcademicYear {
+  id            String              @id @default(cuid())
+  schoolId      String
+  name          String
+  startDate     DateTime
+  endDate       DateTime
+  status        AcademicYearStatus  @default(ACTIVE)
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  school        School              @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  announcements Announcement[]
+  schedules     Schedule[]
+  classes       SchoolClass[]
+  enrollments   StudentEnrollment[]
+
+  @@unique([schoolId, name])
+  @@index([schoolId])
+  @@index([status])
+}
+
+model SchoolClass {
+  id                  String              @id @default(cuid())
+  schoolId            String
+  academicYearId      String
+  name                String
+  level               String?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  announcementTargets AnnouncementClass[]
+  assignments         Assignment[]
+  schedules           Schedule[]
+  academicYear        AcademicYear        @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+  school              School              @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  enrollments         StudentEnrollment[]
+  teacherAssignments  TeacherClass[]
+
+  @@unique([academicYearId, name])
+  @@index([schoolId])
+  @@index([academicYearId])
+}
+
+model TeacherClass {
+  id        String      @id @default(cuid())
+  teacherId String
+  classId   String
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  class     SchoolClass @relation(fields: [classId], references: [id], onDelete: Cascade)
+  teacher   User        @relation("TeacherClassAssignments", fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@unique([teacherId, classId])
+  @@index([teacherId])
+  @@index([classId])
+}
+
+model Student {
+  id               String                @id @default(cuid())
+  schoolId         String
+  userId           String                @unique
+  studentNumber    String
+  firstName        String
+  lastName         String
+  dateOfBirth      DateTime?
+  status           UserStatus            @default(ACTIVE)
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+  gender           StudentGender?
+  assignments      Assignment[]
+  attendances      Attendance[]
+  attendanceEvents AttendanceEvent[]
+  grades           Grade[]
+  parents          ParentStudent[]
+  parentSummons    ParentSummons[]
+  smsNotifications SmsNotification[]
+  school           School                @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  user             User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  enrollments      StudentEnrollment[]
+  medicalRecord    StudentMedicalRecord?
+
+  @@unique([schoolId, studentNumber])
+  @@index([schoolId])
+  @@index([lastName, firstName])
+}
+
+model StudentMedicalRecord {
+  id                     String   @id @default(cuid())
+  studentId              String   @unique
+  bloodGroup             String?
+  allergies              String?
+  medicalConditions      String?
+  medications            String?
+  emergencyContactName   String?
+  emergencyContactPhone  String?
+  doctorName             String?
+  doctorPhone            String?
+  notes                  String?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  temperature            Float?
+  weightKg               Float?
+  bloodPressureSystolic  Int?
+  bloodPressureDiastolic Int?
+  student                Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+}
+
+model AdultMedicalRecord {
+  id                     String   @id @default(cuid())
+  userId                 String   @unique
+  bloodGroup             String?
+  allergies              String?
+  medicalConditions      String?
+  medications            String?
+  emergencyContactName   String?
+  emergencyContactPhone  String?
+  doctorName             String?
+  doctorPhone            String?
+  notes                  String?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  temperature            Float?
+  weightKg               Float?
+  bloodPressureSystolic  Int?
+  bloodPressureDiastolic Int?
+  user                   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model StudentEnrollment {
+  id             String                  @id @default(cuid())
+  studentId      String
+  academicYearId String
+  classId        String
+  status         StudentEnrollmentStatus @default(ACTIVE)
+  enrolledAt     DateTime                @default(now())
+  endedAt        DateTime?
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+  attendances    Attendance[]
+  grades         Grade[]
+  academicYear   AcademicYear            @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+  class          SchoolClass             @relation(fields: [classId], references: [id], onDelete: Cascade)
+  student        Student                 @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, academicYearId])
+  @@index([studentId])
+  @@index([academicYearId])
+  @@index([classId])
+  @@index([status])
+}
+
+model Attendance {
+  id           String            @id @default(cuid())
+  studentId    String
+  enrollmentId String
+  date         DateTime
+  status       AttendanceStatus  @default(PRESENT)
+  arrivalTime  DateTime?
+  reason       String?
+  note         String?
+  recordedBy   String
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  enrollment   StudentEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  recorder     User              @relation("AttendanceRecordedBy", fields: [recordedBy], references: [id])
+  student      Student           @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  events       AttendanceEvent[]
+
+  @@unique([enrollmentId, date])
+  @@index([studentId])
+  @@index([enrollmentId])
+  @@index([date])
+  @@index([status])
+  @@index([recordedBy])
+}
+
+model AttendanceEvent {
+  id           String              @id @default(cuid())
+  attendanceId String
+  studentId    String
+  createdBy    String
+  type         AttendanceEventType
+  note         String?
+  createdAt    DateTime            @default(now())
+  attendance   Attendance          @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
+  creator      User                @relation("AttendanceEventCreatedBy", fields: [createdBy], references: [id])
+  student      Student             @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  summons      ParentSummons[]
+
+  @@index([attendanceId, createdAt])
+  @@index([studentId, createdAt])
+  @@index([createdBy, createdAt])
+  @@index([type, createdAt])
+}
+
+model ParentSummons {
+  id                String              @id @default(cuid())
+  studentId         String
+  parentId          String
+  createdBy         String
+  reason            String
+  message           String
+  status            ParentSummonsStatus @default(PENDING)
+  scheduledAt       DateTime?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  attendanceEventId String?
+  responseReadAt    DateTime?
+  attendanceEvent   AttendanceEvent?    @relation(fields: [attendanceEventId], references: [id])
+  creator           User                @relation("ParentSummonsCreatedBy", fields: [createdBy], references: [id])
+  parent            User                @relation("ParentSummonsParent", fields: [parentId], references: [id], onDelete: Cascade)
+  student           Student             @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  smsNotifications  SmsNotification[]
+
+  @@index([studentId, createdAt])
+  @@index([parentId, status])
+  @@index([createdBy, createdAt])
+  @@index([attendanceEventId])
+  @@index([status, createdAt])
+}
+
+model SmsNotification {
+  id                String                @id @default(cuid())
+  recipientId       String?
+  studentId         String?
+  parentSummonsId   String?
+  announcementId    String?
+  type              SmsNotificationType
+  status            SmsNotificationStatus @default(PENDING)
+  provider          String?
+  providerMessageId String?
+  recipientPhone    String
+  message           String
+  attempts          Int                   @default(0)
+  lastAttemptAt     DateTime?
+  nextAttemptAt     DateTime              @default(now())
+  sentAt            DateTime?
+  error             String?
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  announcement      Announcement?         @relation(fields: [announcementId], references: [id])
+  parentSummons     ParentSummons?        @relation(fields: [parentSummonsId], references: [id])
+  recipient         User?                 @relation("SmsNotificationRecipient", fields: [recipientId], references: [id])
+  student           Student?              @relation(fields: [studentId], references: [id])
+
+  @@index([status, nextAttemptAt])
+  @@index([recipientId, createdAt])
+  @@index([studentId, createdAt])
+  @@index([parentSummonsId])
+  @@index([announcementId])
+}
+
+model ParentStudent {
+  id           String   @id @default(cuid())
+  parentId     String
+  studentId    String
+  relationship String?
+  isPrimary    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  parent       User     @relation("ParentLinks", fields: [parentId], references: [id], onDelete: Cascade)
+  student      Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([parentId, studentId])
+  @@index([parentId])
+  @@index([studentId])
+}
+
+model StaffProfile {
+  id          String            @id @default(cuid())
+  userId      String            @unique
+  function    StaffFunction
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  assignments StaffAssignment[]
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([function])
+}
+
+model StaffAssignment {
+  id        String       @id @default(cuid())
+  staffId   String
+  schoolId  String
+  startDate DateTime
+  endDate   DateTime?
+  active    Boolean      @default(true)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  school    School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  staff     StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@unique([staffId, schoolId, startDate])
+  @@index([staffId])
+  @@index([schoolId])
+  @@index([active])
+}
+
+model Grade {
+  id             String            @id @default(cuid())
+  studentId      String
+  enrollmentId   String
+  subject        String
+  title          String
+  value          Float
+  maxValue       Float             @default(20)
+  coefficient    Float             @default(1)
+  evaluationDate DateTime
+  comment        String?
+  recordedBy     String
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  enrollment     StudentEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  recorder       User              @relation("GradeRecordedBy", fields: [recordedBy], references: [id])
+  student        Student           @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId])
+  @@index([enrollmentId])
+  @@index([subject])
+  @@index([evaluationDate])
+  @@index([recordedBy])
+}
+
+model Assignment {
+  id          String           @id @default(cuid())
+  studentId   String?
+  classId     String
+  subject     String
+  title       String
+  description String?
+  assignedAt  DateTime
+  dueDate     DateTime?
+  status      AssignmentStatus @default(PENDING)
+  createdBy   String
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  class       SchoolClass      @relation(fields: [classId], references: [id], onDelete: Cascade)
+  creator     User             @relation("AssignmentCreatedBy", fields: [createdBy], references: [id])
+  student     Student?         @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId])
+  @@index([classId])
+  @@index([subject])
+  @@index([dueDate])
+  @@index([status])
+  @@index([createdBy])
+}
+
+model Schedule {
+  id                 String              @id @default(cuid())
+  schoolId           String
+  academicYearId     String
+  classId            String
+  teacherId          String
+  subject            String
+  dayOfWeek          ScheduleDay
+  startTime          String
+  endTime            String
+  room               String?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  lessonObservations LessonObservation[]
+  academicYear       AcademicYear        @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+  class              SchoolClass         @relation(fields: [classId], references: [id], onDelete: Cascade)
+  school             School              @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  teacher            User                @relation(fields: [teacherId], references: [id])
+
+  @@index([schoolId])
+  @@index([academicYearId])
+  @@index([classId])
+  @@index([teacherId])
+  @@index([dayOfWeek])
+  @@index([room])
+}
+
+model LessonObservation {
+  id         String   @id @default(cuid())
+  teacherId  String
+  scheduleId String
+  date       DateTime
+  content    String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  schedule   Schedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  teacher    User     @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@unique([scheduleId, date])
+  @@index([teacherId, date])
+  @@index([scheduleId, date])
+}
+
+model Announcement {
+  id               String                  @id @default(cuid())
+  schoolId         String
+  academicYearId   String
+  createdBy        String
+  title            String
+  content          String
+  deletedAt        DateTime?
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
+  audiences        AnnouncementAudience[]
+  academicYear     AcademicYear            @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+  creator          User                    @relation("AnnouncementCreatedBy", fields: [createdBy], references: [id])
+  school           School                  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  classTargets     AnnouncementClass[]
+  recipients       AnnouncementRecipient[]
+  smsNotifications SmsNotification[]
+
+  @@index([schoolId])
+  @@index([academicYearId])
+  @@index([createdBy])
+  @@index([deletedAt])
+}
+
+model AnnouncementClass {
+  id             String       @id @default(cuid())
+  announcementId String
+  classId        String
+  createdAt      DateTime     @default(now())
+  announcement   Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  class          SchoolClass  @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  @@unique([announcementId, classId])
+  @@index([announcementId])
+  @@index([classId])
+}
+
+model AnnouncementRecipient {
+  id             String       @id @default(cuid())
+  announcementId String
+  userId         String
+  isRead         Boolean      @default(false)
+  readAt         DateTime?
+  createdAt      DateTime     @default(now())
+  announcement   Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([announcementId, userId])
+  @@index([announcementId])
+  @@index([userId])
+  @@index([isRead])
+}
+
+model Conversation {
+  id           String                    @id @default(cuid())
+  schoolId     String
+  createdAt    DateTime                  @default(now())
+  updatedAt    DateTime                  @updatedAt
+  school       School                    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  participants ConversationParticipant[]
+  messages     Message[]
+
+  @@index([schoolId])
+}
+
+model ConversationParticipant {
+  id             String       @id @default(cuid())
+  conversationId String
+  userId         String
+  createdAt      DateTime     @default(now())
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@index([userId])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  senderId       String
+  content        String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  deliveredAt    DateTime?
+  readAt         DateTime?
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User         @relation("MessageSender", fields: [senderId], references: [id])
+
+  @@index([conversationId])
+  @@index([senderId])
+  @@index([createdAt])
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model MedicalEvent {
+  id              String    @id @default(cuid())
+  schoolId        String
+  targetUserId    String?
+  createdByUserId String
+  type            String
+  title           String
+  description     String?
+  startAt         DateTime
+  endAt           DateTime?
+  status          String    @default("PLANNED")
+  priority        String    @default("NORMAL")
+  notes           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  createdBy       User      @relation("MedicalEventCreator", fields: [createdByUserId], references: [id])
+  school          School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  target          User?     @relation("MedicalEventTarget", fields: [targetUserId], references: [id])
+
+  @@index([schoolId, startAt])
+  @@index([targetUserId, startAt])
+  @@index([createdByUserId])
+  @@index([status, startAt])
+}
+
+model MedicalReport {
+  id                     String    @id @default(cuid())
+  schoolId               String
+  targetUserId           String
+  createdByUserId        String
+  type                   String
+  title                  String
+  reportDate             DateTime
+  status                 String    @default("DRAFT")
+  priority               String    @default("NORMAL")
+  reason                 String?
+  observations           String?
+  actionsTaken           String?
+  outcome                String?
+  recommendations        String?
+  parentContacted        Boolean   @default(false)
+  parentContactedAt      DateTime?
+  referredTo             String?
+  notes                  String?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+  temperature            Float?
+  weightKg               Float?
+  bloodPressureSystolic  Int?
+  bloodPressureDiastolic Int?
+  createdBy              User      @relation("MedicalReportCreator", fields: [createdByUserId], references: [id])
+  school                 School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  target                 User      @relation("MedicalReportTarget", fields: [targetUserId], references: [id], onDelete: Cascade)
+
+  @@index([schoolId, reportDate])
+  @@index([targetUserId, reportDate])
+  @@index([createdByUserId])
+  @@index([status, reportDate])
+}
+
+model MedicalHistory {
+  id            String   @id @default(cuid())
+  targetUserId  String
+  actorUserId   String
+  action        String
+  field         String
+  previousValue String?
+  newValue      String?
+  createdAt     DateTime @default(now())
+  actor         User     @relation("MedicalHistoryActor", fields: [actorUserId], references: [id])
+  target        User     @relation("MedicalHistoryTarget", fields: [targetUserId], references: [id], onDelete: Cascade)
+
+  @@index([targetUserId, createdAt])
+  @@index([actorUserId, createdAt])
+}
+
 enum UserRole {
   SUPER_ADMIN
   SCHOOL_ADMIN
@@ -108,767 +746,4 @@ enum AnnouncementAudience {
   STUDENTS
   PARENTS
   TEACHERS
-}
-
-model School {
-  id     String       @id @default(cuid())
-  code   String       @unique
-  name   String
-  status SchoolStatus @default(ACTIVE)
-
-  users            User[]
-  students         Student[]
-  academicYears    AcademicYear[]
-  classes          SchoolClass[]
-  staffAssignments StaffAssignment[]
-  schedules        Schedule[]
-  announcements   Announcement[]
-  conversations   Conversation[]
-  medicalEvents   MedicalEvent[]
-  medicalReports  MedicalReport[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model User {
-  id       String  @id @default(cuid())
-  schoolId String?
-
-  email        String @unique
-  passwordHash String
-
-  firstName String
-  lastName  String
-  phone     String?
-  smsEnabled Boolean @default(true)
-
-  role   UserRole   @default(PARENT)
-  status UserStatus @default(ACTIVE)
-
-  school School? @relation(fields: [schoolId], references: [id], onDelete: SetNull)
-
-  studentProfile Student?
-
-  staffProfile StaffProfile?
-
-  adultMedicalRecord AdultMedicalRecord?
-
-  medicalHistoryTargets MedicalHistory[] @relation("MedicalHistoryTarget")
-  medicalHistoryActors  MedicalHistory[] @relation("MedicalHistoryActor")
-
-  medicalEventsTarget  MedicalEvent[] @relation("MedicalEventTarget")
-  medicalEventsCreated MedicalEvent[] @relation("MedicalEventCreator")
-
-  medicalReportsTarget  MedicalReport[] @relation("MedicalReportTarget")
-  medicalReportsCreated MedicalReport[] @relation("MedicalReportCreator")
-
-  parentLinks ParentStudent[] @relation("ParentLinks")
-
-  teacherClassAssignments TeacherClass[] @relation("TeacherClassAssignments")
-
-  recordedGrades     Grade[]      @relation("GradeRecordedBy")
-  createdAssignments Assignment[] @relation("AssignmentCreatedBy")
-  schedules          Schedule[]
-
-  refreshTokens       RefreshToken[]
-  recordedAttendances Attendance[]   @relation("AttendanceRecordedBy")
-  attendanceEvents AttendanceEvent[] @relation("AttendanceEventCreatedBy")
-  parentSummonsCreated ParentSummons[] @relation("ParentSummonsCreatedBy")
-  parentSummonsReceived ParentSummons[] @relation("ParentSummonsParent")
-  smsNotifications SmsNotification[] @relation("SmsNotificationRecipient")
-  createdAnnouncements Announcement[] @relation("AnnouncementCreatedBy")
-  announcementRecipients AnnouncementRecipient[]
-  lessonObservations LessonObservation[]
-  conversationParticipants ConversationParticipant[]
-  sentMessages              Message[] @relation("MessageSender")
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([schoolId])
-  @@index([role])
-  @@index([status])
-}
-
-model AcademicYear {
-  id       String @id @default(cuid())
-  schoolId String
-
-  name      String
-  startDate DateTime
-  endDate   DateTime
-  status    AcademicYearStatus @default(ACTIVE)
-
-  school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-
-  classes     SchoolClass[]
-  enrollments StudentEnrollment[]
-  schedules   Schedule[]
-  announcements Announcement[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([schoolId, name])
-  @@index([schoolId])
-  @@index([status])
-}
-
-model SchoolClass {
-  id             String @id @default(cuid())
-  schoolId       String
-  academicYearId String
-
-  name  String
-  level String?
-
-  school       School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  academicYear AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
-
-  teacherAssignments TeacherClass[]
-  enrollments        StudentEnrollment[]
-  assignments        Assignment[]
-  schedules          Schedule[]
-  announcementTargets AnnouncementClass[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([academicYearId, name])
-  @@index([schoolId])
-  @@index([academicYearId])
-}
-
-model TeacherClass {
-  id        String @id @default(cuid())
-  teacherId String
-  classId   String
-
-  teacher User        @relation("TeacherClassAssignments", fields: [teacherId], references: [id], onDelete: Cascade)
-  class   SchoolClass @relation(fields: [classId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([teacherId, classId])
-  @@index([teacherId])
-  @@index([classId])
-}
-
-model Student {
-  id       String @id @default(cuid())
-  schoolId String
-  userId   String @unique
-
-  // Matricule officiel fourni par l'école.
-  // Il est permanent pour l'identité de l'étudiant.
-  studentNumber String
-
-  firstName String
-  lastName  String
-
-  dateOfBirth DateTime?
-  gender      StudentGender?
-  status      UserStatus @default(ACTIVE)
-
-  school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  parents     ParentStudent[]
-  enrollments StudentEnrollment[]
-  attendances Attendance[]
-  attendanceEvents AttendanceEvent[]
-  parentSummons ParentSummons[]
-  smsNotifications SmsNotification[]
-
-  medicalRecord StudentMedicalRecord?
-
-  grades      Grade[]
-  assignments Assignment[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([schoolId, studentNumber])
-  @@index([schoolId])
-  @@index([lastName, firstName])
-}
-
-model StudentMedicalRecord {
-  id                    String   @id @default(cuid())
-  studentId             String   @unique
-  bloodGroup            String?
-  temperature           Float?
-  weightKg              Float?
-  bloodPressureSystolic Int?
-  bloodPressureDiastolic Int?
-  allergies             String?
-  medicalConditions     String?
-  medications           String?
-  emergencyContactName  String?
-  emergencyContactPhone String?
-  doctorName            String?
-  doctorPhone           String?
-  notes                 String?
-
-  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model AdultMedicalRecord {
-  id                    String   @id @default(cuid())
-  userId                String   @unique
-  bloodGroup            String?
-  temperature           Float?
-  weightKg              Float?
-  bloodPressureSystolic Int?
-  bloodPressureDiastolic Int?
-  allergies             String?
-  medicalConditions     String?
-  medications           String?
-  emergencyContactName  String?
-  emergencyContactPhone String?
-  doctorName            String?
-  doctorPhone           String?
-  notes                 String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([userId])
-}
-
-model StudentEnrollment {
-  id             String @id @default(cuid())
-  studentId      String
-  academicYearId String
-  classId        String
-
-  status StudentEnrollmentStatus @default(ACTIVE)
-
-  enrolledAt DateTime  @default(now())
-  endedAt    DateTime?
-
-  student      Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  academicYear AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
-  class        SchoolClass  @relation(fields: [classId], references: [id], onDelete: Cascade)
-  attendances  Attendance[]
-
-  grades Grade[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Un étudiant possède une seule affectation
-  // principale par année scolaire.
-  @@unique([studentId, academicYearId])
-  @@index([studentId])
-  @@index([academicYearId])
-  @@index([classId])
-  @@index([status])
-}
-
-model Attendance {
-  id           String           @id @default(cuid())
-  studentId    String
-  enrollmentId String
-  date         DateTime
-  status       AttendanceStatus @default(PRESENT)
-  arrivalTime  DateTime?
-  reason       String?
-  note         String?
-  recordedBy   String
-
-  student    Student           @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  enrollment StudentEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
-  recorder   User              @relation("AttendanceRecordedBy", fields: [recordedBy], references: [id], onDelete: Restrict)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([enrollmentId, date])
-  @@index([studentId])
-  @@index([enrollmentId])
-  @@index([date])
-  @@index([status])
-  @@index([recordedBy])
-  events AttendanceEvent[]
-}
-
-model AttendanceEvent {
-  id           String              @id @default(cuid())
-  attendanceId String
-  studentId    String
-  createdBy    String
-  type         AttendanceEventType
-  note         String?
-
-  attendance Attendance @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
-  student    Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  creator    User       @relation("AttendanceEventCreatedBy", fields: [createdBy], references: [id], onDelete: Restrict)
-  summons    ParentSummons[]
-
-  createdAt DateTime @default(now())
-
-  @@index([attendanceId, createdAt])
-  @@index([studentId, createdAt])
-  @@index([createdBy, createdAt])
-  @@index([type, createdAt])
-}
-
-model ParentSummons {
-  id               String              @id @default(cuid())
-  studentId        String
-  parentId         String
-  createdBy        String
-  attendanceEventId String?
-  reason           String
-  message          String
-  status           ParentSummonsStatus @default(PENDING)
-  scheduledAt      DateTime?
-  responseReadAt   DateTime?
-
-  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  parent  User    @relation("ParentSummonsParent", fields: [parentId], references: [id], onDelete: Cascade)
-  creator User    @relation("ParentSummonsCreatedBy", fields: [createdBy], references: [id], onDelete: Restrict)
-  attendanceEvent AttendanceEvent? @relation(fields: [attendanceEventId], references: [id], onDelete: SetNull)
-  smsNotifications SmsNotification[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([studentId, createdAt])
-  @@index([parentId, status])
-  @@index([createdBy, createdAt])
-  @@index([attendanceEventId])
-  @@index([status, createdAt])
-}
-
-model SmsNotification {
-  id                 String                @id @default(cuid())
-  recipientId        String?
-  studentId          String?
-  parentSummonsId    String?
-  announcementId     String?
-  type               SmsNotificationType
-  status             SmsNotificationStatus @default(PENDING)
-  provider            String?
-  providerMessageId   String?
-  recipientPhone     String
-  message            String
-  attempts            Int                   @default(0)
-  lastAttemptAt       DateTime?
-  nextAttemptAt       DateTime              @default(now())
-  sentAt              DateTime?
-  error               String?
-  createdAt           DateTime              @default(now())
-  updatedAt           DateTime              @updatedAt
-
-  recipient      User           ? @relation("SmsNotificationRecipient", fields: [recipientId], references: [id], onDelete: SetNull)
-  student        Student        ? @relation(fields: [studentId], references: [id], onDelete: SetNull)
-  parentSummons  ParentSummons  ? @relation(fields: [parentSummonsId], references: [id], onDelete: SetNull)
-  announcement   Announcement   ? @relation(fields: [announcementId], references: [id], onDelete: SetNull)
-
-  @@index([status, nextAttemptAt])
-  @@index([recipientId, createdAt])
-  @@index([studentId, createdAt])
-  @@index([parentSummonsId])
-  @@index([announcementId])
-}
-
-model ParentStudent {
-  id        String @id @default(cuid())
-  parentId  String
-  studentId String
-
-  relationship String?
-  isPrimary    Boolean @default(false)
-
-  parent  User    @relation("ParentLinks", fields: [parentId], references: [id], onDelete: Cascade)
-  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([parentId, studentId])
-  @@index([parentId])
-  @@index([studentId])
-}
-
-model StaffProfile {
-  id     String @id @default(cuid())
-  userId String @unique
-
-  function StaffFunction
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  assignments StaffAssignment[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([function])
-}
-
-model StaffAssignment {
-  id       String @id @default(cuid())
-  staffId  String
-  schoolId String
-
-  startDate DateTime
-  endDate   DateTime?
-  active    Boolean   @default(true)
-
-  staff  StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
-  school School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([staffId, schoolId, startDate])
-  @@index([staffId])
-  @@index([schoolId])
-  @@index([active])
-}
-
-model Grade {
-  id String @id @default(cuid())
-
-  studentId    String
-  enrollmentId String
-
-  subject String
-  title   String
-
-  value       Float
-  maxValue    Float @default(20)
-  coefficient Float @default(1)
-
-  evaluationDate DateTime
-
-  comment String?
-
-  recordedBy String
-
-  student    Student           @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  enrollment StudentEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
-  recorder   User              @relation("GradeRecordedBy", fields: [recordedBy], references: [id], onDelete: Restrict)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([studentId])
-  @@index([enrollmentId])
-  @@index([subject])
-  @@index([evaluationDate])
-  @@index([recordedBy])
-}
-
-model Assignment {
-  id String @id @default(cuid())
-
-  studentId String?
-  classId   String
-
-  subject     String
-  title       String
-  description String?
-
-  assignedAt DateTime
-  dueDate    DateTime?
-
-  status AssignmentStatus @default(PENDING)
-
-  createdBy String
-
-  student Student?    @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  class   SchoolClass @relation(fields: [classId], references: [id], onDelete: Cascade)
-  creator User        @relation("AssignmentCreatedBy", fields: [createdBy], references: [id], onDelete: Restrict)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([studentId])
-  @@index([classId])
-  @@index([subject])
-  @@index([dueDate])
-  @@index([status])
-  @@index([createdBy])
-}
-
-model Schedule {
-  id String @id @default(cuid())
-
-  schoolId       String
-  academicYearId String
-  classId        String
-  teacherId      String
-
-  subject   String
-  dayOfWeek ScheduleDay
-
-  startTime String
-  endTime   String
-
-  room String?
-
-  school       School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  academicYear AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
-  class        SchoolClass  @relation(fields: [classId], references: [id], onDelete: Cascade)
-  teacher      User         @relation(fields: [teacherId], references: [id], onDelete: Restrict)
-  lessonObservations LessonObservation[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([schoolId])
-  @@index([academicYearId])
-  @@index([classId])
-  @@index([teacherId])
-  @@index([dayOfWeek])
-  @@index([room])
-}
-
-model LessonObservation {
-  id         String @id @default(cuid())
-  teacherId  String
-  scheduleId String
-  date       DateTime
-  content    String
-
-  teacher  User     @relation(fields: [teacherId], references: [id], onDelete: Cascade)
-  schedule Schedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([scheduleId, date])
-  @@index([teacherId, date])
-  @@index([scheduleId, date])
-}
-
-model Announcement {
-  id             String @id @default(cuid())
-  schoolId       String
-  academicYearId String
-  createdBy      String
-
-  title   String
-  content String
-  audiences AnnouncementAudience[]
-
-  deletedAt DateTime?
-
-  school       School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  academicYear AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
-  creator      User         @relation("AnnouncementCreatedBy", fields: [createdBy], references: [id], onDelete: Restrict)
-
-  classTargets AnnouncementClass[]
-  recipients   AnnouncementRecipient[]
-  smsNotifications SmsNotification[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([schoolId])
-  @@index([academicYearId])
-  @@index([createdBy])
-  @@index([deletedAt])
-}
-
-model AnnouncementClass {
-  id             String @id @default(cuid())
-  announcementId String
-  classId       String
-
-  announcement Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
-  class        SchoolClass @relation(fields: [classId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-
-  @@unique([announcementId, classId])
-  @@index([announcementId])
-  @@index([classId])
-}
-
-model AnnouncementRecipient {
-  id             String @id @default(cuid())
-  announcementId String
-  userId         String
-
-  isRead Boolean   @default(false)
-  readAt DateTime?
-
-  announcement Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
-  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-
-  @@unique([announcementId, userId])
-  @@index([announcementId])
-  @@index([userId])
-  @@index([isRead])
-}
-
-model Conversation {
-  id       String @id @default(cuid())
-  schoolId String
-
-  school       School                   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  participants ConversationParticipant[]
-  messages     Message[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([schoolId])
-}
-
-model ConversationParticipant {
-  id             String @id @default(cuid())
-  conversationId String
-  userId         String
-
-  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-
-  @@unique([conversationId, userId])
-  @@index([userId])
-}
-
-model Message {
-  id             String @id @default(cuid())
-  conversationId String
-  senderId       String
-
-  content String
-
-  deliveredAt DateTime?
-  readAt      DateTime?
-
-  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  sender       User         @relation("MessageSender", fields: [senderId], references: [id], onDelete: Restrict)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([conversationId])
-  @@index([senderId])
-  @@index([createdAt])
-}
-
-model RefreshToken {
-  id     String @id @default(cuid())
-  userId String
-
-  tokenHash String    @unique
-  expiresAt DateTime
-  revokedAt DateTime?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-
-  @@index([userId])
-  @@index([expiresAt])
-  
-}
-
-
-model MedicalEvent {
-  id String @id @default(cuid())
-
-  schoolId      String
-  targetUserId  String?
-  createdByUserId String
-
-  type        String
-  title       String
-  description String?
-  startAt     DateTime
-  endAt       DateTime?
-  status      String @default("PLANNED")
-  priority    String @default("NORMAL")
-  notes       String?
-
-  school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  target User? @relation("MedicalEventTarget", fields: [targetUserId], references: [id], onDelete: SetNull)
-  createdBy User @relation("MedicalEventCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([schoolId, startAt])
-  @@index([targetUserId, startAt])
-  @@index([createdByUserId])
-  @@index([status, startAt])
-}
-
-model MedicalReport {
-  id String @id @default(cuid())
-
-  schoolId      String
-  targetUserId  String
-  createdByUserId String
-
-  type        String
-  title       String
-  reportDate  DateTime
-  status      String @default("DRAFT")
-  priority    String @default("NORMAL")
-
-  reason        String?
-  temperature           Float?
-  weightKg              Float?
-  bloodPressureSystolic Int?
-  bloodPressureDiastolic Int?
-  observations  String?
-  actionsTaken  String?
-  outcome       String?
-  recommendations String?
-  parentContacted Boolean @default(false)
-  parentContactedAt DateTime?
-  referredTo    String?
-  notes         String?
-
-  school     School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  target     User   @relation("MedicalReportTarget", fields: [targetUserId], references: [id], onDelete: Cascade)
-  createdBy  User   @relation("MedicalReportCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([schoolId, reportDate])
-  @@index([targetUserId, reportDate])
-  @@index([createdByUserId])
-  @@index([status, reportDate])
-}
-
-model MedicalHistory {
-  id String @id @default(cuid())
-
-  targetUserId String
-  actorUserId  String
-
-  action String
-  field String
-
-  previousValue String?
-  newValue      String?
-
-  target User @relation("MedicalHistoryTarget", fields: [targetUserId], references: [id], onDelete: Cascade)
-  actor  User @relation("MedicalHistoryActor", fields: [actorUserId], references: [id], onDelete: Restrict)
-
-  createdAt DateTime @default(now())
-
-  @@index([targetUserId, createdAt])
-  @@index([actorUserId, createdAt])
 }
