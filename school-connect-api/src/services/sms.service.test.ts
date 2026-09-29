@@ -25,6 +25,7 @@ type SmsRow = {
   providerMessageId: string | null;
   sentAt: Date | null;
   error: string | null;
+  parentSummonsId: string | null;
 };
 
 function createFakePrisma(rows: SmsRow[]) {
@@ -98,6 +99,7 @@ function makeRow(overrides: Partial<SmsRow> = {}): SmsRow {
     providerMessageId: null,
     sentAt: null,
     error: null,
+    parentSummonsId: null,
     ...overrides,
   };
 }
