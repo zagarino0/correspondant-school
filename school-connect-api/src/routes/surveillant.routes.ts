@@ -74,6 +74,11 @@ export async function surveillantRoutes(fastify: FastifyInstance) {
               student: {
                 select: { id: true, firstName: true, lastName: true },
               },
+              events: {
+                orderBy: { createdAt: "desc" },
+                take: 1,
+                select: { id: true, type: true, note: true, createdAt: true },
+              },
             },
           }),
           fastify.prisma.schedule.findMany({
@@ -188,6 +193,16 @@ export async function surveillantRoutes(fastify: FastifyInstance) {
           : null,
         attendanceToControl: sessions.filter((item) => item.attendance.recorded),
         lateArrivals: lateEvents,
+        absenceItems: attendance
+          .filter((item) => item.status === "ABSENT")
+          .map((item) => ({
+            id: item.id,
+            attendanceId: item.id,
+            student: item.student,
+            reason: item.reason,
+            note: item.note,
+            latestEvent: item.events[0] ?? null,
+          })),
         upcomingSessions: sessions,
       });
     },
