@@ -72,7 +72,11 @@ export function SurveillantDashboard({ firstName }: Props) {
   const handleEvent = async (
     studentId: string,
     attendanceId: string,
-    type: "LATE_AUTHORIZED" | "LATE_NOT_AUTHORIZED",
+    type:
+      | "LATE_AUTHORIZED"
+      | "LATE_NOT_AUTHORIZED"
+      | "ABSENCE_JUSTIFIED"
+      | "ABSENCE_UNJUSTIFIED",
   ) => {
     setBusyId(`${attendanceId}:${type}`);
     try {
@@ -222,6 +226,64 @@ export function SurveillantDashboard({ firstName }: Props) {
         ))
       )}
 
+      <SectionTitle title="ABSENCES À TRAITER" />
+      {data.absenceItems.length === 0 ? (
+        <View style={styles.card}>
+          <Text style={styles.emptyCard}>Aucune absence à traiter.</Text>
+        </View>
+      ) : (
+        data.absenceItems.map((item) => (
+          <View key={item.id} style={styles.eventCard}>
+            <View style={styles.eventMain}>
+              <View style={styles.eventMainStudent}>
+                <Text style={styles.studentName}>
+                  {item.student.firstName} {item.student.lastName}
+                </Text>
+                <Text style={styles.eventTime}>
+                  Absence{item.reason ? " · " + item.reason : ""}
+                </Text>
+              </View>
+              {item.latestEvent ? (
+                <Text style={styles.latestEvent}>
+                  {item.latestEvent.type === "ABSENCE_JUSTIFIED"
+                    ? "Justifiée"
+                    : item.latestEvent.type === "ABSENCE_UNJUSTIFIED"
+                      ? "Non justifiée"
+                      : ""}
+                </Text>
+              ) : null}
+            </View>
+
+            <View style={styles.actions}>
+              <Pressable
+                style={[styles.actionButton, styles.allowButton]}
+                disabled={busyId !== null}
+                onPress={() =>
+                  void handleEvent(item.student.id, item.attendanceId, "ABSENCE_JUSTIFIED")
+                }
+              >
+                <Text style={styles.actionText}>Absence justifiée</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.actionButton, styles.denyButton]}
+                disabled={busyId !== null}
+                onPress={() =>
+                  void handleEvent(item.student.id, item.attendanceId, "ABSENCE_UNJUSTIFIED")
+                }
+              >
+                <Text style={styles.actionText}>Absence non justifiée</Text>
+              </Pressable>
+              <Pressable
+                style={styles.summonsButton}
+                disabled={busyId !== null}
+                onPress={() => void handleSummons(item.student.id)}
+              >
+                <Text style={styles.summonsText}>Convoquer le parent</Text>
+              </Pressable>
+            </View>
+          </View>
+        ))
+      )}
       <SectionTitle title="PRÉSENCES À OBSERVER" />
       {data.attendanceToControl.map((item) => (
         <View key={item.scheduleId} style={styles.rowCard}>
@@ -288,6 +350,8 @@ const styles = StyleSheet.create({
   emptyCard: { color: "#64748B", fontSize: 13 },
   eventCard: { padding: 14, borderRadius: 14, backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#E2E8F0" },
   eventMain: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
+  eventMainStudent: { flex: 1 },
+  latestEvent: { fontSize: 11, fontWeight: "800", color: "#344976" },
   studentName: { flex: 1, fontSize: 14, fontWeight: "800", color: "#111827" },
   eventTime: { fontSize: 12, color: "#64748B" },
   actions: { flexDirection: "row", flexWrap: "wrap", gap: 7, marginTop: 12 },
