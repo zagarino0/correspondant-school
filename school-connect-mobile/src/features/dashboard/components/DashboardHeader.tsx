@@ -37,7 +37,7 @@ export function DashboardHeader({ firstName, role }: DashboardHeaderProps) {
         const announcementPromise = getMyAnnouncements();
         const summonsPromise = role === "PARENT" ? getMySummons() : null;
         const surveillantPromise = role === "STAFF" ? getSummonsNotifications() : null;
-        const [announcementResponse, summonsResponse] = await Promise.all([
+        const [announcementResponse, summonsResponse, surveillantResponse] = await Promise.all([
           announcementPromise,
           summonsPromise,
           surveillantPromise,
@@ -64,6 +64,7 @@ export function DashboardHeader({ firstName, role }: DashboardHeaderProps) {
         if (!mounted) return;
         setUnreadAnnouncements(0);
         setPendingSummons(0);
+        setSurveillantNotifications(0);
       }
     }
 
