@@ -204,7 +204,7 @@ export default function AnnouncementsScreen() {
         <View style={styles.stateContainer}>
           <Text style={styles.errorText}>{errorMessage}</Text>
         </View>
-      ) : announcements.length === 0 ? (
+      ) : announcements.length === 0 && summons.length === 0 ? (
         <View style={styles.stateContainer}>
           <Text style={styles.stateTitle}>Aucune annonce</Text>
           <Text style={styles.stateText}>
