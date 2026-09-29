@@ -6,6 +6,8 @@ import { DashboardSection } from "../components/DashboardSection";
 import type { DashboardSectionData } from "../dashboard.types";
 import { getMyAssignments } from "../../../services/assignments/assignment.service";
 import { getMyNextSchedule } from "../../../services/schedule/schedule.service";
+import { getStudentAttendance, type ParentAttendanceRecord } from "../../../services/attendance/attendance.service";
+import { createRealtimeConnection } from "../../../services/realtime/websocket.service";
 import type { StudentSchedule } from "../../schedule/schedule.types";
 import { normalizeApiError } from "../../../services/api/errors";
 
@@ -32,6 +34,8 @@ export function StudentDashboard({
   const [nextSchedule, setNextSchedule] = useState<StudentSchedule | null>(null);
   const [nextScheduleLoading, setNextScheduleLoading] = useState(true);
   const [nextScheduleError, setNextScheduleError] = useState(false);
+  const [attendance, setAttendance] = useState<ParentAttendanceRecord | null>(null);
+  const [attendanceLoading, setAttendanceLoading] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
@@ -98,6 +102,38 @@ export function StudentDashboard({
   }, []);
 
 
+  useEffect(() => {
+    let mounted = true;
+
+    const loadAttendance = async () => {
+      try {
+        const response = await getStudentAttendance("me");
+        if (mounted) {
+          setAttendance(response.attendance[0] ?? null);
+        }
+      } catch {
+        if (mounted) setAttendance(null);
+      } finally {
+        if (mounted) setAttendanceLoading(false);
+      }
+    };
+
+    void loadAttendance();
+
+    const connection = createRealtimeConnection({
+      onEvent: (event) => {
+        if (event.type !== "attendance:event") return;
+        void loadAttendance();
+      },
+    });
+    connection.connect();
+
+    return () => {
+      mounted = false;
+      connection.close();
+    };
+  }, []);
+
   const nextScheduleValue = nextScheduleLoading
     ? "…"
     : nextScheduleError
@@ -131,6 +167,36 @@ export function StudentDashboard({
           title: "Prochain cours",
           value: nextScheduleValue,
           description: nextScheduleDescription,
+        },
+      ],
+    },
+    {
+      id: "student-attendance",
+      title: "Ma présence",
+      cards: [
+        {
+          id: "attendance-status",
+          title: "Aujourd'hui",
+          value: attendanceLoading
+            ? "…"
+            : attendance?.status === "PRESENT"
+              ? "Présent"
+              : attendance?.status === "ABSENT"
+                ? "Absent"
+                : attendance?.status === "LATE"
+                  ? "Retard"
+                  : attendance?.status === "EXCUSED"
+                    ? "Justifié"
+                    : "Non renseigné",
+          description: attendance?.events?.[0]
+            ? attendance.events[0].type === "LATE_AUTHORIZED"
+              ? "Retard — entrée autorisée."
+              : attendance.events[0].type === "LATE_NOT_AUTHORIZED"
+                ? "Retard — entrée non autorisée."
+                : attendance.events[0].type === "ABSENCE_JUSTIFIED"
+                  ? "Absence justifiée."
+                  : "Absence non justifiée."
+            : "État synchronisé avec votre établissement.",
         },
       ],
     },
