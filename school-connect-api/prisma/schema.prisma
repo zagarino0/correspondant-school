@@ -74,6 +74,19 @@ enum ParentSummonsStatus {
   COMPLETED
 }
 
+enum SmsNotificationType {
+  SUMMONS
+  ANNOUNCEMENT
+}
+
+enum SmsNotificationStatus {
+  PENDING
+  SENDING
+  SENT
+  FAILED
+  SKIPPED
+}
+
 enum AssignmentStatus {
   PENDING
   SUBMITTED
@@ -127,6 +140,8 @@ model User {
 
   firstName String
   lastName  String
+  phone     String?
+  smsEnabled Boolean @default(true)
 
   role   UserRole   @default(PARENT)
   status UserStatus @default(ACTIVE)
@@ -161,6 +176,7 @@ model User {
   attendanceEvents AttendanceEvent[] @relation("AttendanceEventCreatedBy")
   parentSummonsCreated ParentSummons[] @relation("ParentSummonsCreatedBy")
   parentSummonsReceived ParentSummons[] @relation("ParentSummonsParent")
+  smsNotifications SmsNotification[] @relation("SmsNotificationRecipient")
   createdAnnouncements Announcement[] @relation("AnnouncementCreatedBy")
   announcementRecipients AnnouncementRecipient[]
   lessonObservations LessonObservation[]
@@ -264,6 +280,7 @@ model Student {
   attendances Attendance[]
   attendanceEvents AttendanceEvent[]
   parentSummons ParentSummons[]
+  smsNotifications SmsNotification[]
 
   medicalRecord StudentMedicalRecord?
 
@@ -420,6 +437,7 @@ model ParentSummons {
   parent  User    @relation("ParentSummonsParent", fields: [parentId], references: [id], onDelete: Cascade)
   creator User    @relation("ParentSummonsCreatedBy", fields: [createdBy], references: [id], onDelete: Restrict)
   attendanceEvent AttendanceEvent? @relation(fields: [attendanceEventId], references: [id], onDelete: SetNull)
+  smsNotifications SmsNotification[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -429,6 +447,38 @@ model ParentSummons {
   @@index([createdBy, createdAt])
   @@index([attendanceEventId])
   @@index([status, createdAt])
+}
+
+model SmsNotification {
+  id                 String                @id @default(cuid())
+  recipientId        String?
+  studentId          String?
+  parentSummonsId    String?
+  announcementId     String?
+  type               SmsNotificationType
+  status             SmsNotificationStatus @default(PENDING)
+  provider            String?
+  providerMessageId   String?
+  recipientPhone     String
+  message            String
+  attempts            Int                   @default(0)
+  lastAttemptAt       DateTime?
+  nextAttemptAt       DateTime              @default(now())
+  sentAt              DateTime?
+  error               String?
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+
+  recipient      User           ? @relation("SmsNotificationRecipient", fields: [recipientId], references: [id], onDelete: SetNull)
+  student        Student        ? @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  parentSummons  ParentSummons  ? @relation(fields: [parentSummonsId], references: [id], onDelete: SetNull)
+  announcement   Announcement   ? @relation(fields: [announcementId], references: [id], onDelete: SetNull)
+
+  @@index([status, nextAttemptAt])
+  @@index([recipientId, createdAt])
+  @@index([studentId, createdAt])
+  @@index([parentSummonsId])
+  @@index([announcementId])
 }
 
 model ParentStudent {
@@ -621,6 +671,7 @@ model Announcement {
 
   classTargets AnnouncementClass[]
   recipients   AnnouncementRecipient[]
+  smsNotifications SmsNotification[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
