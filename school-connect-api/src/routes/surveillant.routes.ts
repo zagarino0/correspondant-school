@@ -558,7 +558,7 @@ export async function surveillantRoutes(fastify: FastifyInstance) {
     async (request, reply) => {
       const { studentId } = request.params as { studentId: string };
       const parsed = z.object({
-        attendanceEventId: z.string().min(1).optional(),
+        attendanceEventId: z.string().min(1).nullable().optional(),
         reason: summonsReasonSchema,
         message: z.string().trim().min(1).max(2000),
         scheduledAt: z.string().datetime().nullable().optional(),
