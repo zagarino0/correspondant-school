@@ -10,6 +10,7 @@ import {
   TextInput,
   View,
   useWindowDimensions,
+  type DimensionValue,
 } from "react-native";
 
 import {
@@ -471,7 +472,7 @@ export function SurveillantDashboard({ firstName }: Props) {
   );
 }
 
-function Stat({ label, value, width }: { label: string; value: number; width: string }) {
+function Stat({ label, value, width }: { label: string; value: number; width: DimensionValue }) {
   return (
     <View style={[styles.stat, { width }]}>
       <Text style={styles.statLabel}>{label}</Text>
