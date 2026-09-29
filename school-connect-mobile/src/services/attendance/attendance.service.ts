@@ -41,6 +41,14 @@ export type ParentAttendanceResponse = {
   attendance: ParentAttendanceRecord[];
 };
 
+export async function getMyAttendance(): Promise<ParentAttendanceResponse> {
+  const response = await apiClient.get<ParentAttendanceResponse>(
+    "/api/v1/attendance/me",
+  );
+
+  return response.data;
+}
+
 export async function getStudentAttendance(
   studentId: string,
 ): Promise<ParentAttendanceResponse> {
