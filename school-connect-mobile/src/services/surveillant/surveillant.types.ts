@@ -39,6 +39,7 @@ export type SurveillantDashboardResponse = {
   }>;
   lateArrivals: Array<{
     id: string;
+    attendanceId: string;
     type: AttendanceEventType;
     note: string | null;
     createdAt: string;
