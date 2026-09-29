@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 
 import { DashboardSection } from "../components/DashboardSection";
@@ -246,13 +246,36 @@ export function ParentDashboard({ firstName }: ParentDashboardProps) {
 
   useEffect(() => {
     let mounted = true;
+    let initialLoad = true;
 
-    const loadSummons = async () => {
+    const loadSummons = async (notify = false) => {
       try {
         const response = await getMySummons();
-        if (mounted) setSummons(response.summons);
+        if (!mounted) return;
+
+        setSummons((current) => {
+          const knownIds = new Set(current.map((item) => item.id));
+          const newSummons = response.summons.filter(
+            (item) => !knownIds.has(item.id),
+          );
+
+          if (notify && newSummons.length > 0) {
+            const latest = newSummons[0];
+            Alert.alert(
+              "Nouvelle convocation",
+              latest.message ||
+                `Une convocation concernant ${latest.student.firstName} ${latest.student.lastName} vous a été envoyée.`,
+            );
+          }
+
+          return response.summons;
+        });
       } catch {
-        if (mounted) setSummons([]);
+        if (mounted && initialLoad) {
+          setSummons([]);
+        }
+      } finally {
+        initialLoad = false;
       }
     };
 
@@ -261,16 +284,23 @@ export function ParentDashboard({ firstName }: ParentDashboardProps) {
     const connection = createRealtimeConnection({
       onEvent: (event) => {
         if (event.type === "parent:summons:new") {
-          void loadSummons();
+          void loadSummons(true);
         }
       },
     });
 
     connection.connect();
 
+    // Fallback: if the WebSocket is unavailable, refresh the persistent
+    // summons inbox periodically while the parent dashboard is open.
+    const pollingTimer = setInterval(() => {
+      void loadSummons(true);
+    }, 5000);
+
     return () => {
       mounted = false;
       connection.close();
+      clearInterval(pollingTimer);
     };
   }, []);
 
