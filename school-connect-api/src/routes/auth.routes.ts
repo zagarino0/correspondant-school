@@ -99,6 +99,12 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
         lastName: user.lastName,
         role: user.role,
         schoolId: user.schoolId,
+        staffFunction: user.role === "STAFF"
+          ? (await fastify.prisma.staffProfile.findUnique({
+              where: { userId: user.id },
+              select: { function: true },
+            }))?.function ?? null
+          : null,
       },
       accessToken,
       refreshToken,
@@ -215,6 +221,12 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
         lastName: user.lastName,
         role: user.role,
         schoolId: user.schoolId,
+        staffFunction: user.role === "STAFF"
+          ? (await fastify.prisma.staffProfile.findUnique({
+              where: { userId: user.id },
+              select: { function: true },
+            }))?.function ?? null
+          : null,
       },
       accessToken: newAccessToken,
       refreshToken: newRefreshToken,
@@ -241,6 +253,9 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
           role: true,
           status: true,
           schoolId: true,
+          staffProfile: {
+            select: { function: true },
+          },
         },
       });
 
@@ -254,7 +269,10 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
       }
 
       return reply.send({
-        user,
+        user: {
+          ...user,
+          staffFunction: user.staffProfile?.function ?? null,
+        },
       });
     }
   );
