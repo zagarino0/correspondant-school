@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 
 import { DashboardSection } from "../components/DashboardSection";
@@ -11,6 +11,7 @@ import {
   type ParentChildSchedule,
   type ParentScheduleDay,
   getMySummons,
+  updateSummonsStatus,
   type ParentSummons,
 } from "../../../services/parents/parent.service";
 import {
@@ -437,6 +438,19 @@ export function ParentDashboard({ firstName }: ParentDashboardProps) {
   }, [selectedChildId]);
 
 
+  const handleSummonsStatus = async (
+    summonsId: string,
+    status: "ACCEPTED" | "DECLINED",
+  ) => {
+    try {
+      await updateSummonsStatus(summonsId, status);
+      const response = await getMySummons();
+      setSummons(response.summons);
+    } catch {
+      // Keep the current state if the status update fails.
+    }
+  };
+
   const selectedChild = useMemo(
     () => children.find((child) => child.id === selectedChildId) ?? null,
     [children, selectedChildId],
@@ -711,6 +725,47 @@ export function ParentDashboard({ firstName }: ParentDashboardProps) {
       {sections.map((section) => (
         <DashboardSection key={section.id} {...section} />
       ))}
+
+      {summons.length > 0 ? (
+        <View style={styles.summonsPanel}>
+          <Text style={styles.summonsTitle}>Convocations parentales</Text>
+          {summons.map((summon) => (
+            <View key={summon.id} style={styles.summonCard}>
+              <View style={styles.summonHeader}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.summonStudent}>
+                    {summon.student.firstName} {summon.student.lastName}
+                  </Text>
+                  <Text style={styles.summonReason}>{summon.reason}</Text>
+                </View>
+                <Text style={styles.summonStatus}>{summon.status}</Text>
+              </View>
+              <Text style={styles.summonMessage}>{summon.message}</Text>
+              {summon.scheduledAt ? (
+                <Text style={styles.summonDate}>
+                  Rendez-vous : {new Date(summon.scheduledAt).toLocaleString()}
+                </Text>
+              ) : null}
+              {summon.status === "PENDING" ? (
+                <View style={styles.summonActions}>
+                  <Pressable
+                    style={styles.declineButton}
+                    onPress={() => void handleSummonsStatus(summon.id, "DECLINED")}
+                  >
+                    <Text style={styles.declineText}>Refuser</Text>
+                  </Pressable>
+                  <Pressable
+                    style={styles.acceptButton}
+                    onPress={() => void handleSummonsStatus(summon.id, "ACCEPTED")}
+                  >
+                    <Text style={styles.acceptText}>Accepter</Text>
+                  </Pressable>
+                </View>
+              ) : null}
+            </View>
+          ))}
+        </View>
+      ) : null}
     </ScrollView>
   );
 }
@@ -740,6 +795,27 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#374151",
   },
+  summonsPanel: {
+    marginTop: 16,
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    backgroundColor: "#FFFFFF",
+  },
+  summonsTitle: { fontSize: 16, fontWeight: "800", color: "#111827", marginBottom: 10 },
+  summonCard: { padding: 12, marginBottom: 8, borderRadius: 12, backgroundColor: "#F8FAFC", borderWidth: 1, borderColor: "#E2E8F0" },
+  summonHeader: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
+  summonStudent: { fontSize: 14, fontWeight: "800", color: "#111827" },
+  summonReason: { marginTop: 3, fontSize: 11, fontWeight: "700", color: "#344976" },
+  summonStatus: { fontSize: 10, fontWeight: "900", color: "#64748B" },
+  summonMessage: { marginTop: 10, fontSize: 12, lineHeight: 18, color: "#475569" },
+  summonDate: { marginTop: 8, fontSize: 11, fontWeight: "700", color: "#475569" },
+  summonActions: { flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 12 },
+  declineButton: { minWidth: 90, minHeight: 40, alignItems: "center", justifyContent: "center", paddingHorizontal: 12, borderRadius: 9, borderWidth: 1, borderColor: "#CBD5E1", backgroundColor: "#FFFFFF" },
+  declineText: { color: "#475569", fontSize: 11, fontWeight: "900" },
+  acceptButton: { minWidth: 90, minHeight: 40, alignItems: "center", justifyContent: "center", paddingHorizontal: 12, borderRadius: 9, backgroundColor: "#344976" },
+  acceptText: { color: "#FFFFFF", fontSize: 11, fontWeight: "900" },
   scheduleGrid: {
     width: "100%",
     flexDirection: "row",
