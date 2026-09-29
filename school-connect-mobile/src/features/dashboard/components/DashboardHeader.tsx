@@ -71,8 +71,7 @@ export function DashboardHeader({ firstName, role }: DashboardHeaderProps) {
     const connection = createRealtimeConnection({
       onEvent: (event) => {
         if (
-          event.type === "parent:summons:new" ||
-          event.type === "parent:summons:updated"
+          event.type === "parent:summons:new"
         ) {
           void loadBadges();
         }
