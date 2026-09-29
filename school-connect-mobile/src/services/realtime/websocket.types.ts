@@ -55,6 +55,20 @@ export type RealtimeEvent =
         scheduledAt?: string | null;
         createdAt: string;
       };
+    } 
+  | {
+      type: "parent:summons:updated";
+      payload: {
+        id: string;
+        studentId: string;
+        student: { firstName: string; lastName: string };
+        reason: string;
+        message: string;
+        status: "ACCEPTED" | "DECLINED" | "COMPLETED";
+        scheduledAt?: string | null;
+        createdAt: string;
+        updatedAt: string;
+      };
     }
   | {
       type: "error";
