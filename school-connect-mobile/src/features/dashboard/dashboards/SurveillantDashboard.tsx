@@ -196,7 +196,7 @@ export function SurveillantDashboard({ firstName }: Props) {
                 style={[styles.actionButton, styles.allowButton]}
                 disabled={busyId !== null}
                 onPress={() =>
-                  void handleEvent(item.student.id, item.id, "LATE_AUTHORIZED")
+                  void handleEvent(item.student.id, item.attendanceId, "LATE_AUTHORIZED")
                 }
               >
                 <Text style={styles.actionText}>Autoriser</Text>
@@ -205,7 +205,7 @@ export function SurveillantDashboard({ firstName }: Props) {
                 style={[styles.actionButton, styles.denyButton]}
                 disabled={busyId !== null}
                 onPress={() =>
-                  void handleEvent(item.student.id, item.id, "LATE_NOT_AUTHORIZED")
+                  void handleEvent(item.student.id, item.attendanceId, "LATE_NOT_AUTHORIZED")
                 }
               >
                 <Text style={styles.actionText}>Refuser</Text>
