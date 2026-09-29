@@ -1,3 +1,4 @@
+import { z } from "zod";
 import type { FastifyPluginAsync } from "fastify";
 
 import { authenticate } from "../middleware/authenticate.js";
@@ -21,6 +22,7 @@ export const parentRoutes: FastifyPluginAsync = async (fastify) => {
         select: {
           id: true,
           studentId: true,
+          attendanceEventId: true,
           reason: true,
           message: true,
           status: true,
@@ -33,6 +35,47 @@ export const parentRoutes: FastifyPluginAsync = async (fastify) => {
       });
 
       return reply.send({ summons });
+    },
+  );
+
+  
+  fastify.patch(
+    "/parents/me/summons/:summonsId",
+    { onRequest: [authenticate] },
+    async (request, reply) => {
+      if (request.user.role !== "PARENT") {
+        return reply.status(403).send({
+          error: { code: "FORBIDDEN", message: "Parent access required." },
+        });
+      }
+
+      const { summonsId } = request.params as { summonsId: string };
+      const parsed = z.object({
+        status: z.enum(["ACCEPTED", "DECLINED"]),
+      }).safeParse(request.body);
+
+      if (!parsed.success) {
+        return reply.status(400).send({
+          error: { code: "VALIDATION_ERROR", message: "Invalid summons status." },
+        });
+      }
+
+      const summons = await fastify.prisma.parentSummons.updateMany({
+        where: {
+          id: summonsId,
+          parentId: request.user.sub,
+          status: "PENDING",
+        },
+        data: { status: parsed.data.status },
+      });
+
+      if (summons.count === 0) {
+        return reply.status(404).send({
+          error: { code: "SUMMONS_NOT_FOUND", message: "Pending summons not found." },
+        });
+      }
+
+      return reply.send({ status: parsed.data.status });
     },
   );
 
