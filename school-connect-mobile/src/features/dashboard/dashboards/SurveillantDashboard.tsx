@@ -178,32 +178,6 @@ export function SurveillantDashboard({ firstName }: Props) {
         <Stat label="Retards" value={data.summary.lateToday} />
       </View>
 
-      <SectionTitle title="SUIVI EN COURS" />
-      {data.currentSession ? (
-        <View style={styles.card}>
-          <Text style={styles.time}>
-            {data.currentSession.startTime} – {data.currentSession.endTime}
-          </Text>
-          <Text style={styles.className}>{data.currentSession.className}</Text>
-          <Text style={styles.subject}>
-            {data.currentSession.subject}
-            {data.currentSession.teacher
-              ? ` · ${data.currentSession.teacher.firstName} ${data.currentSession.teacher.lastName}`
-              : ""}
-          </Text>
-          <Text style={styles.meta}>
-            {data.currentSession.attendance.totalStudents} élèves ·{" "}
-            {data.currentSession.attendance.present} présents ·{" "}
-            {data.currentSession.attendance.absent} absents ·{" "}
-            {data.currentSession.attendance.late} retards
-          </Text>
-        </View>
-      ) : (
-        <View style={styles.card}>
-          <Text style={styles.emptyCard}>Aucune séance en cours.</Text>
-        </View>
-      )}
-
       <SectionTitle title="ACTIONS DU SURVEILLANT" />
       <View style={styles.actionGrid}>
         <ActionCard
@@ -309,30 +283,6 @@ export function SurveillantDashboard({ firstName }: Props) {
         })
       )}
 
-      <SectionTitle title="PRÉSENCES À OBSERVER" />
-      {data.attendanceToControl.map((item) => (
-        <View key={item.scheduleId} style={styles.rowCard}>
-          <View style={styles.rowMain}>
-            <Text style={styles.className}>{item.className}</Text>
-            <Text style={styles.subject}>{item.subject}</Text>
-          </View>
-          <Text style={styles.rowValue}>{item.attendance.totalStudents} élèves</Text>
-        </View>
-      ))}
-
-      <SectionTitle title="PROCHAINES SÉANCES" />
-      {data.upcomingSessions.slice(0, 5).map((item) => (
-        <View key={item.scheduleId} style={styles.rowCard}>
-          <View style={styles.rowMain}>
-            <Text style={styles.time}>
-              {item.startTime} – {item.endTime}
-            </Text>
-            <Text style={styles.className}>{item.className}</Text>
-            <Text style={styles.subject}>{item.subject}</Text>
-          </View>
-          {item.room ? <Text style={styles.room}>{item.room}</Text> : null}
-        </View>
-      ))}
     </ScrollView>
   );
 }
