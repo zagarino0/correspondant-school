@@ -268,6 +268,74 @@ export async function surveillantRoutes(fastify: FastifyInstance) {
   );
 
   fastify.get(
+    "/classes",
+    {
+      onRequest: [authenticate],
+      preHandler: [authorize("attendance-event.read")],
+    },
+    async (request, reply) => {
+      const query = request.query as { search?: string; limit?: string };
+      const schoolId = request.user.schoolId;
+      if (!schoolId) {
+        return reply.status(403).send({
+          error: { code: "SCHOOL_REQUIRED", message: "A school assignment is required." },
+        });
+      }
+
+      const search = query.search?.trim() ?? "";
+      const parsedLimit = Number(query.limit ?? 20);
+      const limit = Number.isFinite(parsedLimit)
+        ? Math.min(Math.max(Math.trunc(parsedLimit), 1), 30)
+        : 20;
+
+      const where = {
+        schoolId,
+        ...(search
+          ? {
+              OR: [
+                { name: { contains: search, mode: "insensitive" as const } },
+                { level: { contains: search, mode: "insensitive" as const } },
+              ],
+            }
+          : {}),
+      };
+
+      const [classes, total] = await Promise.all([
+        fastify.prisma.schoolClass.findMany({
+          where,
+          orderBy: [{ level: "asc" }, { name: "asc" }],
+          take: limit + 1,
+          select: {
+            id: true,
+            name: true,
+            level: true,
+            _count: {
+              select: {
+                enrollments: { where: { status: "ACTIVE" } },
+              },
+            },
+          },
+        }),
+        fastify.prisma.schoolClass.count({ where }),
+      ]);
+
+      const hasMore = classes.length > limit;
+      const items = classes.slice(0, limit).map((item) => ({
+        id: item.id,
+        name: item.name,
+        level: item.level,
+        studentCount: item._count.enrollments,
+      }));
+
+      return reply.send({
+        items,
+        total,
+        hasMore,
+      });
+    },
+  );
+
+  fastify.get(
     "/attendance",
     {
       onRequest: [authenticate],
