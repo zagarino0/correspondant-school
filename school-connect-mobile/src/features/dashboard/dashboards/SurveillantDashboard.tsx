@@ -14,12 +14,24 @@ import {
   createParentSummons,
   getDashboard,
 } from "../../../services/surveillant/surveillant.service";
-import type { SurveillantDashboardResponse } from "../../../services/surveillant/surveillant.types";
+import type {
+  AttendanceEventType,
+  SurveillantDashboardResponse,
+} from "../../../services/surveillant/surveillant.types";
 import { createRealtimeConnection } from "../../../services/realtime/websocket.service";
 import type { RealtimeEvent } from "../../../services/realtime/websocket.types";
 
 type Props = {
   firstName: string;
+};
+
+type ActionItem = {
+  id: string;
+  attendanceId: string;
+  student: { id: string; firstName: string; lastName: string };
+  type: AttendanceEventType | null;
+  reason: string | null;
+  arrivalTime: string | null;
 };
 
 export function SurveillantDashboard({ firstName }: Props) {
@@ -75,11 +87,7 @@ export function SurveillantDashboard({ firstName }: Props) {
   const handleEvent = async (
     studentId: string,
     attendanceId: string,
-    type:
-      | "LATE_AUTHORIZED"
-      | "LATE_NOT_AUTHORIZED"
-      | "ABSENCE_JUSTIFIED"
-      | "ABSENCE_UNJUSTIFIED",
+    type: AttendanceEventType,
   ) => {
     setBusyId(`${attendanceId}:${type}`);
     try {
@@ -90,14 +98,32 @@ export function SurveillantDashboard({ firstName }: Props) {
     }
   };
 
-  const actionItems = useMemo(() => {
+  const actionItems = useMemo<ActionItem[]>(() => {
     if (!data) return [];
 
     if (selectedAction === "LATE_AUTHORIZED" || selectedAction === "LATE_NOT_AUTHORIZED") {
-      return data.lateArrivals.filter((item) => item.type !== selectedAction);
+      return data.lateArrivals
+        .filter((item) => item.type !== selectedAction)
+        .map((item) => ({
+          id: item.id,
+          attendanceId: item.attendanceId,
+          student: item.student,
+          type: item.type,
+          reason: null,
+          arrivalTime: item.attendance.arrivalTime,
+        }));
     }
 
-    return data.absenceItems.filter((item) => item.latestEvent?.type !== selectedAction);
+    return data.absenceItems
+      .filter((item) => item.latestEvent?.type !== selectedAction)
+      .map((item) => ({
+        id: item.id,
+        attendanceId: item.attendanceId,
+        student: item.student,
+        type: item.latestEvent?.type ?? null,
+        reason: item.reason,
+        arrivalTime: null,
+      }));
   }, [data, selectedAction]);
 
   const actionCounts = useMemo(() => {
@@ -228,8 +254,8 @@ export function SurveillantDashboard({ firstName }: Props) {
                   </Text>
                   <Text style={styles.eventTime}>
                     {isLate
-                      ? `Retard · arrivée ${item.attendance.arrivalTime
-                          ? new Date(item.attendance.arrivalTime).toLocaleTimeString([], {
+                      ? `Retard · arrivée ${item.arrivalTime
+                          ? new Date(item.arrivalTime).toLocaleTimeString([], {
                               hour: "2-digit",
                               minute: "2-digit",
                             })
@@ -244,9 +270,9 @@ export function SurveillantDashboard({ firstName }: Props) {
                       : item.type === "LATE_NOT_AUTHORIZED"
                         ? "Non autorisé"
                         : "À traiter"
-                    : item.latestEvent?.type === "ABSENCE_JUSTIFIED"
+                    : item.type === "ABSENCE_JUSTIFIED"
                       ? "Justifiée"
-                      : item.latestEvent?.type === "ABSENCE_UNJUSTIFIED"
+                      : item.type === "ABSENCE_UNJUSTIFIED"
                         ? "Non justifiée"
                         : "À traiter"}
                 </Text>
@@ -282,7 +308,6 @@ export function SurveillantDashboard({ firstName }: Props) {
           );
         })
       )}
-
     </ScrollView>
   );
 }
