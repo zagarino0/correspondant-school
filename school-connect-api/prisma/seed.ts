@@ -1,4 +1,4 @@
-import { PrismaClient, UserRole, ScheduleDay, StudentEnrollmentStatus } from "@prisma/client";
+import { PrismaClient, UserRole, ScheduleDay, StudentEnrollmentStatus, StaffFunction } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
@@ -50,6 +50,40 @@ async function main() {
 
   const teacher = await prisma.user.findUniqueOrThrow({
     where: { email: "teacher@school-connect.local" },
+  });
+
+  const staff = await prisma.user.findUniqueOrThrow({
+    where: { email: "staff@school-connect.local" },
+  });
+
+  const staffProfile = await prisma.staffProfile.upsert({
+    where: { userId: staff.id },
+    update: { function: StaffFunction.SURVEILLANT },
+    create: {
+      userId: staff.id,
+      function: StaffFunction.SURVEILLANT,
+    },
+  });
+
+  await prisma.staffAssignment.upsert({
+    where: {
+      staffId_schoolId_startDate: {
+        staffId: staffProfile.id,
+        schoolId: school.id,
+        startDate: new Date("2026-09-01T00:00:00.000Z"),
+      },
+    },
+    update: {
+      active: true,
+      endDate: null,
+    },
+    create: {
+      staffId: staffProfile.id,
+      schoolId: school.id,
+      startDate: new Date("2026-09-01T00:00:00.000Z"),
+      endDate: null,
+      active: true,
+    },
   });
 
   const academicYear = await prisma.academicYear.upsert({
