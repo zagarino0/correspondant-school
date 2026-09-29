@@ -14,6 +14,16 @@ const eventTypeSchema = z.enum([
   "ABSENCE_UNJUSTIFIED",
 ]);
 
+const summonsReasonSchema = z.enum([
+  "Retards répétés",
+  "Retard non autorisé",
+  "Absences répétées",
+  "Absence non justifiée",
+  "Problème de ponctualité",
+  "Suivi disciplinaire",
+  "Autre",
+]);
+
 const DAY_MAP = [
   "SUNDAY",
   "MONDAY",
@@ -548,7 +558,8 @@ export async function surveillantRoutes(fastify: FastifyInstance) {
     async (request, reply) => {
       const { studentId } = request.params as { studentId: string };
       const parsed = z.object({
-        reason: z.string().trim().min(1).max(200),
+        attendanceEventId: z.string().min(1).optional(),
+        reason: summonsReasonSchema,
         message: z.string().trim().min(1).max(2000),
         scheduledAt: z.string().datetime().nullable().optional(),
         parentId: z.string().min(1).optional(),
@@ -565,6 +576,27 @@ export async function surveillantRoutes(fastify: FastifyInstance) {
 
       if (!student) return reply.status(404).send({ error: { code: "STUDENT_NOT_FOUND", message: "Student not found." } });
 
+      let attendanceEvent: { id: string; studentId: string; attendanceId: string; type: import("@prisma/client").AttendanceEventType } | null = null;
+      if (parsed.data.attendanceEventId) {
+        attendanceEvent = await fastify.prisma.attendanceEvent.findFirst({
+          where: {
+            id: parsed.data.attendanceEventId,
+            studentId,
+          },
+          select: {
+            id: true,
+            studentId: true,
+            attendanceId: true,
+            type: true,
+          },
+        });
+        if (!attendanceEvent) {
+          return reply.status(404).send({
+            error: { code: "ATTENDANCE_EVENT_NOT_FOUND", message: "Attendance event not found for this student." },
+          });
+        }
+      }
+
       const parentIds = parsed.data.parentId
         ? student.parents.map((p) => p.parentId).filter((id) => id === parsed.data.parentId)
         : student.parents.map((p) => p.parentId);
@@ -578,6 +610,7 @@ export async function surveillantRoutes(fastify: FastifyInstance) {
               studentId,
               parentId,
               createdBy: request.user.sub,
+              attendanceEventId: attendanceEvent?.id ?? null,
               reason: parsed.data.reason,
               message: parsed.data.message,
               scheduledAt: parsed.data.scheduledAt ? new Date(parsed.data.scheduledAt) : null,
@@ -586,6 +619,7 @@ export async function surveillantRoutes(fastify: FastifyInstance) {
               id: true,
               studentId: true,
               parentId: true,
+              attendanceEventId: true,
               reason: true,
               message: true,
               status: true,
