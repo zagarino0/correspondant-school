@@ -80,9 +80,19 @@ export type SurveillantAttendanceItem = {
   }>;
 };
 
+export type ParentSummonsReason =
+  | "Retards répétés"
+  | "Retard non autorisé"
+  | "Absences répétées"
+  | "Absence non justifiée"
+  | "Problème de ponctualité"
+  | "Suivi disciplinaire"
+  | "Autre";
+
 export type ParentSummons = {
   id: string;
   studentId: string;
+  attendanceEventId?: string | null;
   parentId?: string;
   reason: string;
   message: string;
