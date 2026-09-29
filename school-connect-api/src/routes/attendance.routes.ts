@@ -57,6 +57,15 @@ export async function attendanceRoutes(fastify: FastifyInstance) {
           recordedBy: true,
           createdAt: true,
           updatedAt: true,
+          events: {
+            orderBy: { createdAt: "desc" },
+            select: {
+              id: true,
+              type: true,
+              note: true,
+              createdAt: true,
+            },
+          },
           recorder: {
             select: {
               id: true,
