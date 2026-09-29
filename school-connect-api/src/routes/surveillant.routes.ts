@@ -274,7 +274,12 @@ export async function surveillantRoutes(fastify: FastifyInstance) {
       preHandler: [authorize("attendance-event.read")],
     },
     async (request, reply) => {
-      const query = request.query as { search?: string; limit?: string };
+      const query = request.query as {
+        search?: string;
+        level?: string;
+        category?: string;
+        limit?: string;
+      };
       const schoolId = request.user.schoolId;
       if (!schoolId) {
         return reply.status(403).send({
@@ -283,6 +288,8 @@ export async function surveillantRoutes(fastify: FastifyInstance) {
       }
 
       const search = query.search?.trim() ?? "";
+      const level = query.level?.trim() ?? "";
+      const category = query.category?.trim() ?? "";
       const parsedLimit = Number(query.limit ?? 20);
       const limit = Number.isFinite(parsedLimit)
         ? Math.min(Math.max(Math.trunc(parsedLimit), 1), 30)
@@ -298,9 +305,21 @@ export async function surveillantRoutes(fastify: FastifyInstance) {
               ],
             }
           : {}),
+        ...(level ? { level: { equals: level, mode: "insensitive" as const } } : {}),
       };
 
-      const [classes, total] = await Promise.all([
+      const categoryLevels: Record<string, string[]> = {
+        primaire: ["CP", "CE1", "CE2", "CM1", "CM2"],
+        "premier-cycle": ["6e", "5e", "4e", "3e"],
+        "deuxieme-cycle": ["2nde", "2nd", "1ère", "1re", "Terminale", "Tle"],
+      };
+
+      const normalizedCategory = category.toLowerCase();
+      if (normalizedCategory && categoryLevels[normalizedCategory]) {
+        where.level = { in: categoryLevels[normalizedCategory] };
+      }
+
+      const [classes, total, levels] = await Promise.all([
         fastify.prisma.schoolClass.findMany({
           where,
           orderBy: [{ level: "asc" }, { name: "asc" }],
@@ -317,6 +336,12 @@ export async function surveillantRoutes(fastify: FastifyInstance) {
           },
         }),
         fastify.prisma.schoolClass.count({ where }),
+        fastify.prisma.schoolClass.findMany({
+          where: { schoolId },
+          distinct: ["level"],
+          orderBy: { level: "asc" },
+          select: { level: true },
+        }),
       ]);
 
       const hasMore = classes.length > limit;
@@ -331,6 +356,8 @@ export async function surveillantRoutes(fastify: FastifyInstance) {
         items,
         total,
         hasMore,
+        levels: levels.map((item) => item.level).filter((value): value is string => Boolean(value)),
+        categories: ["primaire", "premier-cycle", "deuxieme-cycle"],
       });
     },
   );
