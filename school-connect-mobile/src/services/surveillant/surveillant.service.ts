@@ -61,3 +61,33 @@ export async function createParentSummons(
   );
   return response.data.summons;
 }
+
+
+export type SurveillantSummonsNotification = {
+  id: string;
+  studentId: string;
+  reason: string;
+  message: string;
+  status: "ACCEPTED" | "DECLINED" | "COMPLETED";
+  scheduledAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  responseReadAt: string | null;
+  student: { firstName: string; lastName: string };
+};
+
+export async function getSummonsNotifications(): Promise<{
+  items: SurveillantSummonsNotification[];
+  unreadCount: number;
+}> {
+  const response = await apiClient.get("/api/v1/surveillant/notifications/summons");
+  return response.data;
+}
+
+export async function markSummonsNotificationRead(
+  summonsId: string,
+): Promise<void> {
+  await apiClient.patch(
+    `/api/v1/surveillant/notifications/summons/${summonsId}/read`,
+  );
+}
