@@ -35,7 +35,7 @@ export default function AppHomeScreen() {
       case "STUDENT": return <StudentDashboard firstName={user.firstName} />;
       case "PARENT": return <ParentDashboard firstName={user.firstName} />;
       case "TEACHER": return <TeacherDashboard firstName={user.firstName} />;
-      case "STAFF": return <StaffDashboard firstName={user.firstName} />;
+      case "STAFF": return <StaffDashboard firstName={user.firstName} staffFunction={user.staffFunction} />;
       case "SCHOOL_ADMIN": return <SchoolAdminDashboard firstName={user.firstName} />;
       case "SUPER_ADMIN": return <SuperAdminDashboard firstName={user.firstName} />;
       default: return null;
