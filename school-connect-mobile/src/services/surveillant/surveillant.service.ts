@@ -48,7 +48,8 @@ export async function createAttendanceEvent(
 export async function createParentSummons(
   studentId: string,
   payload: {
-    reason: string;
+    attendanceEventId?: string | null;
+    reason: import("./surveillant.types").ParentSummonsReason;
     message: string;
     scheduledAt?: string | null;
     parentId?: string;
