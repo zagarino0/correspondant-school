@@ -210,21 +210,11 @@ export async function surveillantRoutes(fastify: FastifyInstance) {
         select: {
           id: true,
           classId: true,
+          teacherId: true,
           subject: true,
           startTime: true,
           endTime: true,
           room: true,
-          class: {
-            select: {
-              id: true,
-              name: true,
-              enrollments: {
-                where: { status: "ACTIVE" },
-                select: { studentId: true },
-              },
-            },
-          },
-          teacher: { select: { id: true, firstName: true, lastName: true } },
         },
       });
 
