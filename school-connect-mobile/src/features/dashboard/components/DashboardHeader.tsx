@@ -4,6 +4,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
 import { getMyAnnouncements } from "../../../features/announcements/announcement.service";
+import { getMySummons } from "../../../services/parents/parent.service";
+import { createRealtimeConnection } from "../../../services/realtime/websocket.service";
 import type { UserRole } from "../../../types/auth";
 
 type DashboardHeaderProps = {
@@ -23,13 +25,19 @@ const roleLabels: Record<UserRole, string> = {
 export function DashboardHeader({ firstName, role }: DashboardHeaderProps) {
   const router = useRouter();
   const [unreadAnnouncements, setUnreadAnnouncements] = useState(0);
+  const [pendingSummons, setPendingSummons] = useState(0);
 
   useEffect(() => {
     let mounted = true;
 
     async function loadBadges() {
       try {
-        const announcementResponse = await getMyAnnouncements();
+        const announcementPromise = getMyAnnouncements();
+        const summonsPromise = role === "PARENT" ? getMySummons() : null;
+        const [announcementResponse, summonsResponse] = await Promise.all([
+          announcementPromise,
+          summonsPromise,
+        ]);
 
         if (!mounted) return;
 
@@ -38,18 +46,51 @@ export function DashboardHeader({ firstName, role }: DashboardHeaderProps) {
             (announcement) => !announcement.isRead,
           ).length,
         );
+        setPendingSummons(
+          role === "PARENT"
+            ? (summonsResponse?.summons.filter(
+                (summon) => summon.status === "PENDING",
+              ).length ?? 0)
+            : 0,
+        );
       } catch {
         if (!mounted) return;
         setUnreadAnnouncements(0);
+        setPendingSummons(0);
       }
     }
 
     void loadBadges();
 
+    if (role !== "PARENT") {
+      return () => {
+        mounted = false;
+      };
+    }
+
+    const connection = createRealtimeConnection({
+      onEvent: (event) => {
+        if (
+          event.type === "parent:summons:new" ||
+          event.type === "parent:summons:updated"
+        ) {
+          void loadBadges();
+        }
+      },
+    });
+
+    connection.connect();
+
+    const pollingTimer = setInterval(() => {
+      void loadBadges();
+    }, 5000);
+
     return () => {
       mounted = false;
+      connection.close();
+      clearInterval(pollingTimer);
     };
-  }, []);
+  }, [role]);
 
   return (
     <View style={styles.container}>
@@ -74,10 +115,12 @@ export function DashboardHeader({ firstName, role }: DashboardHeaderProps) {
             accessibilityLabel="Annonces"
           >
             <Ionicons name="notifications-outline" size={23} color="#344976" />
-            {unreadAnnouncements > 0 ? (
+            {unreadAnnouncements + pendingSummons > 0 ? (
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>
-                  {unreadAnnouncements > 99 ? "99+" : unreadAnnouncements}
+                  {unreadAnnouncements + pendingSummons > 99
+                    ? "99+"
+                    : unreadAnnouncements + pendingSummons}
                 </Text>
               </View>
             ) : null}
