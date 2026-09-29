@@ -8,6 +8,8 @@ import {
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { createRealtimeConnection } from "../../services/realtime/websocket.service";
+import { getMySummons, updateSummonsStatus, type ParentSummons } from "../../services/parents/parent.service";
 
 import type { StudentAnnouncement } from "../../features/announcements/announcement.types";
 import {
@@ -76,6 +78,7 @@ function AnnouncementCard({
 export default function AnnouncementsScreen() {
   const router = useRouter();
   const [announcements, setAnnouncements] = useState<StudentAnnouncement[]>([]);
+  const [summons, setSummons] = useState<ParentSummons[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -92,6 +95,17 @@ export default function AnnouncementsScreen() {
         if (isMounted) {
           setAnnouncements(response.announcements);
         }
+
+        try {
+          const summonsResponse = await getMySummons();
+          if (isMounted) {
+            setSummons(summonsResponse.summons);
+          }
+        } catch {
+          if (isMounted) {
+            setSummons([]);
+          }
+        }
       } catch {
         if (isMounted) {
           setErrorMessage("Impossible de charger vos annonces.");
@@ -105,8 +119,24 @@ export default function AnnouncementsScreen() {
 
     void loadAnnouncements();
 
+    const connection = createRealtimeConnection({
+      onEvent: (event) => {
+        if (event.type === "parent:summons:new") {
+          void loadAnnouncements();
+        }
+      },
+    });
+
+    connection.connect();
+
+    const pollingTimer = setInterval(() => {
+      void loadAnnouncements();
+    }, 5000);
+
     return () => {
       isMounted = false;
+      connection.close();
+      clearInterval(pollingTimer);
     };
   }, []);
 
@@ -187,6 +217,63 @@ export default function AnnouncementsScreen() {
           contentContainerStyle={styles.contentContainer}
           showsVerticalScrollIndicator={false}
         >
+          {summons.map((summon) => (
+            <View key={summon.id} style={[styles.card, styles.summonsCard, summon.status === "PENDING" ? styles.unreadCard : null]}>
+              <View style={styles.cardHeader}>
+                <View style={styles.cardTitleContainer}>
+                  <Text style={styles.title}>Convocation parentale</Text>
+                  <Text style={styles.date}>
+                    {summon.scheduledAt
+                      ? `Rendez-vous : ${formatDate(summon.scheduledAt)} à ${new Date(summon.scheduledAt).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}`
+                      : `Envoyée le ${formatDate(summon.createdAt)}`}
+                  </Text>
+                </View>
+                {summon.status === "PENDING" ? (
+                  <Text style={styles.unreadLabel}>À traiter</Text>
+                ) : null}
+              </View>
+              <Text style={styles.summonsStudent}>
+                {summon.student.firstName} {summon.student.lastName}
+              </Text>
+              <Text style={styles.summonsReason}>{summon.reason}</Text>
+              <Text style={styles.content}>{summon.message}</Text>
+              {summon.status === "PENDING" ? (
+                <View style={styles.summonsActions}>
+                  <Pressable
+                    style={[styles.summonsButton, styles.declineButton]}
+                    onPress={async () => {
+                      try {
+                        await updateSummonsStatus(summon.id, "DECLINED");
+                        setSummons((current) => current.map((item) =>
+                          item.id === summon.id ? { ...item, status: "DECLINED" } : item,
+                        ));
+                      } catch {}
+                    }}
+                  >
+                    <Text style={styles.declineText}>Refuser</Text>
+                  </Pressable>
+                  <Pressable
+                    style={[styles.summonsButton, styles.acceptButton]}
+                    onPress={async () => {
+                      try {
+                        await updateSummonsStatus(summon.id, "ACCEPTED");
+                        setSummons((current) => current.map((item) =>
+                          item.id === summon.id ? { ...item, status: "ACCEPTED" } : item,
+                        ));
+                      } catch {}
+                    }}
+                  >
+                    <Text style={styles.acceptText}>Accepter</Text>
+                  </Pressable>
+                </View>
+              ) : (
+                <Text style={styles.statusText}>
+                  Statut : {summon.status === "ACCEPTED" ? "Acceptée" : summon.status === "DECLINED" ? "Refusée" : "Terminée"}
+                </Text>
+              )}
+            </View>
+          ))}
+
           {announcements.map((announcement) => (
             <AnnouncementCard
               key={announcement.id}
@@ -283,6 +370,56 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "600",
     color: "#374151",
+  },
+  summonsCard: {
+    borderLeftWidth: 4,
+    borderLeftColor: "#344976",
+  },
+  summonsStudent: {
+    marginTop: 12,
+    fontSize: 15,
+    fontWeight: "800",
+    color: "#111827",
+  },
+  summonsReason: {
+    marginTop: 4,
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#344976",
+  },
+  summonsActions: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 14,
+  },
+  summonsButton: {
+    flex: 1,
+    minHeight: 42,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  declineButton: {
+    backgroundColor: "#F3F4F6",
+  },
+  acceptButton: {
+    backgroundColor: "#344976",
+  },
+  declineText: {
+    fontSize: 13,
+    fontWeight: "800",
+    color: "#374151",
+  },
+  acceptText: {
+    fontSize: 13,
+    fontWeight: "800",
+    color: "#FFFFFF",
+  },
+  statusText: {
+    marginTop: 12,
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#6B7280",
   },
   classes: {
     marginTop: 6,
