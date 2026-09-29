@@ -35,6 +35,9 @@ async function main() {
         schoolId: user.schoolId,
         status: "ACTIVE",
         passwordHash,
+        ...(user.email === "parent2@school-connect.local"
+          ? { phone: "0376520982", smsEnabled: true }
+          : {}),
       },
       create: {
         email: user.email,
@@ -44,6 +47,9 @@ async function main() {
         schoolId: user.schoolId,
         status: "ACTIVE",
         passwordHash,
+        ...(user.email === "parent2@school-connect.local"
+          ? { phone: "0376520982", smsEnabled: true }
+          : {}),
       },
     });
   }
