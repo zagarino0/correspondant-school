@@ -47,6 +47,12 @@ export type TeacherAttendanceRow = {
     reason: string | null;
     note: string | null;
     recordedBy: string;
+    events: Array<{
+      id: string;
+      type: "LATE_AUTHORIZED" | "LATE_NOT_AUTHORIZED" | "ABSENCE_JUSTIFIED" | "ABSENCE_UNJUSTIFIED";
+      note: string | null;
+      createdAt: string;
+    }>;
   } | null;
 };
 
