@@ -6,6 +6,67 @@ import { authorizeStudentResource } from "../middleware/authorize-student-resour
 
 export async function attendanceRoutes(fastify: FastifyInstance) {
   fastify.get(
+    "/attendance/me",
+    {
+      onRequest: [authenticate],
+    },
+    async (request, reply) => {
+      const student = await fastify.prisma.student.findUnique({
+        where: { userId: request.user.sub },
+        select: {
+          id: true,
+          studentNumber: true,
+          firstName: true,
+          lastName: true,
+        },
+      });
+
+      if (!student) {
+        return reply.status(404).send({
+          error: {
+            code: "STUDENT_NOT_FOUND",
+            message: "Student profile not found.",
+          },
+        });
+      }
+
+      const attendance = await fastify.prisma.attendance.findMany({
+        where: { studentId: student.id },
+        orderBy: { date: "desc" },
+        select: {
+          id: true,
+          date: true,
+          status: true,
+          arrivalTime: true,
+          reason: true,
+          note: true,
+          recordedBy: true,
+          createdAt: true,
+          updatedAt: true,
+          events: {
+            orderBy: { createdAt: "desc" },
+            select: {
+              id: true,
+              type: true,
+              note: true,
+              createdAt: true,
+            },
+          },
+          recorder: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
+      });
+
+      return reply.send({ student, attendance });
+    },
+  );
+
+  fastify.get(
     "/attendance/student/:studentId",
     {
       onRequest: [
