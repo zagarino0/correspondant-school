@@ -14,6 +14,7 @@ export type SmsNotificationInput = {
   announcementId?: string | null;
   type: "SUMMONS" | "ANNOUNCEMENT";
   phone?: string | null;
+  enabled?: boolean;
   message: string;
 };
 
@@ -40,7 +41,8 @@ export async function enqueueSmsNotification(
 ): Promise<void> {
   const normalizedPhone = normalizeMadagascarMobile(input.phone);
 
-  const shouldSend = env.SMS_ENABLED && normalizedPhone;
+  const enabled = input.enabled ?? true;
+  const shouldSend = env.SMS_ENABLED && enabled && normalizedPhone;
 
   await prisma.smsNotification.create({
     data: {
@@ -55,9 +57,11 @@ export async function enqueueSmsNotification(
       message: input.message.slice(0, 1200),
       error: !normalizedPhone
         ? "NO_VALID_MADAGASCAR_MOBILE"
-        : !env.SMS_ENABLED
-          ? "SMS_DISABLED"
-          : null,
+        : !enabled
+          ? "PARENT_SMS_DISABLED"
+          : !env.SMS_ENABLED
+            ? "SMS_DISABLED"
+            : null,
       nextAttemptAt: new Date(),
     },
   });
