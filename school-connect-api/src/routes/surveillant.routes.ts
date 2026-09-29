@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { ScheduleDay } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 
 import { authenticate } from "../middleware/authenticate.js";
 import { authorize } from "../middleware/authorize.js";
@@ -369,7 +370,7 @@ export async function surveillantRoutes(fastify: FastifyInstance) {
         ? Math.min(Math.max(Math.trunc(parsedLimit), 1), 30)
         : 20;
 
-      const where = {
+      const where: Prisma.SchoolClassWhereInput = {
         schoolId,
         ...(search
           ? {
