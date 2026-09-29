@@ -116,6 +116,7 @@ export default function TeacherAttendanceScreen() {
                   reason: saved.reason ?? null,
                   note: saved.note ?? null,
                   recordedBy: saved.recordedBy,
+                  events: saved.events ?? [],
                 },
               }
             : item,
