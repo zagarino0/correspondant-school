@@ -261,7 +261,7 @@ export function SurveillantDashboard({ firstName }: Props) {
         date.getHours() !== hour ||
         date.getMinutes() !== minute
       ) {
-        setSummonsError("La date ou l’heure de convocation est invalide.");
+        setSummonsError("La date ou l’heure du rendez-vous est invalide.");
         return;
       }
       scheduledAt = date.toISOString();
@@ -278,7 +278,7 @@ export function SurveillantDashboard({ firstName }: Props) {
         message = `${message.replace(/\s+$/, "")}\n\n${appointmentText}`;
       }
     } else if (summonsDate || summonsTime) {
-      setSummonsError("Renseignez la date et l’heure ensemble.");
+      setSummonsError("Renseignez la date et l’heure du rendez-vous ensemble.");
       return;
     }
 
@@ -635,7 +635,7 @@ export function SurveillantDashboard({ firstName }: Props) {
                 placeholderTextColor="#94A3B8"
               />
 
-              <Text style={styles.formLabel}>Date de convocation</Text>
+              <Text style={styles.formLabel}>Date du rendez-vous</Text>
               <TextInput
                 value={summonsDate}
                 onChangeText={setSummonsDate}
@@ -645,7 +645,7 @@ export function SurveillantDashboard({ firstName }: Props) {
                 style={styles.searchInput}
               />
 
-              <Text style={styles.formLabel}>Heure de convocation</Text>
+              <Text style={styles.formLabel}>Heure du rendez-vous</Text>
               <TextInput
                 value={summonsTime}
                 onChangeText={setSummonsTime}
