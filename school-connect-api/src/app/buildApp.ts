@@ -29,6 +29,7 @@ import medicalRoutes from "../routes/medical.routes.js";
 import medicalHistoryRoutes from "../routes/medical-history.routes.js";
 import medicalReportRoutes from "../routes/medical-report.routes.js";
 import { surveillantRoutes } from "../routes/surveillant.routes.js";
+import { startSmsWorker } from "../services/sms.service.js";
 
 import jwtPlugin from "../plugins/jwt.js";
 
@@ -59,6 +60,10 @@ export async function buildApp() {
   await app.register(sensible);
 
   await app.register(prismaPlugin);
+  const stopSmsWorker = startSmsWorker(app.prisma);
+  app.addHook("onClose", async () => {
+    stopSmsWorker();
+  });
   await app.register(jwtPlugin);
   await app.register(websocketPlugin);
   await app.register(healthRoutes, {
