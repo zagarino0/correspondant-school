@@ -33,39 +33,36 @@ export function DashboardHeader({ firstName, role }: DashboardHeaderProps) {
     let mounted = true;
 
     async function loadBadges() {
-      try {
-        const announcementPromise = getMyAnnouncements();
-        const summonsPromise = role === "PARENT" ? getMySummons() : null;
-        const surveillantPromise = role === "STAFF" ? getSummonsNotifications() : null;
-        const [announcementResponse, summonsResponse, surveillantResponse] = await Promise.all([
-          announcementPromise,
-          summonsPromise,
-          surveillantPromise,
+      const [announcementResult, summonsResult, surveillantResult] =
+        await Promise.allSettled([
+          getMyAnnouncements(),
+          role === "PARENT" ? getMySummons() : Promise.resolve(null),
+          role === "STAFF" ? getSummonsNotifications() : Promise.resolve(null),
         ]);
 
-        if (!mounted) return;
+      if (!mounted) return;
 
-        setUnreadAnnouncements(
-          announcementResponse.announcements.filter(
-            (announcement) => !announcement.isRead,
-          ).length,
-        );
-        setPendingSummons(
-          role === "PARENT"
-            ? (summonsResponse?.summons.filter(
-                (summon) => summon.status === "PENDING",
-              ).length ?? 0)
-            : 0,
-        );
-        setSurveillantNotifications(
-          role === "STAFF" ? (surveillantResponse?.unreadCount ?? 0) : 0,
-        );
-      } catch {
-        if (!mounted) return;
-        setUnreadAnnouncements(0);
-        setPendingSummons(0);
-        setSurveillantNotifications(0);
-      }
+      setUnreadAnnouncements(
+        announcementResult.status === "fulfilled"
+          ? announcementResult.value.announcements.filter(
+              (announcement) => !announcement.isRead,
+            ).length
+          : 0,
+      );
+
+      setPendingSummons(
+        role === "PARENT" && summonsResult.status === "fulfilled"
+          ? (summonsResult.value?.summons.filter(
+              (summon) => summon.status === "PENDING",
+            ).length ?? 0)
+          : 0,
+      );
+
+      setSurveillantNotifications(
+        role === "STAFF" && surveillantResult.status === "fulfilled"
+          ? (surveillantResult.value?.unreadCount ?? 0)
+          : 0,
+      );
     }
 
     void loadBadges();
