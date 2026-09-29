@@ -1,9 +1,11 @@
-import type { PrismaClient } from "@prisma/client";
+import type { Prisma, PrismaClient } from "@prisma/client";
 
 import { env } from "../config/env.js";
 import { createSmsProvider, type SmsProvider } from "./sms.provider.js";
 
 const MADAGASCAR_MOBILE_E164 = /^\+2613[0-9]\d{7}$/;
+
+type SmsDatabase = PrismaClient | Prisma.TransactionClient;
 
 export type SmsNotificationInput = {
   recipientId: string;
@@ -33,7 +35,7 @@ export function normalizeMadagascarMobile(phone?: string | null): string | null 
 }
 
 export async function enqueueSmsNotification(
-  prisma: PrismaClient,
+  prisma: SmsDatabase,
   input: SmsNotificationInput,
 ): Promise<void> {
   const normalizedPhone = normalizeMadagascarMobile(input.phone);
