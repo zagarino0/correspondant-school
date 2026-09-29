@@ -1,5 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
+import { ScheduleDay } from "@prisma/client";
 
 import { authenticate } from "../middleware/authenticate.js";
 import { authorize } from "../middleware/authorize.js";
@@ -23,8 +24,8 @@ const DAY_MAP = [
   "SATURDAY",
 ] as const;
 
-function dayOfWeek(date: Date) {
-  return DAY_MAP[date.getDay()];
+function dayOfWeek(date: Date): ScheduleDay {
+  return DAY_MAP[date.getDay()] ?? "SUNDAY";
 }
 
 function todayRange(date = new Date()) {
@@ -81,15 +82,11 @@ export async function surveillantRoutes(fastify: FastifyInstance) {
             select: {
               id: true,
               classId: true,
+              teacherId: true,
               subject: true,
               startTime: true,
               endTime: true,
               room: true,
-              class: { select: { id: true, name: true, enrollments: {
-                where: { status: "ACTIVE" },
-                select: { id: true, studentId: true },
-              } } },
-              teacher: { select: { id: true, firstName: true, lastName: true } },
             },
           }),
           fastify.prisma.attendanceEvent.findMany({
@@ -112,9 +109,30 @@ export async function surveillantRoutes(fastify: FastifyInstance) {
           }),
         ]);
 
+      const [classes, teachers] = await Promise.all([
+        fastify.prisma.schoolClass.findMany({
+          where: { id: { in: schedules.map((schedule) => schedule.classId) } },
+          select: {
+            id: true,
+            name: true,
+            enrollments: {
+              where: { status: "ACTIVE" },
+              select: { id: true, studentId: true },
+            },
+          },
+        }),
+        fastify.prisma.user.findMany({
+          where: { id: { in: schedules.map((schedule) => schedule.teacherId) } },
+          select: { id: true, firstName: true, lastName: true },
+        }),
+      ]);
+
+      const classById = new Map(classes.map((item) => [item.id, item]));
+      const teacherById = new Map(teachers.map((item) => [item.id, item]));
+
       const counts = attendance.reduce(
         (acc, item) => {
-          acc[item.status] += 1;
+          acc[item.status] = (acc[item.status] ?? 0) + 1;
           return acc;
         },
         { PRESENT: 0, ABSENT: 0, LATE: 0, EXCUSED: 0 } as Record<string, number>,
@@ -123,14 +141,16 @@ export async function surveillantRoutes(fastify: FastifyInstance) {
       const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes();
       const currentSession =
         schedules.find((item) => {
-          const [sh, sm] = item.startTime.split(":").map(Number);
-          const [eh, em] = item.endTime.split(":").map(Number);
+          const [sh = 0, sm = 0] = item.startTime.split(":").map(Number);
+          const [eh = 0, em = 0] = item.endTime.split(":").map(Number);
           return sh * 60 + sm <= nowMinutes && nowMinutes < eh * 60 + em;
         }) ?? null;
 
       const sessions = schedules.map((schedule) => {
+        const schoolClass = classById.get(schedule.classId);
+        const teacher = teacherById.get(schedule.teacherId) ?? null;
         const classStudentIds = new Set(
-          schedule.class.enrollments.map((enrollment) => enrollment.studentId),
+          schoolClass?.enrollments.map((enrollment) => enrollment.studentId) ?? [],
         );
         const classAttendance = attendance.filter((item) =>
           classStudentIds.has(item.studentId),
@@ -139,14 +159,14 @@ export async function surveillantRoutes(fastify: FastifyInstance) {
         return {
           scheduleId: schedule.id,
           classId: schedule.classId,
-          className: schedule.class.name,
+          className: schoolClass?.name ?? "Classe inconnue",
           subject: schedule.subject,
-          teacher: schedule.teacher,
+          teacher,
           startTime: schedule.startTime,
           endTime: schedule.endTime,
           room: schedule.room,
           attendance: {
-            totalStudents: schedule.class.enrollments.length,
+            totalStudents: schoolClass?.enrollments.length ?? 0,
             present: classAttendance.filter((item) => item.status === "PRESENT").length,
             absent: classAttendance.filter((item) => item.status === "ABSENT").length,
             late: classAttendance.filter((item) => item.status === "LATE").length,
@@ -208,9 +228,26 @@ export async function surveillantRoutes(fastify: FastifyInstance) {
         },
       });
 
+      const [classes, teachers] = await Promise.all([
+        fastify.prisma.schoolClass.findMany({
+          where: { id: { in: schedules.map((schedule) => schedule.classId) } },
+          select: { id: true, name: true, enrollments: { where: { status: "ACTIVE" }, select: { studentId: true } } },
+        }),
+        fastify.prisma.user.findMany({
+          where: { id: { in: schedules.map((schedule) => schedule.teacherId) } },
+          select: { id: true, firstName: true, lastName: true },
+        }),
+      ]);
+      const classById = new Map(classes.map((item) => [item.id, item]));
+      const teacherById = new Map(teachers.map((item) => [item.id, item]));
+
       return reply.send({
         date: start.toISOString().slice(0, 10),
-        sessions: schedules,
+        sessions: schedules.map((schedule) => ({
+          ...schedule,
+          class: classById.get(schedule.classId) ?? null,
+          teacher: teacherById.get(schedule.teacherId) ?? null,
+        })),
       });
     },
   );
