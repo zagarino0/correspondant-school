@@ -10,6 +10,9 @@ import {
   type Role,
 } from "../src/authorization/roles.js";
 
+import { hasStaffPermission } from "../src/authorization/staff-permissions.js";
+import { StaffFunction } from "@prisma/client";
+
 describe("ABAC - Resource Access", () => {
   it("autorise un parent à accéder aux données de son enfant", () => {
     const context: ResourceContext = {
@@ -138,5 +141,47 @@ describe("Student RBAC", () => {
     expect(
       hasPermission(studentRole, "payment.read")
     ).toBe(false);
+  });
+});
+
+describe("Surveillant RBAC", () => {
+  const surveillant = StaffFunction.SURVEILLANT;
+
+  it("autorise la consultation des élèves", () => {
+    expect(hasStaffPermission(surveillant, "student.read")).toBe(true);
+  });
+
+  it("autorise la gestion opérationnelle des présences", () => {
+    expect(hasStaffPermission(surveillant, "attendance.read")).toBe(true);
+    expect(hasStaffPermission(surveillant, "attendance.create")).toBe(true);
+    expect(hasStaffPermission(surveillant, "attendance.update")).toBe(true);
+    expect(hasStaffPermission(surveillant, "attendance.delete")).toBe(false);
+  });
+
+  it("autorise les événements de retard et d'absence sans suppression", () => {
+    expect(hasStaffPermission(surveillant, "attendance-event.read")).toBe(true);
+    expect(hasStaffPermission(surveillant, "attendance-event.create")).toBe(true);
+  });
+
+  it("autorise les convocations sans suppression", () => {
+    expect(hasStaffPermission(surveillant, "parent-summons.read")).toBe(true);
+    expect(hasStaffPermission(surveillant, "parent-summons.create")).toBe(true);
+    expect(hasStaffPermission(surveillant, "parent-summons.delete")).toBe(false);
+  });
+
+  it("autorise la messagerie et les annonces", () => {
+    expect(hasStaffPermission(surveillant, "message.read")).toBe(true);
+    expect(hasStaffPermission(surveillant, "message.send")).toBe(true);
+    expect(hasStaffPermission(surveillant, "announcement.read")).toBe(true);
+    expect(hasStaffPermission(surveillant, "announcement.create")).toBe(true);
+    expect(hasStaffPermission(surveillant, "announcement.delete")).toBe(false);
+  });
+
+  it("refuse les fonctions pédagogiques, financières et administratives", () => {
+    expect(hasStaffPermission(surveillant, "grade.read")).toBe(false);
+    expect(hasStaffPermission(surveillant, "assignment.create")).toBe(false);
+    expect(hasStaffPermission(surveillant, "schedule.create")).toBe(false);
+    expect(hasStaffPermission(surveillant, "payment.read")).toBe(false);
+    expect(hasStaffPermission(surveillant, "user.create")).toBe(false);
   });
 });
