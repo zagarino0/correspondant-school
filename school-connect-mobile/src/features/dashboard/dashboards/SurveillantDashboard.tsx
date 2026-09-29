@@ -26,6 +26,7 @@ import type {
   SurveillantClassOption,
   SurveillantDashboardResponse,
   SurveillantSession,
+  ParentSummonsReason,
 } from "../../../services/surveillant/surveillant.types";
 import { createRealtimeConnection } from "../../../services/realtime/websocket.service";
 import type { RealtimeEvent } from "../../../services/realtime/websocket.types";
@@ -55,6 +56,13 @@ export function SurveillantDashboard({ firstName }: Props) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [summonsStudent, setSummonsStudent] = useState<SurveillantAttendanceItem | null>(null);
+  const [summonsVisible, setSummonsVisible] = useState(false);
+  const [summonsReason, setSummonsReason] = useState<ParentSummonsReason>("Retards répétés");
+  const [summonsMessage, setSummonsMessage] = useState("");
+  const [summonsDate, setSummonsDate] = useState("");
+  const [summonsTime, setSummonsTime] = useState("");
+  const [summonsError, setSummonsError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setData(await getDashboard());
@@ -175,15 +183,84 @@ export function SurveillantDashboard({ firstName }: Props) {
     }
   };
 
-  const handleSummons = async (studentId: string) => {
-    setBusyId(`summons:${studentId}`);
+  const defaultSummonsMessage = useCallback((reason: ParentSummonsReason, student: SurveillantAttendanceItem | null) => {
+    const name = student ? `${student.student.firstName} ${student.student.lastName}` : "votre enfant";
+    const className = controlSession?.className ?? "sa classe";
+    return `Bonjour,\\n\\nnous vous invitons à vous présenter à l’établissement concernant ${reason.toLowerCase()} de votre enfant ${name}, élève de ${className}.\\n\\nMerci de prendre connaissance de cette convocation.`;
+  }, [controlSession]);
+
+  const openSummons = (item: SurveillantAttendanceItem) => {
+    const reason: ParentSummonsReason =
+      item.events[0]?.type === "LATE_NOT_AUTHORIZED"
+        ? "Retard non autorisé"
+        : item.status === "ABSENT"
+          ? "Absence non justifiée"
+          : "Retards répétés";
+    setSummonsStudent(item);
+    setSummonsReason(reason);
+    setSummonsMessage(defaultSummonsMessage(reason, item));
+    setSummonsDate("");
+    setSummonsTime("");
+    setSummonsError(null);
+    setSummonsVisible(true);
+  };
+
+  const closeSummons = () => {
+    if (busyId === null) {
+      setSummonsVisible(false);
+      setSummonsStudent(null);
+      setSummonsError(null);
+    }
+  };
+
+  const submitSummons = async () => {
+    if (!summonsStudent) return;
+
+    const message = summonsMessage.trim();
+    if (!message) {
+      setSummonsError("Le message au parent est obligatoire.");
+      return;
+    }
+    if ((summonsDate && !/^\\d{2}\\/\\d{2}\\/\\d{4}$/.test(summonsDate)) ||
+        (summonsTime && !/^\\d{2}:\\d{2}$/.test(summonsTime))) {
+      setSummonsError("Utilisez les formats JJ/MM/AAAA et HH:MM.");
+      return;
+    }
+
+    let scheduledAt: string | null = null;
+    if (summonsDate && summonsTime) {
+      const [day, month, year] = summonsDate.split("/").map(Number);
+      const [hour, minute] = summonsTime.split(":").map(Number);
+      const date = new Date(year, month - 1, day, hour, minute);
+      if (
+        date.getFullYear() !== year ||
+        date.getMonth() !== month - 1 ||
+        date.getDate() !== day ||
+        date.getHours() !== hour ||
+        date.getMinutes() !== minute
+      ) {
+        setSummonsError("La date ou l’heure de convocation est invalide.");
+        return;
+      }
+      scheduledAt = date.toISOString();
+    } else if (summonsDate || summonsTime) {
+      setSummonsError("Renseignez la date et l’heure ensemble.");
+      return;
+    }
+
+    setBusyId(`summons:${summonsStudent.studentId}`);
+    setSummonsError(null);
     try {
-      await createParentSummons(studentId, {
-        reason: "Suivi de présence",
-        message:
-          "Nous vous invitons à prendre contact avec l'établissement concernant la présence de votre enfant.",
+      await createParentSummons(summonsStudent.studentId, {
+        attendanceEventId: summonsStudent.events[0]?.id ?? null,
+        reason: summonsReason,
+        message,
+        scheduledAt,
       });
+      closeSummons();
       await load();
+    } catch {
+      setSummonsError("Impossible d’envoyer la convocation au parent.");
     } finally {
       setBusyId(null);
     }
@@ -456,7 +533,7 @@ export function SurveillantDashboard({ firstName }: Props) {
                       <Pressable
                         style={styles.summonsButton}
                         disabled={busyId !== null}
-                        onPress={() => void handleSummons(item.studentId)}
+                        onPress={() => openSummons(item)}
                       >
                         <Text style={styles.summonsText}>Convoquer</Text>
                       </Pressable>
@@ -465,6 +542,100 @@ export function SurveillantDashboard({ firstName }: Props) {
                 ))}
               </ScrollView>
             )}
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={summonsVisible} transparent animationType="slide" onRequestClose={closeSummons}>
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.modal, width >= 720 && styles.modalWide]}>
+            <View style={styles.modalHeader}>
+              <View style={styles.rowMain}>
+                <Text style={styles.modalTitle}>CONVOQUER LE PARENT</Text>
+                <Text style={styles.rowMeta}>
+                  {summonsStudent
+                    ? `${summonsStudent.student.firstName} ${summonsStudent.student.lastName} · ${controlSession?.className ?? "Classe"}`
+                    : ""}
+                </Text>
+              </View>
+              <Pressable onPress={closeSummons} disabled={busyId !== null}>
+                <Text style={styles.closeText}>Fermer</Text>
+              </Pressable>
+            </View>
+
+            <ScrollView style={styles.summonsForm} keyboardShouldPersistTaps="handled">
+              <Text style={styles.formLabel}>Motif</Text>
+              <View style={styles.reasonGrid}>
+                {([
+                  "Retards répétés",
+                  "Retard non autorisé",
+                  "Absences répétées",
+                  "Absence non justifiée",
+                  "Problème de ponctualité",
+                  "Suivi disciplinaire",
+                  "Autre",
+                ] as ParentSummonsReason[]).map((reason) => (
+                  <Pressable
+                    key={reason}
+                    style={[styles.reasonChip, summonsReason === reason && styles.reasonChipActive]}
+                    onPress={() => {
+                      setSummonsReason(reason);
+                      setSummonsMessage(defaultSummonsMessage(reason, summonsStudent));
+                    }}
+                  >
+                    <Text style={[styles.reasonChipText, summonsReason === reason && styles.reasonChipTextActive]}>
+                      {reason}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+
+              <Text style={styles.formLabel}>Message au parent</Text>
+              <TextInput
+                value={summonsMessage}
+                onChangeText={setSummonsMessage}
+                multiline
+                textAlignVertical="top"
+                style={styles.messageInput}
+                placeholder="Message de convocation…"
+                placeholderTextColor="#94A3B8"
+              />
+
+              <Text style={styles.formLabel}>Date de convocation</Text>
+              <TextInput
+                value={summonsDate}
+                onChangeText={setSummonsDate}
+                placeholder="JJ/MM/AAAA"
+                placeholderTextColor="#94A3B8"
+                keyboardType="numbers-and-punctuation"
+                style={styles.searchInput}
+              />
+
+              <Text style={styles.formLabel}>Heure</Text>
+              <TextInput
+                value={summonsTime}
+                onChangeText={setSummonsTime}
+                placeholder="HH:MM"
+                placeholderTextColor="#94A3B8"
+                keyboardType="numbers-and-punctuation"
+                style={styles.searchInput}
+              />
+
+              {summonsError ? <Text style={styles.formError}>{summonsError}</Text> : null}
+
+              <View style={styles.formActions}>
+                <Pressable style={styles.cancelButton} onPress={closeSummons} disabled={busyId !== null}>
+                  <Text style={styles.cancelButtonText}>Annuler</Text>
+                </Pressable>
+                <Pressable style={styles.confirmButton} onPress={() => void submitSummons()} disabled={busyId !== null}>
+                  {busyId?.startsWith("summons:") ? (
+                    <ActivityIndicator color="#FFFFFF" />
+                  ) : (
+                    <Text style={styles.confirmButtonText}>Convoquer</Text>
+                  )}
+                </Pressable>
+              </View>
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -585,4 +756,18 @@ const styles = StyleSheet.create({
   eventButtonTextActive: { color: "#FFFFFF" },
   summonsButton: { paddingHorizontal: 9, paddingVertical: 7, borderRadius: 8, borderWidth: 1, borderColor: "#344976" },
   summonsText: { color: "#344976", fontSize: 10, fontWeight: "900" },
+  summonsForm: { flexGrow: 0 },
+  formLabel: { marginBottom: 6, fontSize: 11, fontWeight: "900", color: "#475569" },
+  reasonGrid: { flexDirection: "row", flexWrap: "wrap", gap: 7, marginBottom: 13 },
+  reasonChip: { paddingHorizontal: 10, paddingVertical: 9, borderRadius: 10, borderWidth: 1, borderColor: "#CBD5E1", backgroundColor: "#FFFFFF" },
+  reasonChipActive: { borderColor: "#344976", backgroundColor: "#344976" },
+  reasonChipText: { fontSize: 10, fontWeight: "800", color: "#475569" },
+  reasonChipTextActive: { color: "#FFFFFF" },
+  messageInput: { minHeight: 115, marginBottom: 13, padding: 12, borderRadius: 10, borderWidth: 1, borderColor: "#CBD5E1", backgroundColor: "#FFFFFF", color: "#111827", fontSize: 13 },
+  formError: { marginBottom: 10, color: "#B91C1C", fontSize: 11, fontWeight: "700" },
+  formActions: { flexDirection: "row", justifyContent: "flex-end", gap: 8, paddingTop: 4, paddingBottom: 10 },
+  cancelButton: { minWidth: 90, alignItems: "center", justifyContent: "center", minHeight: 44, paddingHorizontal: 14, borderRadius: 10, borderWidth: 1, borderColor: "#CBD5E1", backgroundColor: "#FFFFFF" },
+  cancelButtonText: { color: "#475569", fontSize: 12, fontWeight: "900" },
+  confirmButton: { minWidth: 110, alignItems: "center", justifyContent: "center", minHeight: 44, paddingHorizontal: 14, borderRadius: 10, backgroundColor: "#344976" },
+  confirmButtonText: { color: "#FFFFFF", fontSize: 12, fontWeight: "900" },
 });
