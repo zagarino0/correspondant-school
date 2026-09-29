@@ -624,7 +624,6 @@ export function SurveillantDashboard({ firstName }: Props) {
               />
 
               <Text style={styles.formLabel}>Date de convocation</Text>
-              <Text style={styles.formLabel}>Date de convocation</Text>
               <TextInput
                 value={summonsDate}
                 onChangeText={setSummonsDate}
@@ -634,7 +633,6 @@ export function SurveillantDashboard({ firstName }: Props) {
                 style={styles.searchInput}
               />
 
-              <Text style={styles.formLabel}>Heure</Text>
               <Text style={styles.formLabel}>Heure de convocation</Text>
               <TextInput
                 value={summonsTime}
