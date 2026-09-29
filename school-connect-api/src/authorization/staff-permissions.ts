@@ -58,10 +58,28 @@ const staffPermissions: Record<StaffFunction, readonly Permission[]> = {
     "user.update",
   ],
 
+  /*
+   * SURVEILLANT
+   *
+   * Vie scolaire opérationnelle :
+   * - consultation des élèves de son établissement
+   * - présence, absences et corrections de présence
+   * - événements de retard / absence (journal append-only)
+   * - convocations des parents
+   * - annonces et messagerie
+   * - consultation de l'emploi du temps
+   *
+   * Les permissions sont volontairement limitées :
+   * le surveillant ne gère ni les élèves, ni les classes, ni les
+   * emplois du temps, ni les notes, ni les paiements, ni les dossiers
+   * médicaux ou les paramètres de l'établissement.
+   */
   SURVEILLANT: [
     "student.read",
 
     "attendance.read",
+    "attendance.create",
+    "attendance.update",
 
     "attendance-event.read",
     "attendance-event.create",
@@ -74,6 +92,7 @@ const staffPermissions: Record<StaffFunction, readonly Permission[]> = {
     "message.read",
     "message.send",
 
+    "announcement.read",
     "announcement.create",
 
     "ticket.read",
