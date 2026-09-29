@@ -6,6 +6,7 @@ import { useRouter } from "expo-router";
 import { getMyAnnouncements } from "../../../features/announcements/announcement.service";
 import { getMySummons } from "../../../services/parents/parent.service";
 import { createRealtimeConnection } from "../../../services/realtime/websocket.service";
+import { getSummonsNotifications } from "../../../services/surveillant/surveillant.service";
 import type { UserRole } from "../../../types/auth";
 
 type DashboardHeaderProps = {
@@ -26,6 +27,7 @@ export function DashboardHeader({ firstName, role }: DashboardHeaderProps) {
   const router = useRouter();
   const [unreadAnnouncements, setUnreadAnnouncements] = useState(0);
   const [pendingSummons, setPendingSummons] = useState(0);
+  const [surveillantNotifications, setSurveillantNotifications] = useState(0);
 
   useEffect(() => {
     let mounted = true;
@@ -34,9 +36,11 @@ export function DashboardHeader({ firstName, role }: DashboardHeaderProps) {
       try {
         const announcementPromise = getMyAnnouncements();
         const summonsPromise = role === "PARENT" ? getMySummons() : null;
+        const surveillantPromise = role === "STAFF" ? getSummonsNotifications() : null;
         const [announcementResponse, summonsResponse] = await Promise.all([
           announcementPromise,
           summonsPromise,
+          surveillantPromise,
         ]);
 
         if (!mounted) return;
@@ -53,6 +57,9 @@ export function DashboardHeader({ firstName, role }: DashboardHeaderProps) {
               ).length ?? 0)
             : 0,
         );
+        setSurveillantNotifications(
+          role === "STAFF" ? (surveillantResponse?.unreadCount ?? 0) : 0,
+        );
       } catch {
         if (!mounted) return;
         setUnreadAnnouncements(0);
@@ -62,7 +69,7 @@ export function DashboardHeader({ firstName, role }: DashboardHeaderProps) {
 
     void loadBadges();
 
-    if (role !== "PARENT") {
+    if (role !== "PARENT" && role !== "STAFF") {
       return () => {
         mounted = false;
       };
@@ -71,7 +78,8 @@ export function DashboardHeader({ firstName, role }: DashboardHeaderProps) {
     const connection = createRealtimeConnection({
       onEvent: (event) => {
         if (
-          event.type === "parent:summons:new"
+          event.type === "parent:summons:new" ||
+          event.type === "parent:summons:updated"
         ) {
           void loadBadges();
         }
@@ -114,12 +122,12 @@ export function DashboardHeader({ firstName, role }: DashboardHeaderProps) {
             accessibilityLabel="Annonces"
           >
             <Ionicons name="notifications-outline" size={23} color="#344976" />
-            {unreadAnnouncements + pendingSummons > 0 ? (
+            {unreadAnnouncements + pendingSummons + surveillantNotifications > 0 ? (
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>
-                  {unreadAnnouncements + pendingSummons > 99
+                  {unreadAnnouncements + pendingSummons + surveillantNotifications > 99
                     ? "99+"
-                    : unreadAnnouncements + pendingSummons}
+                    : unreadAnnouncements + pendingSummons + surveillantNotifications}
                 </Text>
               </View>
             ) : null}
