@@ -44,7 +44,7 @@ export async function enqueueSmsNotification(
   const enabled = input.enabled ?? true;
   const shouldSend = env.SMS_ENABLED && enabled && normalizedPhone;
 
-  await prisma.smsNotification.create({
+  const notification = await prisma.smsNotification.create({
     data: {
       recipientId: input.recipientId,
       studentId: input.studentId ?? null,
@@ -65,6 +65,10 @@ export async function enqueueSmsNotification(
       nextAttemptAt: new Date(),
     },
   });
+
+  console.info(
+    `[SMS workflow] queued notification id=${notification.id} status=${notification.status} type=${input.type} provider=${env.SMS_PROVIDER}`,
+  );
 }
 
 async function processOne(
@@ -91,6 +95,8 @@ async function processOne(
 
   if (claim.count === 0) return;
 
+  console.info(`[SMS worker] claimed notification id=${id}`);
+
   const notification = await prisma.smsNotification.findUnique({
     where: { id },
   });
@@ -114,6 +120,10 @@ async function processOne(
         nextAttemptAt: new Date(),
       },
     });
+
+    console.info(
+      `[SMS worker] notification id=${id} status=SENT provider=${provider.name} attempt=${notification.attempts}`,
+    );
   } catch (error) {
     const attempts = notification.attempts;
     const exhausted = attempts >= env.SMS_MAX_ATTEMPTS;
@@ -132,6 +142,10 @@ async function processOne(
         nextAttemptAt,
       },
     });
+
+    console.error(
+      `[SMS worker] notification id=${id} status=${exhausted ? "FAILED" : "PENDING"} attempt=${attempts}`,
+    );
   }
 }
 
@@ -181,6 +195,9 @@ export function startSmsWorker(prisma: PrismaClient): () => void {
   }
 
   const provider = createSmsProvider();
+  console.info(
+    `[SMS worker] started provider=${provider.name} intervalMs=${env.SMS_WORKER_INTERVAL_MS}`,
+  );
   let running = false;
 
   const tick = async () => {
@@ -201,7 +218,10 @@ export function startSmsWorker(prisma: PrismaClient): () => void {
     void tick();
   }, env.SMS_WORKER_INTERVAL_MS);
 
-  return () => clearInterval(timer);
+  return () => {
+    clearInterval(timer);
+    console.info("[SMS worker] stopped");
+  };
 }
 
 export function buildSummonsSmsMessage(input: {
