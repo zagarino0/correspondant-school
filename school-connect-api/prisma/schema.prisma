@@ -60,6 +60,20 @@ enum AttendanceStatus {
   EXCUSED
 }
 
+enum AttendanceEventType {
+  LATE_AUTHORIZED
+  LATE_NOT_AUTHORIZED
+  ABSENCE_JUSTIFIED
+  ABSENCE_UNJUSTIFIED
+}
+
+enum ParentSummonsStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  COMPLETED
+}
+
 enum AssignmentStatus {
   PENDING
   SUBMITTED
@@ -144,6 +158,9 @@ model User {
 
   refreshTokens       RefreshToken[]
   recordedAttendances Attendance[]   @relation("AttendanceRecordedBy")
+  attendanceEvents AttendanceEvent[] @relation("AttendanceEventCreatedBy")
+  parentSummonsCreated ParentSummons[] @relation("ParentSummonsCreatedBy")
+  parentSummonsReceived ParentSummons[] @relation("ParentSummonsParent")
   createdAnnouncements Announcement[] @relation("AnnouncementCreatedBy")
   announcementRecipients AnnouncementRecipient[]
   lessonObservations LessonObservation[]
@@ -245,6 +262,8 @@ model Student {
   parents     ParentStudent[]
   enrollments StudentEnrollment[]
   attendances Attendance[]
+  attendanceEvents AttendanceEvent[]
+  parentSummons ParentSummons[]
 
   medicalRecord StudentMedicalRecord?
 
@@ -361,6 +380,50 @@ model Attendance {
   @@index([date])
   @@index([status])
   @@index([recordedBy])
+  events AttendanceEvent[]
+}
+
+model AttendanceEvent {
+  id           String              @id @default(cuid())
+  attendanceId String
+  studentId    String
+  createdBy    String
+  type         AttendanceEventType
+  note         String?
+
+  attendance Attendance @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
+  student    Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  creator    User       @relation("AttendanceEventCreatedBy", fields: [createdBy], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+
+  @@index([attendanceId, createdAt])
+  @@index([studentId, createdAt])
+  @@index([createdBy, createdAt])
+  @@index([type, createdAt])
+}
+
+model ParentSummons {
+  id          String              @id @default(cuid())
+  studentId   String
+  parentId    String
+  createdBy   String
+  reason      String
+  message     String
+  status      ParentSummonsStatus @default(PENDING)
+  scheduledAt DateTime?
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  parent  User    @relation("ParentSummonsParent", fields: [parentId], references: [id], onDelete: Cascade)
+  creator User    @relation("ParentSummonsCreatedBy", fields: [createdBy], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([studentId, createdAt])
+  @@index([parentId, status])
+  @@index([createdBy, createdAt])
+  @@index([status, createdAt])
 }
 
 model ParentStudent {
