@@ -23,20 +23,21 @@ export async function getTeacherClass(
 }
 
 export async function getTeacherAttendance(
-  classId: string,
+  scheduleId: string,
   date: string,
 ): Promise<TeacherAttendanceResponse> {
   const response = await apiClient.get<TeacherAttendanceResponse>(
-    `/api/v1/teachers/me/classes/${classId}/attendance`,
-    { params: { date } },
+    `/api/v1/teachers/me/classes/${scheduleId}/attendance`,
+    { params: { date, scheduleId } },
   );
   return response.data;
 }
 
 export async function saveTeacherAttendance(
-  classId: string,
+  scheduleId: string,
   payload: {
     enrollmentId: string;
+    scheduleId: string;
     date: string;
     status: "PRESENT" | "ABSENT" | "LATE" | "EXCUSED";
     arrivalTime?: string | null;
@@ -45,7 +46,7 @@ export async function saveTeacherAttendance(
   },
 ) {
   const response = await apiClient.post(
-    `/api/v1/teachers/me/classes/${classId}/attendance`,
+    `/api/v1/teachers/me/classes/${scheduleId}/attendance`,
     payload,
   );
   return response.data;
