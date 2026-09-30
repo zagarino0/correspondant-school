@@ -48,16 +48,25 @@ export type SchoolLifeProfile = {
     id: string;
     type: string;
     severity: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+    status: "OPEN" | "UNDER_REVIEW" | "RESOLVED" | "CLOSED";
     description: string;
     occurredAt: string;
+    location: string | null;
+    resolutionNote: string | null;
+    resolvedAt: string | null;
   }>;
   disciplinaryActions: Array<{
     id: string;
     incidentId: string | null;
     type: string;
     status: "ACTIVE" | "COMPLETED" | "CANCELLED";
+    approvalStatus: "PENDING" | "APPROVED" | "REJECTED";
     description: string;
+    decisionNote: string | null;
     actionAt: string;
+    dueAt: string | null;
+    completedAt: string | null;
+    approvedAt: string | null;
   }>;
   schoolLifeObservations: Array<{
     id: string;
@@ -122,8 +131,12 @@ export type SchoolLifeIncidentItem = {
   studentId: string;
   type: string;
   severity: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  status: "OPEN" | "UNDER_REVIEW" | "RESOLVED" | "CLOSED";
   description: string;
   occurredAt: string;
+  location: string | null;
+  resolutionNote: string | null;
+  resolvedAt: string | null;
   student: { firstName: string; lastName: string; studentNumber: string };
 };
 
@@ -133,8 +146,13 @@ export type SchoolLifeDisciplinaryItem = {
   incidentId: string | null;
   type: string;
   status: "ACTIVE" | "COMPLETED" | "CANCELLED";
+  approvalStatus: "PENDING" | "APPROVED" | "REJECTED";
   description: string;
+  decisionNote: string | null;
   actionAt: string;
+  dueAt: string | null;
+  completedAt: string | null;
+  approvedAt: string | null;
   student: { firstName: string; lastName: string; studentNumber: string };
 };
 
@@ -252,6 +270,7 @@ export async function createSchoolLifeIncident(
     severity: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
     description: string;
     occurredAt?: string;
+    location?: string | null;
   },
 ): Promise<SchoolLifeIncidentItem> {
   const response = await apiClient.post<{ item: SchoolLifeIncidentItem }>(
@@ -269,6 +288,9 @@ export async function updateSchoolLifeIncident(
     severity?: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
     description?: string;
     occurredAt?: string;
+    status?: "OPEN" | "UNDER_REVIEW" | "RESOLVED" | "CLOSED";
+    location?: string | null;
+    resolutionNote?: string | null;
   },
 ): Promise<SchoolLifeIncidentItem> {
   const response = await apiClient.patch<{ item: SchoolLifeIncidentItem }>(
@@ -283,6 +305,53 @@ export async function getSchoolLifeDisciplinaryActions(): Promise<SchoolLifeDisc
     "/api/v1/surveillant/school-life/disciplinary-actions",
   );
   return response.data.items;
+}
+
+export async function createSchoolLifeDisciplinaryAction(
+  studentId: string,
+  input: {
+    incidentId?: string | null;
+    type: string;
+    description: string;
+    decisionNote?: string | null;
+    actionAt?: string;
+    dueAt?: string | null;
+  },
+): Promise<SchoolLifeDisciplinaryItem> {
+  const response = await apiClient.post<{ item: SchoolLifeDisciplinaryItem }>(
+    `/api/v1/surveillant/school-life/students/${studentId}/disciplinary-actions`,
+    input,
+  );
+  return response.data.item;
+}
+
+export async function updateSchoolLifeDisciplinaryAction(
+  studentId: string,
+  actionId: string,
+  input: {
+    type?: string;
+    status?: "ACTIVE" | "COMPLETED" | "CANCELLED";
+    approvalStatus?: "PENDING" | "APPROVED" | "REJECTED";
+    description?: string;
+    decisionNote?: string | null;
+    actionAt?: string;
+    dueAt?: string | null;
+  },
+): Promise<SchoolLifeDisciplinaryItem> {
+  const response = await apiClient.patch<{ item: SchoolLifeDisciplinaryItem }>(
+    `/api/v1/surveillant/school-life/students/${studentId}/disciplinary-actions/${actionId}`,
+    input,
+  );
+  return response.data.item;
+}
+
+export async function deleteSchoolLifeDisciplinaryAction(
+  studentId: string,
+  actionId: string,
+): Promise<void> {
+  await apiClient.delete(
+    `/api/v1/surveillant/school-life/students/${studentId}/disciplinary-actions/${actionId}`,
+  );
 }
 
 export async function getSchoolLifeAuthorizations(): Promise<SchoolLifeAuthorizationItem[]> {
