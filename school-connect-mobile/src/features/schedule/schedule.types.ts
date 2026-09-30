@@ -7,6 +7,35 @@ export type ScheduleDay =
   | "SATURDAY"
   | "SUNDAY";
 
+export type SchoolSchedule = {
+  id: string;
+  schoolId: string;
+  academicYearId: string;
+  classId: string;
+  teacherId: string;
+  subject: string;
+  dayOfWeek: ScheduleDay;
+  startTime: string;
+  endTime: string;
+  room: string | null;
+  createdAt: string;
+  updatedAt: string;
+  class: {
+    id: string;
+    name: string;
+    level: string | null;
+  };
+  teacher: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  };
+};
+
+export type SchoolScheduleResponse = {
+  schedules: SchoolSchedule[];
+};
+
 export type StudentSchedule = {
   id: string;
   schoolId: string;
