@@ -18,16 +18,6 @@ import {
   type SurveillantAttendanceStudent,
 } from "../../../services/surveillant/attendance.service";
 
-const dayMap: Record<string, string> = {
-  MONDAY: "LUNDI",
-  TUESDAY: "MARDI",
-  WEDNESDAY: "MERCREDI",
-  THURSDAY: "JEUDI",
-  FRIDAY: "VENDREDI",
-  SATURDAY: "SAMEDI",
-  SUNDAY: "DIMANCHE",
-};
-
 function getTodayKey() {
   const days = [
     "SUNDAY",
