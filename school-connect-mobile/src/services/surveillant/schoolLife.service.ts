@@ -204,6 +204,37 @@ export async function getSchoolLifeMovements(params?: {
   return response.data.items;
 }
 
+export async function createSchoolLifeMovement(
+  studentId: string,
+  input: {
+    type: "ENTRY" | "EXIT";
+    reason: string;
+    occurredAt?: string;
+  },
+): Promise<SchoolLifeMovementItem> {
+  const response = await apiClient.post<{ item: SchoolLifeMovementItem }>(
+    `/api/v1/surveillant/school-life/students/${studentId}/movements`,
+    input,
+  );
+  return response.data.item;
+}
+
+export async function updateSchoolLifeMovement(
+  studentId: string,
+  movementId: string,
+  input: {
+    type?: "ENTRY" | "EXIT";
+    reason?: string;
+    occurredAt?: string;
+  },
+): Promise<SchoolLifeMovementItem> {
+  const response = await apiClient.patch<{ item: SchoolLifeMovementItem }>(
+    `/api/v1/surveillant/school-life/students/${studentId}/movements/${movementId}`,
+    input,
+  );
+  return response.data.item;
+}
+
 export async function getSchoolLifeIncidents(params?: {
   severity?: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
 }): Promise<SchoolLifeIncidentItem[]> {
