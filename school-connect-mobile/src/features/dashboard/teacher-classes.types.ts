@@ -59,6 +59,7 @@ export type TeacherAttendanceRow = {
 export type TeacherAttendanceResponse = {
   date: string;
   classId: string;
+  scheduleId: string;
   students: TeacherAttendanceRow[];
 };
 
