@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "expo-router";
 import {
   ActivityIndicator,
   Modal,
@@ -41,6 +42,7 @@ const ACTIONS: Array<{ type: AttendanceEventType; label: string }> = [
 ];
 
 export function SurveillantDashboard({ firstName }: Props) {
+  const router = useRouter();
   const { width } = useWindowDimensions();
   const [data, setData] = useState<SurveillantDashboardResponse | null>(null);
   const [controlSession, setControlSession] = useState<SurveillantSession | null>(null);
@@ -339,6 +341,23 @@ export function SurveillantDashboard({ firstName }: Props) {
           <Stat label="Élèves" value={data.summary.totalStudents} width={statWidth} />
           <Stat label="Présences" value={data.summary.presentToday} width={statWidth} />
           <Stat label="Retards" value={data.summary.lateToday} width={statWidth} />
+        </View>
+        <SectionTitle title="ACCÈS RAPIDES" />
+        <View style={styles.quickActions}>
+          <Pressable style={styles.quickAction} onPress={() => router.push("/(app)/students")}>
+            <Text style={styles.quickActionIcon}>É</Text>
+            <View style={styles.quickActionCopy}>
+              <Text style={styles.quickActionLabel}>Élèves</Text>
+              <Text style={styles.quickActionDescription}>Rechercher et consulter les fiches élèves</Text>
+            </View>
+          </Pressable>
+          <Pressable style={styles.quickAction} onPress={() => router.push("/(app)/surveillant/school-life")}>
+            <Text style={styles.quickActionIcon}>V</Text>
+            <View style={styles.quickActionCopy}>
+              <Text style={styles.quickActionLabel}>Vie scolaire</Text>
+              <Text style={styles.quickActionDescription}>Sorties, mouvements, incidents et autorisations</Text>
+            </View>
+          </Pressable>
         </View>
 
         <SectionTitle title="SUIVI DU JOUR" />
@@ -748,6 +767,34 @@ function shortActionLabel(type: AttendanceEventType) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F5F7FA" },
   content: { padding: 16, paddingBottom: 110, gap: 10 },
+  quickActions: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  quickAction: {
+    flex: 1,
+    minWidth: 220,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    padding: 13,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    backgroundColor: "#FFFFFF",
+  },
+  quickActionIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    textAlign: "center",
+    textAlignVertical: "center",
+    backgroundColor: "#EEF2F7",
+    color: "#344976",
+    fontSize: 14,
+    fontWeight: "900",
+    overflow: "hidden",
+  },
+  quickActionCopy: { flex: 1 },
+  quickActionLabel: { fontSize: 12, fontWeight: "900", color: "#344976" },
+  quickActionDescription: { marginTop: 3, fontSize: 9, lineHeight: 13, color: "#64748B" },
   loading: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24 },
   loadingText: { marginTop: 8, color: "#64748B", fontSize: 13 },
   empty: { flex: 1, padding: 24, alignItems: "center", justifyContent: "center" },
