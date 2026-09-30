@@ -21,6 +21,8 @@ import {
   createSchoolLifeExit,
   updateSchoolLifeExit,
   createSchoolLifeMovement,
+  createSchoolLifeIncident,
+  updateSchoolLifeIncident,
   getSchoolLifeIncidents,
   getSchoolLifeMovements,
   type SchoolLifeAuthorizationItem,
@@ -72,6 +74,7 @@ export default function SurveillantSchoolLifeScreen() {
   const [authorizations, setAuthorizations] = useState<SchoolLifeAuthorizationItem[]>([]);
   const [showExitModal, setShowExitModal] = useState(false);
   const [showMovementModal, setShowMovementModal] = useState(false);
+  const [showIncidentModal, setShowIncidentModal] = useState(false);
   const [students, setStudents] = useState<StudentListItem[]>([]);
   const [studentSearch, setStudentSearch] = useState("");
   const [selectedStudent, setSelectedStudent] = useState<StudentListItem | null>(null);
@@ -87,6 +90,13 @@ export default function SurveillantSchoolLifeScreen() {
   const [movementType, setMovementType] = useState<"ENTRY" | "EXIT">("ENTRY");
   const [movementReason, setMovementReason] = useState("");
   const [savingMovement, setSavingMovement] = useState(false);
+  const [incidentStudentSearch, setIncidentStudentSearch] = useState("");
+  const [selectedIncidentStudent, setSelectedIncidentStudent] = useState<StudentListItem | null>(null);
+  const [incidentType, setIncidentType] = useState("");
+  const [incidentSeverity, setIncidentSeverity] = useState<"LOW" | "MEDIUM" | "HIGH" | "CRITICAL">("MEDIUM");
+  const [incidentDescription, setIncidentDescription] = useState("");
+  const [savingIncident, setSavingIncident] = useState(false);
+  const [editingIncident, setEditingIncident] = useState<SchoolLifeIncidentItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -160,6 +170,30 @@ export default function SurveillantSchoolLifeScreen() {
     setShowMovementModal(true);
   };
 
+  const resetIncidentForm = () => {
+    setSelectedIncidentStudent(null);
+    setIncidentStudentSearch("");
+    setIncidentType("");
+    setIncidentSeverity("MEDIUM");
+    setIncidentDescription("");
+    setEditingIncident(null);
+  };
+
+  const openCreateIncident = () => {
+    resetIncidentForm();
+    setShowIncidentModal(true);
+  };
+
+  const openEditIncident = (item: SchoolLifeIncidentItem) => {
+    setEditingIncident(item);
+    setSelectedIncidentStudent(null);
+    setIncidentStudentSearch("");
+    setIncidentType(item.type);
+    setIncidentSeverity(item.severity);
+    setIncidentDescription(item.description);
+    setShowIncidentModal(true);
+  };
+
   useEffect(() => {
     if (!showExitModal) return;
 
@@ -197,6 +231,25 @@ export default function SurveillantSchoolLifeScreen() {
 
     return () => clearTimeout(timer);
   }, [showMovementModal, movementStudentSearch]);
+
+  useEffect(() => {
+    if (!showIncidentModal || editingIncident) return;
+
+    const timer = setTimeout(() => {
+      setLoadingStudents(true);
+      void getStudents({
+        status: "ACTIVE",
+        search: incidentStudentSearch.trim() || undefined,
+        page: 1,
+        pageSize: 30,
+      })
+        .then((response) => setStudents(response.students))
+        .catch(() => setError("Impossible de rechercher les élèves."))
+        .finally(() => setLoadingStudents(false));
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [showIncidentModal, incidentStudentSearch, editingIncident]);
 
   const submitExit = async () => {
     if (!selectedStudent || !authorizedPersonName.trim() || !exitReason.trim()) {
@@ -245,6 +298,39 @@ export default function SurveillantSchoolLifeScreen() {
       setError("Impossible d'enregistrer le mouvement.");
     } finally {
       setSavingMovement(false);
+    }
+  };
+
+  const submitIncident = async () => {
+    if ((!editingIncident && !selectedIncidentStudent) || !incidentType.trim() || !incidentDescription.trim()) {
+      setError("Élève, type et description de l'incident sont obligatoires.");
+      return;
+    }
+
+    setSavingIncident(true);
+    setError(null);
+    try {
+      if (editingIncident) {
+        await updateSchoolLifeIncident(editingIncident.studentId, editingIncident.id, {
+          type: incidentType.trim(),
+          severity: incidentSeverity,
+          description: incidentDescription.trim(),
+        });
+      } else {
+        await createSchoolLifeIncident(selectedIncidentStudent!.id, {
+          type: incidentType.trim(),
+          severity: incidentSeverity,
+          description: incidentDescription.trim(),
+          occurredAt: new Date().toISOString(),
+        });
+      }
+      setShowIncidentModal(false);
+      resetIncidentForm();
+      await load();
+    } catch {
+      setError("Impossible d'enregistrer l'incident.");
+    } finally {
+      setSavingIncident(false);
     }
   };
 
@@ -432,17 +518,33 @@ export default function SurveillantSchoolLifeScreen() {
         ) : null}
 
         {tab === "incidents" ? (
-          <Section title="INCIDENTS">
-            {incidents.length === 0 ? <Empty text="Aucun incident enregistré." /> : incidents.slice(0, 50).map((item) => (
-              <ItemCard key={item.id}>
-                <View style={styles.itemHeader}>
-                  <Text style={styles.itemTitle}>{studentName(item.student)}</Text>
-                  <Badge text={item.severity} />
-                </View>
-                <Text style={styles.itemMeta}>{item.type} · {dateTime(item.occurredAt)}</Text>
-                <Text style={styles.itemText}>{item.description}</Text>
-              </ItemCard>
-            ))}</Section>
+          <>
+            <View style={styles.exitToolbar}>
+              <View style={styles.exitToolbarCopy}>
+                <Text style={styles.exitToolbarTitle}>Registre des incidents</Text>
+                <Text style={styles.exitToolbarText}>Déclarer, qualifier et mettre à jour les incidents des élèves.</Text>
+              </View>
+              <Pressable style={styles.primaryButton} onPress={openCreateIncident}>
+                <Text style={styles.primaryButtonText}>+ Nouvel incident</Text>
+              </Pressable>
+            </View>
+
+            <Section title="INCIDENTS">
+              {incidents.length === 0 ? <Empty text="Aucun incident enregistré." /> : incidents.slice(0, 50).map((item) => (
+                <ItemCard key={item.id}>
+                  <View style={styles.itemHeader}>
+                    <Text style={styles.itemTitle}>{studentName(item.student)}</Text>
+                    <Badge text={item.severity} />
+                  </View>
+                  <Text style={styles.itemMeta}>{item.type} · {dateTime(item.occurredAt)}</Text>
+                  <Text style={styles.itemText}>{item.description}</Text>
+                  <Pressable style={styles.completeButton} onPress={() => openEditIncident(item)}>
+                    <Text style={styles.completeButtonText}>Modifier / suivre</Text>
+                  </Pressable>
+                </ItemCard>
+              ))}
+            </Section>
+          </>
         ) : null}
 
         {tab === "discipline" ? (
@@ -587,6 +689,120 @@ export default function SurveillantSchoolLifeScreen() {
               >
                 <Text style={styles.submitButtonText}>
                   {savingExit ? "Enregistrement…" : "Enregistrer la sortie"}
+                </Text>
+              </Pressable>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={showIncidentModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowIncidentModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <View>
+                <Text style={styles.modalEyebrow}>{editingIncident ? "SUIVI INCIDENT" : "NOUVEL INCIDENT"}</Text>
+                <Text style={styles.modalTitle}>{editingIncident ? "Mettre à jour l'incident" : "Déclarer un incident"}</Text>
+              </View>
+              <Pressable onPress={() => setShowIncidentModal(false)} style={styles.modalClose}>
+                <Text style={styles.modalCloseText}>×</Text>
+              </Pressable>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+              <Text style={styles.formLabel}>ÉLÈVE</Text>
+              {editingIncident ? (
+                <View style={styles.selectedStudent}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.selectedStudentName}>{studentName(editingIncident.student)}</Text>
+                    <Text style={styles.selectedStudentMeta}>{editingIncident.student.studentNumber}</Text>
+                  </View>
+                </View>
+              ) : selectedIncidentStudent ? (
+                <View style={styles.selectedStudent}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.selectedStudentName}>{studentName(selectedIncidentStudent)}</Text>
+                    <Text style={styles.selectedStudentMeta}>
+                      {selectedIncidentStudent.studentNumber} · {selectedIncidentStudent.enrollments[0]?.class.name ?? "Sans classe"}
+                    </Text>
+                  </View>
+                  <Pressable onPress={() => setSelectedIncidentStudent(null)}>
+                    <Text style={styles.changeText}>Changer</Text>
+                  </Pressable>
+                </View>
+              ) : (
+                <>
+                  <TextInput
+                    value={incidentStudentSearch}
+                    onChangeText={setIncidentStudentSearch}
+                    placeholder="Rechercher un élève ou matricule…"
+                    placeholderTextColor="#94A3B8"
+                    style={styles.input}
+                  />
+                  {loadingStudents ? (
+                    <ActivityIndicator style={styles.studentsLoader} />
+                  ) : (
+                    <View style={styles.studentPicker}>
+                      {students.map((student) => (
+                        <Pressable key={student.id} style={styles.studentOption} onPress={() => setSelectedIncidentStudent(student)}>
+                          <Text style={styles.studentOptionName}>{studentName(student)}</Text>
+                          <Text style={styles.studentOptionMeta}>
+                            {student.studentNumber} · {student.enrollments[0]?.class.name ?? "Sans classe"}
+                          </Text>
+                        </Pressable>
+                      ))}
+                      {students.length === 0 ? <Text style={styles.emptyPicker}>Aucun élève trouvé.</Text> : null}
+                    </View>
+                  )}
+                </>
+              )}
+
+              <Text style={styles.formLabel}>TYPE D'INCIDENT</Text>
+              <TextInput
+                value={incidentType}
+                onChangeText={setIncidentType}
+                placeholder="Ex. altercation, retard, comportement…"
+                placeholderTextColor="#94A3B8"
+                style={styles.input}
+              />
+
+              <Text style={styles.formLabel}>GRAVITÉ</Text>
+              <View style={styles.typeRow}>
+                {(["LOW", "MEDIUM", "HIGH", "CRITICAL"] as const).map((severity) => (
+                  <Pressable
+                    key={severity}
+                    style={[styles.typeButton, incidentSeverity === severity && styles.typeButtonActive]}
+                    onPress={() => setIncidentSeverity(severity)}
+                  >
+                    <Text style={[styles.typeButtonText, incidentSeverity === severity && styles.typeButtonTextActive]}>
+                      {severity === "LOW" ? "Faible" : severity === "MEDIUM" ? "Moyenne" : severity === "HIGH" ? "Haute" : "Critique"}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+
+              <Text style={styles.formLabel}>DESCRIPTION</Text>
+              <TextInput
+                value={incidentDescription}
+                onChangeText={setIncidentDescription}
+                placeholder="Décrire précisément les faits constatés…"
+                placeholderTextColor="#94A3B8"
+                multiline
+                style={[styles.input, styles.textarea]}
+              />
+
+              <Pressable
+                style={[styles.submitButton, savingIncident && styles.buttonDisabled]}
+                onPress={() => void submitIncident()}
+                disabled={savingIncident}
+              >
+                <Text style={styles.submitButtonText}>
+                  {savingIncident ? "Enregistrement…" : editingIncident ? "Enregistrer le suivi" : "Enregistrer l'incident"}
                 </Text>
               </Pressable>
             </ScrollView>
