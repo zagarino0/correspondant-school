@@ -16,7 +16,7 @@ const alertSeveritySchema = z.enum(["NORMAL", "IMPORTANT", "CRITICAL"]);
 function parseDate(value: string | undefined, fallback = new Date()) {
   const date = value ? new Date(value) : fallback;
   return Number.isNaN(date.getTime()) ? null : date;
-
+}
 
 function dayRange(date: Date) {
   const start = new Date(date);
