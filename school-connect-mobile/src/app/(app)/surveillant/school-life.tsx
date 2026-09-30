@@ -142,9 +142,14 @@ export default function SurveillantSchoolLifeScreen() {
               Suivi opérationnel des mouvements, sorties, incidents et autorisations.
             </Text>
           </View>
-          <Pressable style={styles.studentsButton} onPress={() => router.push("/(app)/students")}>
-            <Text style={styles.studentsButtonText}>Élèves</Text>
-          </Pressable>
+          <View style={styles.headerActions}>
+            <Pressable style={styles.backButton} onPress={() => router.push("/(app)")}> 
+              <Text style={styles.backButtonText}>← Dashboard</Text>
+            </Pressable>
+            <Pressable style={styles.studentsButton} onPress={() => router.push("/(app)/students")}>
+              <Text style={styles.studentsButtonText}>Élèves</Text>
+            </Pressable>
+          </View>
         </View>
 
         {error ? (
@@ -342,6 +347,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   headerMain: { flex: 1 },
+  headerActions: { alignItems: "flex-end", gap: 7 },
+  backButton: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: "#D9DEE5", backgroundColor: "#FFFFFF" },
+  backButtonText: { color: "#344976", fontSize: 10, fontWeight: "900" },
   eyebrow: { fontSize: 9, fontWeight: "900", letterSpacing: 1.2, color: "#64748B" },
   title: { marginTop: 3, fontSize: 26, fontWeight: "900", color: "#344976" },
   subtitle: { marginTop: 5, fontSize: 12, lineHeight: 18, color: "#64748B" },
