@@ -7,7 +7,7 @@ import { getTeacherAttendance, getTeacherClass, saveTeacherAttendance } from "..
 import type { TeacherAttendanceRow } from "../../../features/dashboard/teacher-classes.types";
 import type { TeacherDashboardResponse } from "../../../features/dashboard/teacher-dashboard.types";
 
-type AttendanceStatus = "PRESENT" | "ABSENT" | "LATE";
+type AttendanceStatus = "PRESENT" | "ABSENT";
 
 function getLocalDateKey(): string {
   const date = new Date();
@@ -68,7 +68,7 @@ export default function TeacherAttendanceScreen() {
       setError(null);
       const [details, attendance] = await Promise.all([
         getTeacherClass(selectedSchedule.classId),
-        getTeacherAttendance(selectedSchedule.classId, date),
+        getTeacherAttendance(selectedSchedule.classId, selectedSchedule.id, date),
       ]);
       const attendanceByEnrollment = new Map(attendance.students.map((row) => [row.enrollmentId, row]));
       setStudents(
@@ -99,6 +99,7 @@ export default function TeacherAttendanceScreen() {
       setSavingEnrollmentId(row.enrollmentId);
       const response = await saveTeacherAttendance(selectedSchedule.classId, {
         enrollmentId: row.enrollmentId,
+        scheduleId: selectedSchedule.id,
         date,
         status,
       });
@@ -204,7 +205,7 @@ export default function TeacherAttendanceScreen() {
                         <Text style={styles.studentNumber}>{row.student.studentNumber}</Text>
                       </View>
 
-                      {(["ABSENT", "PRESENT", "LATE"] as const).map((status) => (
+                      {(["ABSENT", "PRESENT"] as const).map((status) => (
                         <Pressable
                           key={status}
                           disabled={isSaving}
@@ -212,7 +213,7 @@ export default function TeacherAttendanceScreen() {
                           style={[styles.statusButton, current === status && styles.statusButtonActive, isSaving && styles.disabled]}
                         >
                           <Text style={[styles.statusText, current === status && styles.statusTextActive]}>
-                            {status === "ABSENT" ? "A" : status === "PRESENT" ? "P" : "R"}
+                            {status === "ABSENT" ? "A" : "P"}
                           </Text>
                         </Pressable>
                       ))}
