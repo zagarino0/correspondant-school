@@ -136,19 +136,29 @@ export default function SurveillantSchoolLifeScreen() {
     setExitReason("");
   };
 
-  const openCreateExit = async () => {
+  const openCreateExit = () => {
     resetExitForm();
     setShowExitModal(true);
-    setLoadingStudents(true);
-    try {
-      const response = await getStudents({ status: "ACTIVE", page: 1, pageSize: 50 });
-      setStudents(response.students);
-    } catch {
-      setError("Impossible de charger les élèves.");
-    } finally {
-      setLoadingStudents(false);
-    }
   };
+
+  useEffect(() => {
+    if (!showExitModal) return;
+
+    const timer = setTimeout(() => {
+      setLoadingStudents(true);
+      void getStudents({
+        status: "ACTIVE",
+        search: studentSearch.trim() || undefined,
+        page: 1,
+        pageSize: 30,
+      })
+        .then((response) => setStudents(response.students))
+        .catch(() => setError("Impossible de rechercher les élèves."))
+        .finally(() => setLoadingStudents(false));
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [showExitModal, studentSearch]);
 
   const submitExit = async () => {
     if (!selectedStudent || !authorizedPersonName.trim() || !exitReason.trim()) {
@@ -301,7 +311,7 @@ export default function SurveillantSchoolLifeScreen() {
                 <Text style={styles.exitToolbarTitle}>Gestion des sorties</Text>
                 <Text style={styles.exitToolbarText}>Enregistrer un départ et clôturer le retour de l'élève.</Text>
               </View>
-              <Pressable style={styles.primaryButton} onPress={() => void openCreateExit()}>
+              <Pressable style={styles.primaryButton} onPress={openCreateExit}>
                 <Text style={styles.primaryButtonText}>+ Nouvelle sortie</Text>
               </Pressable>
             </View>
