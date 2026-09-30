@@ -5,6 +5,14 @@ import { authenticate } from "../middleware/authenticate.js";
 import { authorizeResource } from "../middleware/authorize-resource.js";
 import { authorize } from "../middleware/authorize.js";
 
+function getScheduleDayFromDate(date: Date): ScheduleDay {
+  const map: Record<number, ScheduleDay> = {
+    0: "SUNDAY", 1: "MONDAY", 2: "TUESDAY", 3: "WEDNESDAY",
+    4: "THURSDAY", 5: "FRIDAY", 6: "SATURDAY",
+  };
+  return map[date.getUTCDay()]!;
+}
+
 function getDateRange(date: string): { start: Date; end: Date } {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
 
@@ -295,8 +303,9 @@ export async function teacherRoutes(
       }
 
       const { classId } = request.params as { classId: string };
-      const query = request.query as { date?: string };
+      const query = request.query as { date?: string; scheduleId?: string };
       const date = query.date ?? new Date().toISOString().slice(0, 10);
+      const scheduleId = query.scheduleId;
       const start = new Date(date + "T00:00:00.000Z");
       const end = new Date(date + "T00:00:00.000Z");
       end.setUTCDate(end.getUTCDate() + 1);
@@ -304,6 +313,34 @@ export async function teacherRoutes(
       if (Number.isNaN(start.getTime())) {
         return reply.code(400).send({
           error: { code: "INVALID_DATE", message: "Date invalide." },
+        });
+      }
+
+      if (!scheduleId) {
+        return reply.code(400).send({
+          error: { code: "SCHEDULE_REQUIRED", message: "scheduleId est obligatoire pour le pointage du teacher." },
+        });
+      }
+
+      const schedule = await app.prisma.schedule.findFirst({
+        where: { id: scheduleId, teacherId: request.user.sub, classId, dayOfWeek: getScheduleDayFromDate(start) },
+        select: { id: true, classId: true },
+      });
+
+      if (!schedule) {
+        return reply.code(403).send({
+          error: { code: "SCHEDULE_ACCESS_DENIED", message: "Vous n'êtes pas responsable de ce créneau." },
+        });
+      }
+
+      const schedule = await app.prisma.schedule.findFirst({
+        where: { id: body.scheduleId, teacherId: request.user.sub, classId, dayOfWeek: getScheduleDayFromDate(date) },
+        select: { id: true, classId: true },
+      });
+
+      if (!schedule) {
+        return reply.code(403).send({
+          error: { code: "SCHEDULE_ACCESS_DENIED", message: "Vous n'êtes pas responsable de ce créneau." },
         });
       }
 
@@ -344,7 +381,7 @@ export async function teacherRoutes(
             },
           },
           attendances: {
-            where: { date: { gte: start, lt: end } },
+            where: { date: { gte: start, lt: end }, scheduleId },
             take: 1,
             select: {
               id: true,
@@ -371,6 +408,7 @@ export async function teacherRoutes(
       return reply.send({
         date,
         classId,
+        scheduleId,
         students: enrollments.map((enrollment) => ({
           enrollmentId: enrollment.id,
           student: enrollment.student,
@@ -398,6 +436,7 @@ export async function teacherRoutes(
       const { classId } = request.params as { classId: string };
       const body = request.body as {
         enrollmentId?: string;
+        scheduleId?: string;
         date?: string;
         status?: "PRESENT" | "ABSENT" | "LATE" | "EXCUSED";
         arrivalTime?: string | null;
@@ -405,11 +444,11 @@ export async function teacherRoutes(
         note?: string | null;
       };
 
-      if (!body.enrollmentId || !body.date || !body.status) {
+      if (!body.enrollmentId || !body.scheduleId || !body.date || !body.status) {
         return reply.code(400).send({
           error: {
             code: "INVALID_ATTENDANCE_DATA",
-            message: "enrollmentId, date et status sont obligatoires.",
+            message: "enrollmentId, scheduleId, date et status sont obligatoires.",
           },
         });
       }
@@ -477,38 +516,41 @@ export async function teacherRoutes(
         });
       }
 
-      const existingAttendance = await app.prisma.attendance.findFirst({
-        where: {
-          enrollmentId: enrollment.id,
-          date,
-          scheduleId: null,
-        },
-        orderBy: { updatedAt: "desc" },
-      });
+      if (body.status === "LATE") {
+        return reply.code(403).send({
+          error: {
+            code: "TEACHER_LATE_FORBIDDEN",
+            message: "Le teacher peut uniquement enregistrer Présent ou Absent. Le retard est géré par le surveillant.",
+          },
+        });
+      }
 
-      const attendance = existingAttendance
-        ? await app.prisma.attendance.update({
-            where: { id: existingAttendance.id },
-            data: {
-              status: body.status,
-              arrivalTime: body.arrivalTime ? new Date(body.arrivalTime) : null,
-              reason: body.reason ?? null,
-              note: body.note ?? null,
-              recordedBy: request.user.sub,
-            },
-          })
-        : await app.prisma.attendance.create({
-            data: {
-              studentId: enrollment.studentId,
-              enrollmentId: enrollment.id,
-              date,
-              status: body.status,
-              arrivalTime: body.arrivalTime ? new Date(body.arrivalTime) : null,
-              reason: body.reason ?? null,
-              note: body.note ?? null,
-              recordedBy: request.user.sub,
-            },
-          });
+      const sessionKey = body.scheduleId + ":" + body.date + ":" + enrollment.studentId;
+
+      const attendance = await app.prisma.attendance.upsert({
+        where: { sessionKey },
+        create: {
+          studentId: enrollment.studentId,
+          enrollmentId: enrollment.id,
+          scheduleId: body.scheduleId,
+          sessionKey,
+          date,
+          status: body.status,
+          arrivalTime: null,
+          reason: null,
+          note: body.note ?? null,
+          recordedBy: request.user.sub,
+        },
+        update: {
+          status: body.status,
+          arrivalTime: null,
+          reason: null,
+          note: body.note ?? null,
+          recordedBy: request.user.sub,
+          date,
+          scheduleId: body.scheduleId,
+        },
+      });
 
       return reply.code(200).send({ attendance });
     },
