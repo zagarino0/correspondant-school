@@ -93,3 +93,104 @@ export async function getSchoolLifeProfile(
 
   return response.data.student;
 }
+
+
+export type SchoolLifeExitItem = {
+  id: string;
+  studentId: string;
+  type: "TEMPORARY" | "PERMANENT";
+  status: "OPEN" | "COMPLETED" | "CANCELLED";
+  authorizedPersonName: string;
+  authorizedPersonPhone: string | null;
+  reason: string;
+  exitAt: string;
+  returnAt: string | null;
+  student: { firstName: string; lastName: string; studentNumber: string };
+};
+
+export type SchoolLifeMovementItem = {
+  id: string;
+  studentId: string;
+  type: "ENTRY" | "EXIT";
+  reason: string | null;
+  occurredAt: string;
+  student: { firstName: string; lastName: string; studentNumber: string };
+};
+
+export type SchoolLifeIncidentItem = {
+  id: string;
+  studentId: string;
+  type: string;
+  severity: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  description: string;
+  occurredAt: string;
+  student: { firstName: string; lastName: string; studentNumber: string };
+};
+
+export type SchoolLifeDisciplinaryItem = {
+  id: string;
+  studentId: string;
+  incidentId: string | null;
+  type: string;
+  status: "ACTIVE" | "COMPLETED" | "CANCELLED";
+  description: string;
+  actionAt: string;
+  student: { firstName: string; lastName: string; studentNumber: string };
+};
+
+export type SchoolLifeAuthorizationItem = {
+  id: string;
+  studentId: string;
+  parentId: string;
+  type: string;
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  reason: string | null;
+  requestedAt: string;
+  decidedAt: string | null;
+  student: { firstName: string; lastName: string; studentNumber: string };
+};
+
+export async function getSchoolLifeExits(params?: {
+  status?: "OPEN" | "COMPLETED" | "CANCELLED";
+  date?: string;
+}): Promise<SchoolLifeExitItem[]> {
+  const response = await apiClient.get<{ items: SchoolLifeExitItem[] }>(
+    "/api/v1/surveillant/school-life/exits",
+    { params },
+  );
+  return response.data.items;
+}
+
+export async function getSchoolLifeMovements(params?: {
+  date?: string;
+}): Promise<SchoolLifeMovementItem[]> {
+  const response = await apiClient.get<{ items: SchoolLifeMovementItem[] }>(
+    "/api/v1/surveillant/school-life/movements",
+    { params },
+  );
+  return response.data.items;
+}
+
+export async function getSchoolLifeIncidents(params?: {
+  severity?: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+}): Promise<SchoolLifeIncidentItem[]> {
+  const response = await apiClient.get<{ items: SchoolLifeIncidentItem[] }>(
+    "/api/v1/surveillant/school-life/incidents",
+    { params },
+  );
+  return response.data.items;
+}
+
+export async function getSchoolLifeDisciplinaryActions(): Promise<SchoolLifeDisciplinaryItem[]> {
+  const response = await apiClient.get<{ items: SchoolLifeDisciplinaryItem[] }>(
+    "/api/v1/surveillant/school-life/disciplinary-actions",
+  );
+  return response.data.items;
+}
+
+export async function getSchoolLifeAuthorizations(): Promise<SchoolLifeAuthorizationItem[]> {
+  const response = await apiClient.get<{ items: SchoolLifeAuthorizationItem[] }>(
+    "/api/v1/surveillant/school-life/authorizations",
+  );
+  return response.data.items;
+}
