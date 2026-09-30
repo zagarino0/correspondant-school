@@ -333,16 +333,6 @@ export async function teacherRoutes(
         });
       }
 
-      const schedule = await app.prisma.schedule.findFirst({
-        where: { id: body.scheduleId, teacherId: request.user.sub, classId, dayOfWeek: getScheduleDayFromDate(date) },
-        select: { id: true, classId: true },
-      });
-
-      if (!schedule) {
-        return reply.code(403).send({
-          error: { code: "SCHEDULE_ACCESS_DENIED", message: "Vous n'êtes pas responsable de ce créneau." },
-        });
-      }
 
       const teacherClass = await app.prisma.teacherClass.findUnique({
         where: {
@@ -471,6 +461,21 @@ export async function teacherRoutes(
         });
       }
 
+      const schedule = await app.prisma.schedule.findFirst({
+        where: {
+          id: body.scheduleId,
+          teacherId: request.user.sub,
+          classId,
+          dayOfWeek: getScheduleDayFromDate(date),
+        },
+        select: { id: true, classId: true },
+      });
+
+      if (!schedule) {
+        return reply.code(403).send({
+          error: { code: "SCHEDULE_ACCESS_DENIED", message: "Vous n'êtes pas responsable de ce créneau." },
+        });
+      }
       const teacherClass = await app.prisma.teacherClass.findUnique({
         where: {
           teacherId_classId: {
