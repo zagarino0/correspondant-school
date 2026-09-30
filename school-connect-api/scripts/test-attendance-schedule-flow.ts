@@ -53,6 +53,19 @@ function getSchedules(dashboard: Json): Json[] {
     ?? [];
 }
 
+function getScheduleDayFromDate(date: string): string {
+  const day = new Date(`${date}T00:00:00.000Z`).getUTCDay();
+  return [
+    "SUNDAY",
+    "MONDAY",
+    "TUESDAY",
+    "WEDNESDAY",
+    "THURSDAY",
+    "FRIDAY",
+    "SATURDAY",
+  ][day]!;
+}
+
 async function main() {
   // Static RBAC contract checks.
   assert(
@@ -316,17 +329,21 @@ async function main() {
     `Schedules de la classe -> ${classSchedules.response.status}: ${JSON.stringify(classSchedules.body)}`,
   );
 
+  // Le dashboard Teacher ne renvoie pas toujours dayOfWeek sur le créneau.
+  // On dérive donc le jour depuis la date de test et on compare avec les
+  // schedules complets renvoyés par /api/v1/schedules.
+  const expectedDay = getScheduleDayFromDate(date);
   const otherSchedule = (classSchedules.body?.schedules ?? []).find(
     (item: Json) =>
       item?.id &&
       item.id !== schedule.id &&
       item.classId === schedule.classId &&
-      item.dayOfWeek === schedule.dayOfWeek,
+      item.dayOfWeek === expectedDay,
   );
 
   assert(
     otherSchedule?.id,
-    `Impossible de tester le schedule différent : aucun deuxième créneau de la classe ${schedule.classId} le ${schedule.dayOfWeek} n'est configuré.`,
+    `Impossible de tester le schedule différent : aucun deuxième créneau de la classe ${schedule.classId} le ${expectedDay} n'est configuré.`,
   );
 
   const wrong = await request(
