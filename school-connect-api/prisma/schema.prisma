@@ -250,6 +250,7 @@ model Attendance {
   id           String            @id @default(cuid())
   studentId    String
   enrollmentId String
+  scheduleId   String?
   date         DateTime
   status       AttendanceStatus  @default(PRESENT)
   arrivalTime  DateTime?
@@ -259,12 +260,14 @@ model Attendance {
   createdAt    DateTime          @default(now())
   updatedAt    DateTime          @updatedAt
   enrollment   StudentEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  schedule     Schedule?         @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
   recorder     User              @relation("AttendanceRecordedBy", fields: [recordedBy], references: [id])
   student      Student           @relation(fields: [studentId], references: [id], onDelete: Cascade)
   events       AttendanceEvent[]
 
   @@unique([enrollmentId, date])
   @@index([studentId])
+  @@index([scheduleId, date])
   @@index([enrollmentId])
   @@index([date])
   @@index([status])
@@ -631,6 +634,7 @@ model Schedule {
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
   lessonObservations LessonObservation[]
+  attendances        Attendance[]
   academicYear       AcademicYear        @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
   class              SchoolClass         @relation(fields: [classId], references: [id], onDelete: Cascade)
   school             School              @relation(fields: [schoolId], references: [id], onDelete: Cascade)
