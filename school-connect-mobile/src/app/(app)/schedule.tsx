@@ -39,7 +39,7 @@ const timetableDays: ScheduleDay[] = [
   "SATURDAY",
 ];
 
-function getUniqueTimeSlots(schedules: StudentSchedule[]): string[] {
+function getUniqueTimeSlots(schedules: Array<StudentSchedule | TeacherSchedule | SchoolSchedule>): string[] {
   return Array.from(
     new Set(
       schedules.map(
