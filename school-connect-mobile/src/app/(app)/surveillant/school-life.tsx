@@ -20,6 +20,7 @@ import {
   getSchoolLifeExits,
   createSchoolLifeExit,
   updateSchoolLifeExit,
+  createSchoolLifeMovement,
   getSchoolLifeIncidents,
   getSchoolLifeMovements,
   type SchoolLifeAuthorizationItem,
@@ -70,6 +71,7 @@ export default function SurveillantSchoolLifeScreen() {
   const [discipline, setDiscipline] = useState<SchoolLifeDisciplinaryItem[]>([]);
   const [authorizations, setAuthorizations] = useState<SchoolLifeAuthorizationItem[]>([]);
   const [showExitModal, setShowExitModal] = useState(false);
+  const [showMovementModal, setShowMovementModal] = useState(false);
   const [students, setStudents] = useState<StudentListItem[]>([]);
   const [studentSearch, setStudentSearch] = useState("");
   const [selectedStudent, setSelectedStudent] = useState<StudentListItem | null>(null);
@@ -80,6 +82,11 @@ export default function SurveillantSchoolLifeScreen() {
   const [savingExit, setSavingExit] = useState(false);
   const [exitActionId, setExitActionId] = useState<string | null>(null);
   const [loadingStudents, setLoadingStudents] = useState(false);
+  const [movementStudentSearch, setMovementStudentSearch] = useState("");
+  const [selectedMovementStudent, setSelectedMovementStudent] = useState<StudentListItem | null>(null);
+  const [movementType, setMovementType] = useState<"ENTRY" | "EXIT">("ENTRY");
+  const [movementReason, setMovementReason] = useState("");
+  const [savingMovement, setSavingMovement] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -141,6 +148,18 @@ export default function SurveillantSchoolLifeScreen() {
     setShowExitModal(true);
   };
 
+  const resetMovementForm = () => {
+    setSelectedMovementStudent(null);
+    setMovementStudentSearch("");
+    setMovementType("ENTRY");
+    setMovementReason("");
+  };
+
+  const openCreateMovement = () => {
+    resetMovementForm();
+    setShowMovementModal(true);
+  };
+
   useEffect(() => {
     if (!showExitModal) return;
 
@@ -159,6 +178,25 @@ export default function SurveillantSchoolLifeScreen() {
 
     return () => clearTimeout(timer);
   }, [showExitModal, studentSearch]);
+
+  useEffect(() => {
+    if (!showMovementModal) return;
+
+    const timer = setTimeout(() => {
+      setLoadingStudents(true);
+      void getStudents({
+        status: "ACTIVE",
+        search: movementStudentSearch.trim() || undefined,
+        page: 1,
+        pageSize: 30,
+      })
+        .then((response) => setStudents(response.students))
+        .catch(() => setError("Impossible de rechercher les élèves."))
+        .finally(() => setLoadingStudents(false));
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [showMovementModal, movementStudentSearch]);
 
   const submitExit = async () => {
     if (!selectedStudent || !authorizedPersonName.trim() || !exitReason.trim()) {
@@ -183,6 +221,30 @@ export default function SurveillantSchoolLifeScreen() {
       setError("Impossible d'enregistrer la sortie.");
     } finally {
       setSavingExit(false);
+    }
+  };
+
+  const submitMovement = async () => {
+    if (!selectedMovementStudent || !movementReason.trim()) {
+      setError("Élève et motif du mouvement sont obligatoires.");
+      return;
+    }
+
+    setSavingMovement(true);
+    setError(null);
+    try {
+      await createSchoolLifeMovement(selectedMovementStudent.id, {
+        type: movementType,
+        reason: movementReason.trim(),
+        occurredAt: new Date().toISOString(),
+      });
+      setShowMovementModal(false);
+      resetMovementForm();
+      await load();
+    } catch {
+      setError("Impossible d'enregistrer le mouvement.");
+    } finally {
+      setSavingMovement(false);
     }
   };
 
@@ -343,17 +405,30 @@ export default function SurveillantSchoolLifeScreen() {
         ) : null}
 
         {tab === "movements" ? (
-          <Section title="MOUVEMENTS DU JOUR">
-            {movements.length === 0 ? <Empty text="Aucun mouvement enregistré aujourd'hui." /> : movements.map((item) => (
-              <ItemCard key={item.id}>
-                <View style={styles.itemHeader}>
-                  <Text style={styles.itemTitle}>{studentName(item.student)}</Text>
-                  <Badge text={item.type === "ENTRY" ? "ENTRÉE" : "SORTIE"} />
-                </View>
-                <Text style={styles.itemMeta}>{item.student.studentNumber} · {dateTime(item.occurredAt)}</Text>
-                <Text style={styles.itemText}>{item.reason || "Aucun motif renseigné."}</Text>
-              </ItemCard>
-            ))}</Section>
+          <>
+            <View style={styles.exitToolbar}>
+              <View style={styles.exitToolbarCopy}>
+                <Text style={styles.exitToolbarTitle}>Registre des mouvements</Text>
+                <Text style={styles.exitToolbarText}>Enregistrer les entrées et sorties d'élèves de l'établissement.</Text>
+              </View>
+              <Pressable style={styles.primaryButton} onPress={openCreateMovement}>
+                <Text style={styles.primaryButtonText}>+ Nouveau mouvement</Text>
+              </Pressable>
+            </View>
+
+            <Section title="MOUVEMENTS DU JOUR">
+              {movements.length === 0 ? <Empty text="Aucun mouvement enregistré aujourd'hui." /> : movements.map((item) => (
+                <ItemCard key={item.id}>
+                  <View style={styles.itemHeader}>
+                    <Text style={styles.itemTitle}>{studentName(item.student)}</Text>
+                    <Badge text={item.type === "ENTRY" ? "ENTRÉE" : "SORTIE"} />
+                  </View>
+                  <Text style={styles.itemMeta}>{item.student.studentNumber} · {dateTime(item.occurredAt)}</Text>
+                  <Text style={styles.itemText}>{item.reason || "Aucun motif renseigné."}</Text>
+                </ItemCard>
+              ))}
+            </Section>
+          </>
         ) : null}
 
         {tab === "incidents" ? (
@@ -512,6 +587,108 @@ export default function SurveillantSchoolLifeScreen() {
               >
                 <Text style={styles.submitButtonText}>
                   {savingExit ? "Enregistrement…" : "Enregistrer la sortie"}
+                </Text>
+              </Pressable>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={showMovementModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowMovementModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <View>
+                <Text style={styles.modalEyebrow}>NOUVEAU MOUVEMENT</Text>
+                <Text style={styles.modalTitle}>Enregistrer un mouvement</Text>
+              </View>
+              <Pressable onPress={() => setShowMovementModal(false)} style={styles.modalClose}>
+                <Text style={styles.modalCloseText}>×</Text>
+              </Pressable>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+              <Text style={styles.formLabel}>ÉLÈVE</Text>
+              {selectedMovementStudent ? (
+                <View style={styles.selectedStudent}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.selectedStudentName}>{studentName(selectedMovementStudent)}</Text>
+                    <Text style={styles.selectedStudentMeta}>
+                      {selectedMovementStudent.studentNumber} · {selectedMovementStudent.enrollments[0]?.class.name ?? "Sans classe"}
+                    </Text>
+                  </View>
+                  <Pressable onPress={() => setSelectedMovementStudent(null)}>
+                    <Text style={styles.changeText}>Changer</Text>
+                  </Pressable>
+                </View>
+              ) : (
+                <>
+                  <TextInput
+                    value={movementStudentSearch}
+                    onChangeText={setMovementStudentSearch}
+                    placeholder="Rechercher un élève ou matricule…"
+                    placeholderTextColor="#94A3B8"
+                    style={styles.input}
+                  />
+                  {loadingStudents ? (
+                    <ActivityIndicator style={styles.studentsLoader} />
+                  ) : (
+                    <View style={styles.studentPicker}>
+                      {students.map((student) => (
+                        <Pressable
+                          key={student.id}
+                          style={styles.studentOption}
+                          onPress={() => setSelectedMovementStudent(student)}
+                        >
+                          <Text style={styles.studentOptionName}>{studentName(student)}</Text>
+                          <Text style={styles.studentOptionMeta}>
+                            {student.studentNumber} · {student.enrollments[0]?.class.name ?? "Sans classe"}
+                          </Text>
+                        </Pressable>
+                      ))}
+                      {students.length === 0 ? <Text style={styles.emptyPicker}>Aucun élève trouvé.</Text> : null}
+                    </View>
+                  )}
+                </>
+              )}
+
+              <Text style={styles.formLabel}>TYPE DE MOUVEMENT</Text>
+              <View style={styles.typeRow}>
+                {(["ENTRY", "EXIT"] as const).map((type) => (
+                  <Pressable
+                    key={type}
+                    style={[styles.typeButton, movementType === type && styles.typeButtonActive]}
+                    onPress={() => setMovementType(type)}
+                  >
+                    <Text style={[styles.typeButtonText, movementType === type && styles.typeButtonTextActive]}>
+                      {type === "ENTRY" ? "Entrée" : "Sortie"}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+
+              <Text style={styles.formLabel}>MOTIF</Text>
+              <TextInput
+                value={movementReason}
+                onChangeText={setMovementReason}
+                placeholder="Motif du mouvement"
+                placeholderTextColor="#94A3B8"
+                multiline
+                style={[styles.input, styles.textarea]}
+              />
+
+              <Pressable
+                style={[styles.submitButton, savingMovement && styles.buttonDisabled]}
+                onPress={() => void submitMovement()}
+                disabled={savingMovement}
+              >
+                <Text style={styles.submitButtonText}>
+                  {savingMovement ? "Enregistrement…" : "Enregistrer le mouvement"}
                 </Text>
               </Pressable>
             </ScrollView>
