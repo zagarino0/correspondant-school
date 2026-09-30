@@ -38,6 +38,7 @@ export const permissions = [
   "disciplinary-action.read",
   "disciplinary-action.create",
   "disciplinary-action.update",
+  "disciplinary-action.delete",
 
   "observation.read",
   "observation.create",
