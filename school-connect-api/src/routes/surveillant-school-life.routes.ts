@@ -98,12 +98,19 @@ export async function surveillantSchoolLifeRoutes(fastify: FastifyInstance) {
           incidents: {
             orderBy: { occurredAt: "desc" },
             take: 20,
-            select: { id: true, type: true, severity: true, description: true, occurredAt: true },
+            select: {
+              id: true, type: true, severity: true, status: true, description: true, occurredAt: true,
+              location: true, resolutionNote: true, resolvedAt: true,
+            },
           },
           disciplinaryActions: {
             orderBy: { actionAt: "desc" },
             take: 20,
-            select: { id: true, incidentId: true, type: true, status: true, description: true, actionAt: true },
+            select: {
+              id: true, incidentId: true, type: true, status: true, approvalStatus: true,
+              description: true, decisionNote: true, actionAt: true, dueAt: true,
+              completedAt: true, approvedAt: true,
+            },
           },
           schoolLifeObservations: {
             orderBy: { observedAt: "desc" },
