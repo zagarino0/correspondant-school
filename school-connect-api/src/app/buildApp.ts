@@ -29,6 +29,7 @@ import medicalRoutes from "../routes/medical.routes.js";
 import medicalHistoryRoutes from "../routes/medical-history.routes.js";
 import medicalReportRoutes from "../routes/medical-report.routes.js";
 import { surveillantRoutes } from "../routes/surveillant.routes.js";
+import { surveillantSchoolLifeRoutes } from "../routes/surveillant-school-life.routes.js";
 import { startSmsWorker } from "../services/sms.service.js";
 
 import jwtPlugin from "../plugins/jwt.js";
@@ -101,6 +102,9 @@ export async function buildApp() {
   });
   await app.register(surveillantRoutes, {
     prefix: "/api/v1/surveillant",
+  });
+  await app.register(surveillantSchoolLifeRoutes, {
+    prefix: "/api/v1/surveillant/school-life",
   });
   await app.register(attendanceRoutes, {
     prefix: "/api/v1",
