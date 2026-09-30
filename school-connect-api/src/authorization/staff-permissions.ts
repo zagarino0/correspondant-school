@@ -15,6 +15,8 @@ const staffPermissions: Record<StaffFunction, readonly Permission[]> = {
     "attendance.read",
     "attendance.create",
     "attendance.update",
+    "attendance-late.create",
+    "attendance-late.update",
 
     "assignment.read",
     "assignment.create",
