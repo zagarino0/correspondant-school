@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { router } from "expo-router";
 import {
   ActivityIndicator,
   Modal,
@@ -333,6 +334,21 @@ export function SurveillantDashboard({ firstName }: Props) {
         <View style={styles.header}>
           <Text style={styles.greeting}>Bonjour {firstName}</Text>
           <Text style={styles.role}>Espace surveillant</Text>
+        </View>
+
+        <View style={styles.quickActions}>
+          <Pressable style={styles.quickAction} onPress={() => router.push("/(app)/students")}>
+            <Text style={styles.quickActionIcon}>É</Text>
+            <Text style={styles.quickActionLabel}>Élèves</Text>
+          </Pressable>
+          <Pressable style={styles.quickAction} onPress={() => router.push("/(app)/students")}>
+            <Text style={styles.quickActionIcon}>V</Text>
+            <Text style={styles.quickActionLabel}>Vie scolaire</Text>
+          </Pressable>
+          <Pressable style={styles.quickAction} onPress={() => router.push("/(app)/messages")}>
+            <Text style={styles.quickActionIcon}>M</Text>
+            <Text style={styles.quickActionLabel}>Messages</Text>
+          </Pressable>
         </View>
 
         <View style={styles.statsRow}>
