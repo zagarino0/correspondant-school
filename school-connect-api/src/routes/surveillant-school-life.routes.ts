@@ -301,6 +301,40 @@ export async function surveillantSchoolLifeRoutes(fastify: FastifyInstance) {
     },
   );
 
+
+
+  fastify.patch(
+    "/students/:studentId/movements/:movementId",
+    {
+      onRequest: [authenticate],
+      preHandler: [authorizeStudentResource("student-movement.update")],
+    },
+    async (request, reply) => {
+      const { studentId, movementId } = request.params as { studentId: string; movementId: string };
+      const parsed = z.object({
+        type: movementTypeSchema.optional(),
+        reason: z.string().trim().min(1).max(500).optional(),
+        occurredAt: z.string().datetime().optional(),
+      }).safeParse(request.body);
+      if (!parsed.success) return reply.status(400).send({ error: { code: "VALIDATION_ERROR", message: "Invalid movement update." } });
+
+      const existing = await fastify.prisma.studentMovement.findFirst({
+        where: { id: movementId, studentId, schoolId: request.user.schoolId ?? undefined },
+      });
+      if (!existing) return reply.status(404).send({ error: { code: "MOVEMENT_NOT_FOUND", message: "Movement not found." } });
+
+      const item = await fastify.prisma.studentMovement.update({
+        where: { id: movementId },
+        data: {
+          ...(parsed.data.type ? { type: parsed.data.type } : {}),
+          ...(parsed.data.reason !== undefined ? { reason: parsed.data.reason } : {}),
+          ...(parsed.data.occurredAt ? { occurredAt: new Date(parsed.data.occurredAt) } : {}),
+        },
+      });
+      return reply.send({ item });
+    },
+  );
+
   fastify.get(
     "/incidents",
     {
@@ -361,6 +395,42 @@ export async function surveillantSchoolLifeRoutes(fastify: FastifyInstance) {
         },
       });
       return reply.status(201).send({ item });
+    },
+  );
+
+
+
+  fastify.patch(
+    "/students/:studentId/incidents/:incidentId",
+    {
+      onRequest: [authenticate],
+      preHandler: [authorizeStudentResource("incident.update")],
+    },
+    async (request, reply) => {
+      const { studentId, incidentId } = request.params as { studentId: string; incidentId: string };
+      const parsed = z.object({
+        type: z.string().trim().min(1).max(100).optional(),
+        severity: incidentSeveritySchema.optional(),
+        description: z.string().trim().min(1).max(3000).optional(),
+        occurredAt: z.string().datetime().optional(),
+      }).safeParse(request.body);
+      if (!parsed.success) return reply.status(400).send({ error: { code: "VALIDATION_ERROR", message: "Invalid incident update." } });
+
+      const existing = await fastify.prisma.incident.findFirst({
+        where: { id: incidentId, studentId, schoolId: request.user.schoolId ?? undefined },
+      });
+      if (!existing) return reply.status(404).send({ error: { code: "INCIDENT_NOT_FOUND", message: "Incident not found." } });
+
+      const item = await fastify.prisma.incident.update({
+        where: { id: incidentId },
+        data: {
+          ...(parsed.data.type ? { type: parsed.data.type } : {}),
+          ...(parsed.data.severity ? { severity: parsed.data.severity } : {}),
+          ...(parsed.data.description ? { description: parsed.data.description } : {}),
+          ...(parsed.data.occurredAt ? { occurredAt: new Date(parsed.data.occurredAt) } : {}),
+        },
+      });
+      return reply.send({ item });
     },
   );
 
@@ -427,6 +497,42 @@ export async function surveillantSchoolLifeRoutes(fastify: FastifyInstance) {
     },
   );
 
+
+
+  fastify.patch(
+    "/students/:studentId/disciplinary-actions/:actionId",
+    {
+      onRequest: [authenticate],
+      preHandler: [authorizeStudentResource("disciplinary-action.update")],
+    },
+    async (request, reply) => {
+      const { studentId, actionId } = request.params as { studentId: string; actionId: string };
+      const parsed = z.object({
+        type: z.string().trim().min(1).max(100).optional(),
+        status: disciplinaryStatusSchema.optional(),
+        description: z.string().trim().min(1).max(3000).optional(),
+        actionAt: z.string().datetime().optional(),
+      }).safeParse(request.body);
+      if (!parsed.success) return reply.status(400).send({ error: { code: "VALIDATION_ERROR", message: "Invalid disciplinary action update." } });
+
+      const existing = await fastify.prisma.disciplinaryAction.findFirst({
+        where: { id: actionId, studentId, schoolId: request.user.schoolId ?? undefined },
+      });
+      if (!existing) return reply.status(404).send({ error: { code: "DISCIPLINARY_ACTION_NOT_FOUND", message: "Disciplinary action not found." } });
+
+      const item = await fastify.prisma.disciplinaryAction.update({
+        where: { id: actionId },
+        data: {
+          ...(parsed.data.type ? { type: parsed.data.type } : {}),
+          ...(parsed.data.status ? { status: parsed.data.status } : {}),
+          ...(parsed.data.description ? { description: parsed.data.description } : {}),
+          ...(parsed.data.actionAt ? { actionAt: new Date(parsed.data.actionAt) } : {}),
+        },
+      });
+      return reply.send({ item });
+    },
+  );
+
   fastify.get(
     "/observations",
     {
@@ -478,6 +584,38 @@ export async function surveillantSchoolLifeRoutes(fastify: FastifyInstance) {
         },
       });
       return reply.status(201).send({ item });
+    },
+  );
+
+
+
+  fastify.patch(
+    "/students/:studentId/observations/:observationId",
+    {
+      onRequest: [authenticate],
+      preHandler: [authorizeStudentResource("observation.update")],
+    },
+    async (request, reply) => {
+      const { studentId, observationId } = request.params as { studentId: string; observationId: string };
+      const parsed = z.object({
+        content: z.string().trim().min(1).max(3000).optional(),
+        observedAt: z.string().datetime().optional(),
+      }).safeParse(request.body);
+      if (!parsed.success) return reply.status(400).send({ error: { code: "VALIDATION_ERROR", message: "Invalid observation update." } });
+
+      const existing = await fastify.prisma.schoolLifeObservation.findFirst({
+        where: { id: observationId, studentId, schoolId: request.user.schoolId ?? undefined },
+      });
+      if (!existing) return reply.status(404).send({ error: { code: "OBSERVATION_NOT_FOUND", message: "Observation not found." } });
+
+      const item = await fastify.prisma.schoolLifeObservation.update({
+        where: { id: observationId },
+        data: {
+          ...(parsed.data.content ? { content: parsed.data.content } : {}),
+          ...(parsed.data.observedAt ? { observedAt: new Date(parsed.data.observedAt) } : {}),
+        },
+      });
+      return reply.send({ item });
     },
   );
 
