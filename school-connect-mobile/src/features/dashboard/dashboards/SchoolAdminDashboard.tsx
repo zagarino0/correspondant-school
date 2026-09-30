@@ -10,6 +10,7 @@ import {
 
 import { RoleDashboard } from "./RoleDashboard";
 import { MedicalAccessCard } from "../components/MedicalAccessCard";
+import { DisciplinaryApprovalCard } from "../components/DisciplinaryApprovalCard";
 import { getSchoolAdminDashboard, getSchoolAdminSchedules } from "../../../services/school-admin/school-admin.service";
 import type { SchoolAdminDashboardResponse, ScheduleDay, SchoolAdminSchedule } from "../../../services/school-admin/school-admin.types";
 
@@ -205,6 +206,8 @@ export function SchoolAdminDashboard({
       />
 
       <MedicalAccessCard />
+
+      <DisciplinaryApprovalCard />
 
       <View style={styles.timetableSection}>
         <View style={styles.timetableHeader}>
