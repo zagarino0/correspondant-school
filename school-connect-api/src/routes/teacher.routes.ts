@@ -477,31 +477,38 @@ export async function teacherRoutes(
         });
       }
 
-      const attendance = await app.prisma.attendance.upsert({
+      const existingAttendance = await app.prisma.attendance.findFirst({
         where: {
-          enrollmentId_date: {
-            enrollmentId: enrollment.id,
-            date,
-          },
-        },
-        update: {
-          status: body.status,
-          arrivalTime: body.arrivalTime ? new Date(body.arrivalTime) : null,
-          reason: body.reason ?? null,
-          note: body.note ?? null,
-          recordedBy: request.user.sub,
-        },
-        create: {
-          studentId: enrollment.studentId,
           enrollmentId: enrollment.id,
           date,
-          status: body.status,
-          arrivalTime: body.arrivalTime ? new Date(body.arrivalTime) : null,
-          reason: body.reason ?? null,
-          note: body.note ?? null,
-          recordedBy: request.user.sub,
+          scheduleId: null,
         },
+        orderBy: { updatedAt: "desc" },
       });
+
+      const attendance = existingAttendance
+        ? await app.prisma.attendance.update({
+            where: { id: existingAttendance.id },
+            data: {
+              status: body.status,
+              arrivalTime: body.arrivalTime ? new Date(body.arrivalTime) : null,
+              reason: body.reason ?? null,
+              note: body.note ?? null,
+              recordedBy: request.user.sub,
+            },
+          })
+        : await app.prisma.attendance.create({
+            data: {
+              studentId: enrollment.studentId,
+              enrollmentId: enrollment.id,
+              date,
+              status: body.status,
+              arrivalTime: body.arrivalTime ? new Date(body.arrivalTime) : null,
+              reason: body.reason ?? null,
+              note: body.note ?? null,
+              recordedBy: request.user.sub,
+            },
+          });
 
       return reply.code(200).send({ attendance });
     },
