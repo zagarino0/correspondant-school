@@ -74,6 +74,7 @@ model User {
   reportedIncidents        Incident[]                @relation("IncidentReportedBy")
   disciplinaryActions      DisciplinaryAction[]      @relation("DisciplinaryActionCreatedBy")
   schoolLifeObservations   SchoolLifeObservation[]   @relation("SchoolLifeObservationCreatedBy")
+  parentAuthorizations     ParentAuthorization[]
   alertRecipients          Alert[]                   @relation("AlertRecipient")
   createdAlerts             Alert[]                   @relation("AlertCreatedBy")
   createdDailyReports      DailyReport[]             @relation("DailyReportCreatedBy")
