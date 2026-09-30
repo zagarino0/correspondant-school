@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -275,7 +275,7 @@ export default function SurveillantSchoolLifeScreen() {
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>{title}</Text>
@@ -313,7 +313,7 @@ function ActionRow({
   );
 }
 
-function ItemCard({ children }: { children: React.ReactNode }) {
+function ItemCard({ children }: { children: ReactNode }) {
   return <View style={styles.itemCard}>{children}</View>;
 }
 
