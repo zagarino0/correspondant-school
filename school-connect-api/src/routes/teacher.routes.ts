@@ -516,14 +516,6 @@ export async function teacherRoutes(
         });
       }
 
-      if (body.status === "LATE") {
-        return reply.code(403).send({
-          error: {
-            code: "TEACHER_LATE_FORBIDDEN",
-            message: "Le teacher peut uniquement enregistrer Présent ou Absent. Le retard est géré par le surveillant.",
-          },
-        });
-      }
 
       const sessionKey = body.scheduleId + ":" + body.date + ":" + enrollment.studentId;
 
