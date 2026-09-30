@@ -404,7 +404,12 @@ export default function SurveillantAttendanceScreen() {
                           </Text>
                           {isLate && student.attendance?.reason ? <Text style={styles.lateMeta}>{student.attendance.reason}</Text> : null}
                         </View>
-                        <Pressable style={styles.lateAction} onPress={() => openLateModal(student)} disabled={!student.attendance}>
+                        <Pressable
+                          style={styles.lateAction}
+                          onPress={() => openLateModal(student)}
+                          accessibilityRole="button"
+                          accessibilityLabel={isLate ? `Modifier le retard de ${studentName(student)}` : `Marquer un retard pour ${studentName(student)}`}
+                        >
                           <Text style={styles.lateActionText}>{isLate ? "Modifier retard" : "Marquer retard"}</Text>
                         </Pressable>
                       </View>
