@@ -86,10 +86,10 @@ const staffPermissions: Record<StaffFunction, readonly Permission[]> = {
     // Recherche / fiche vie scolaire
     "student.read",
 
-    // Présences, absences et retards
+    // Consultation du pointage du teacher + gestion des retards uniquement
     "attendance.read",
-    "attendance.create",
-    "attendance.update",
+    "attendance-late.create",
+    "attendance-late.update",
 
     "attendance-event.read",
     "attendance-event.create",
