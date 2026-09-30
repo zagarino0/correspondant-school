@@ -29,6 +29,15 @@ export function authorize(permission: Permission) {
         });
 
       if (!staffProfile) {
+        request.log.warn(
+          {
+            userId: request.user.sub,
+            role,
+            permission,
+          },
+          "Authorization denied: staff profile not found",
+        );
+
         return reply.status(403).send({
           error: {
             code: "STAFF_PROFILE_NOT_FOUND",
@@ -37,7 +46,21 @@ export function authorize(permission: Permission) {
         });
       }
 
-      if (!hasStaffPermission(staffProfile.function, permission)) {
+      const allowed = hasStaffPermission(staffProfile.function, permission);
+
+      request.log.debug(
+        {
+          userId: request.user.sub,
+          role,
+          staffFunction: staffProfile.function,
+          permission,
+          allowed,
+          schoolId: request.user.schoolId,
+        },
+        "Authorization check",
+      );
+
+      if (!allowed) {
         return reply.status(403).send({
           error: {
             code: "FORBIDDEN",
@@ -49,7 +72,20 @@ export function authorize(permission: Permission) {
       return;
     }
 
-    if (!hasPermission(role, permission)) {
+    const allowed = hasPermission(role, permission);
+
+    request.log.debug(
+      {
+        userId: request.user.sub,
+        role,
+        permission,
+        allowed,
+        schoolId: request.user.schoolId,
+      },
+      "Authorization check",
+    );
+
+    if (!allowed) {
       return reply.status(403).send({
         error: {
           code: "FORBIDDEN",
