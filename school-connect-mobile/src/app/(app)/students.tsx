@@ -16,6 +16,7 @@ import type {
   StudentListItem,
   StudentStatus,
 } from "../../services/students/student.types";
+import { useAuthStore } from "../../stores/authStore";
 
 type StudentCategory =
   | "PRIMAIRE"
@@ -76,6 +77,8 @@ const STATUS_FILTERS: Array<{ label: string; value?: StudentStatus }> = [
 ];
 
 export default function StudentsScreen() {
+  const user = useAuthStore((state) => state.user);
+  const isSurveillant = user?.role === "STAFF" && user.staffFunction === "SURVEILLANT";
   const [students, setStudents] = useState<StudentListItem[]>([]);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<StudentStatus | undefined>();
@@ -436,12 +439,12 @@ export default function StudentsScreen() {
                                               </View>
                                               <Pressable
                                                 onPress={() => router.push({
-                                                  pathname: "/(app)/students/[studentId]",
+                                                  pathname: isSurveillant ? "/(app)/surveillant/students/[studentId]" : "/(app)/students/[studentId]",
                                                   params: { studentId: student.id },
                                                 })}
                                                 style={styles.editButton}
                                               >
-                                                <Text style={styles.editButtonText}>Modifier</Text>
+                                                <Text style={styles.editButtonText}>{isSurveillant ? "Voir fiche" : "Modifier"}</Text>
                                               </Pressable>
                                             </View>
                                             <View style={styles.studentCardBottom}>
