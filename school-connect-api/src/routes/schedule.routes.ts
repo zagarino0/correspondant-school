@@ -190,7 +190,7 @@ export async function scheduleRoutes(
        */
       const isSurveillant =
         request.user.role === "STAFF" &&
-        request.user.staffFunction === "SURVEILLANT";
+        (request.user as typeof request.user & { staffFunction?: string }).staffFunction === "SURVEILLANT";
 
       const activeAcademicYear = isSurveillant
         ? await app.prisma.academicYear.findFirst({
