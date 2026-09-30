@@ -251,6 +251,7 @@ model Attendance {
   studentId    String
   enrollmentId String
   scheduleId   String?
+  sessionKey   String?           @unique
   date         DateTime
   status       AttendanceStatus  @default(PRESENT)
   arrivalTime  DateTime?
@@ -265,7 +266,6 @@ model Attendance {
   student      Student           @relation(fields: [studentId], references: [id], onDelete: Cascade)
   events       AttendanceEvent[]
 
-  @@unique([enrollmentId, date])
   @@index([studentId])
   @@index([scheduleId, date])
   @@index([enrollmentId])
