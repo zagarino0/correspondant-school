@@ -397,8 +397,7 @@ export default function SurveillantSchoolLifeScreen() {
             ))}</Section>
         ) : null}
       </ScrollView>
-    </View>
-      <Modal
+            <Modal
         visible={showExitModal}
         transparent
         animationType="slide"
@@ -518,6 +517,8 @@ export default function SurveillantSchoolLifeScreen() {
           </View>
         </View>
       </Modal>
+
+    </View>
   );
 }
 
