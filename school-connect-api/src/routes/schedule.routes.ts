@@ -188,10 +188,31 @@ export async function scheduleRoutes(
       /**
        * Construction du filtre Prisma.
        */
+      const isSurveillant =
+        request.user.role === "STAFF" &&
+        request.user.staffFunction === "SURVEILLANT";
+
+      const activeAcademicYear = isSurveillant
+        ? await app.prisma.academicYear.findFirst({
+            where: {
+              ...(schoolId ? { schoolId } : {}),
+              status: "ACTIVE",
+            },
+            select: { id: true },
+            orderBy: { startDate: "desc" },
+          })
+        : null;
+
       const where = {
         ...(schoolId
           ? {
               schoolId,
+            }
+          : {}),
+
+        ...(activeAcademicYear
+          ? {
+              academicYearId: activeAcademicYear.id,
             }
           : {}),
 
@@ -257,6 +278,20 @@ export async function scheduleRoutes(
             room: true,
             createdAt: true,
             updatedAt: true,
+            class: {
+              select: {
+                id: true,
+                name: true,
+                level: true,
+              },
+            },
+            teacher: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+              },
+            },
           },
         });
 
