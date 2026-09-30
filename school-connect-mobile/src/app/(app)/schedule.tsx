@@ -49,10 +49,10 @@ function getUniqueTimeSlots(schedules: StudentSchedule[]): string[] {
 }
 
 function getScheduleForCell(
-  schedules: Array<StudentSchedule | TeacherSchedule>,
+  schedules: Array<StudentSchedule | TeacherSchedule | SchoolSchedule>,
   day: ScheduleDay,
   timeSlot: string,
-): StudentSchedule[] {
+): Array<StudentSchedule | TeacherSchedule | SchoolSchedule> {
   return schedules.filter(
     (schedule) =>
       schedule.dayOfWeek === day &&
@@ -96,7 +96,7 @@ export default function ScheduleScreen() {
       } catch {
         if (isMounted) {
           setErrorMessage(
-            "Impossible de charger votre emploi du temps.",
+            "Impossible de charger l’emploi du temps.",
           );
         }
       } finally {
@@ -161,7 +161,7 @@ export default function ScheduleScreen() {
         <View style={styles.stateContainer}>
           <Text style={styles.stateTitle}>Aucun cours disponible</Text>
           <Text style={styles.stateText}>
-            Votre emploi du temps n'est pas encore disponible.
+            L’emploi du temps de votre établissement n'est pas encore disponible.
           </Text>
         </View>
       ) : (
@@ -243,15 +243,7 @@ export default function ScheduleScreen() {
 
                               {"class" in schedule ? (
                                 <Text style={styles.classText} numberOfLines={2}>
-                                  {(schedule as TeacherSchedule).class.name}
-                                </Text>
-                              ) : null}
-
-                              {"class" in schedule && !("teacher" in schedule) ? null : null}
-
-                              {"class" in schedule ? (
-                                <Text style={styles.classText} numberOfLines={2}>
-                                  {(schedule as TeacherSchedule).class.name}
+                                  {(schedule as TeacherSchedule | SchoolSchedule).class.name}
                                 </Text>
                               ) : null}
 
