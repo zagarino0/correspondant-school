@@ -23,6 +23,14 @@ model School {
   classes          SchoolClass[]
   staffAssignments StaffAssignment[]
   students         Student[]
+  studentExits     StudentExit[]
+  studentMovements StudentMovement[]
+  incidents        Incident[]
+  disciplinaryActions DisciplinaryAction[]
+  schoolLifeObservations SchoolLifeObservation[]
+  parentAuthorizations ParentAuthorization[]
+  alerts           Alert[]
+  dailyReports     DailyReport[]
   users            User[]
 }
 
@@ -61,6 +69,14 @@ model User {
   refreshTokens            RefreshToken[]
   schedules                Schedule[]
   smsNotifications         SmsNotification[]         @relation("SmsNotificationRecipient")
+  recordedStudentExits     StudentExit[]             @relation("StudentExitRecordedBy")
+  recordedStudentMovements StudentMovement[]         @relation("StudentMovementRecordedBy")
+  reportedIncidents        Incident[]                @relation("IncidentReportedBy")
+  disciplinaryActions      DisciplinaryAction[]      @relation("DisciplinaryActionCreatedBy")
+  schoolLifeObservations   SchoolLifeObservation[]   @relation("SchoolLifeObservationCreatedBy")
+  alertRecipients          Alert[]                   @relation("AlertRecipient")
+  createdAlerts             Alert[]                   @relation("AlertCreatedBy")
+  createdDailyReports      DailyReport[]             @relation("DailyReportCreatedBy")
   staffProfile             StaffProfile?
   studentProfile           Student?
   teacherClassAssignments  TeacherClass[]            @relation("TeacherClassAssignments")
@@ -149,6 +165,13 @@ model Student {
   user             User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   enrollments      StudentEnrollment[]
   medicalRecord    StudentMedicalRecord?
+  studentExits     StudentExit[]
+  studentMovements StudentMovement[]
+  incidents        Incident[]
+  disciplinaryActions DisciplinaryAction[]
+  schoolLifeObservations SchoolLifeObservation[]
+  parentAuthorizations ParentAuthorization[]
+  alerts           Alert[]
 
   @@unique([schoolId, studentNumber])
   @@index([schoolId])
@@ -367,6 +390,180 @@ model StaffAssignment {
   @@index([staffId])
   @@index([schoolId])
   @@index([active])
+}
+
+model StudentExit {
+  id                   String           @id @default(cuid())
+  schoolId             String
+  studentId            String
+  type                 StudentExitType  @default(TEMPORARY)
+  status               StudentExitStatus @default(OPEN)
+  authorizedPersonName String
+  authorizedPersonPhone String?
+  reason               String
+  exitAt               DateTime
+  returnAt             DateTime?
+  recordedBy           String
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+  school               School           @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  student              Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  recorder              User             @relation("StudentExitRecordedBy", fields: [recordedBy], references: [id])
+
+  @@index([schoolId, exitAt])
+  @@index([studentId, exitAt])
+  @@index([status])
+  @@index([recordedBy])
+}
+
+model StudentMovement {
+  id         String              @id @default(cuid())
+  schoolId   String
+  studentId  String
+  type       StudentMovementType
+  reason     String
+  occurredAt DateTime
+  recordedBy String
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+  school     School              @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  student    Student             @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  recorder   User                @relation("StudentMovementRecordedBy", fields: [recordedBy], references: [id])
+
+  @@index([schoolId, occurredAt])
+  @@index([studentId, occurredAt])
+  @@index([type, occurredAt])
+  @@index([recordedBy])
+}
+
+model Incident {
+  id          String           @id @default(cuid())
+  schoolId    String
+  studentId   String
+  type        String
+  severity    IncidentSeverity @default(MEDIUM)
+  description String
+  occurredAt  DateTime
+  reportedBy  String
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  school      School           @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  student     Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  reporter    User             @relation("IncidentReportedBy", fields: [reportedBy], references: [id])
+  actions     DisciplinaryAction[]
+
+  @@index([schoolId, occurredAt])
+  @@index([studentId, occurredAt])
+  @@index([severity, occurredAt])
+  @@index([reportedBy])
+}
+
+model DisciplinaryAction {
+  id          String                   @id @default(cuid())
+  schoolId    String
+  studentId   String
+  incidentId  String?
+  type        String
+  status      DisciplinaryActionStatus @default(ACTIVE)
+  description String
+  actionAt    DateTime
+  createdBy   String
+  createdAt   DateTime                 @default(now())
+  updatedAt   DateTime                 @updatedAt
+  school      School                   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  student     Student                  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  incident    Incident?                @relation(fields: [incidentId], references: [id], onDelete: SetNull)
+  creator     User                     @relation("DisciplinaryActionCreatedBy", fields: [createdBy], references: [id])
+
+  @@index([schoolId, actionAt])
+  @@index([studentId, actionAt])
+  @@index([incidentId])
+  @@index([status])
+  @@index([createdBy])
+}
+
+model SchoolLifeObservation {
+  id         String   @id @default(cuid())
+  schoolId   String
+  studentId  String
+  content    String
+  observedAt DateTime
+  createdBy  String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  school     School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  student    Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  creator    User     @relation("SchoolLifeObservationCreatedBy", fields: [createdBy], references: [id])
+
+  @@index([schoolId, observedAt])
+  @@index([studentId, observedAt])
+  @@index([createdBy])
+}
+
+model ParentAuthorization {
+  id          String              @id @default(cuid())
+  schoolId    String
+  studentId   String
+  parentId    String
+  type        String
+  status      AuthorizationStatus @default(PENDING)
+  reason      String?
+  requestedAt DateTime            @default(now())
+  decidedAt   DateTime?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  school      School              @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  student     Student             @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  parent      User                @relation(fields: [parentId], references: [id], onDelete: Cascade)
+
+  @@index([schoolId, status])
+  @@index([studentId, status])
+  @@index([parentId, status])
+  @@index([requestedAt])
+}
+
+model Alert {
+  id          String        @id @default(cuid())
+  schoolId    String
+  studentId   String?
+  recipientId String?
+  severity    AlertSeverity @default(NORMAL)
+  title       String
+  message     String
+  createdBy   String
+  readAt      DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  school      School        @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  student     Student?      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  recipient   User?         @relation("AlertRecipient", fields: [recipientId], references: [id], onDelete: SetNull)
+  creator     User          @relation("AlertCreatedBy", fields: [createdBy], references: [id])
+
+  @@index([schoolId, createdAt])
+  @@index([studentId, createdAt])
+  @@index([recipientId, readAt])
+  @@index([severity, createdAt])
+}
+
+model DailyReport {
+  id          String   @id @default(cuid())
+  schoolId    String
+  reportDate  DateTime
+  summary     String
+  absences    Int      @default(0)
+  lates       Int      @default(0)
+  incidents   Int      @default(0)
+  exits       Int      @default(0)
+  movements   Int      @default(0)
+  createdBy   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  school      School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  creator     User     @relation("DailyReportCreatedBy", fields: [createdBy], references: [id])
+
+  @@unique([schoolId, reportDate])
+  @@index([schoolId, reportDate])
+  @@index([createdBy])
 }
 
 model Grade {
@@ -723,6 +920,47 @@ enum SmsNotificationStatus {
   SENT
   FAILED
   SKIPPED
+}
+
+enum StudentExitType {
+  TEMPORARY
+  PERMANENT
+}
+
+enum StudentExitStatus {
+  OPEN
+  COMPLETED
+  CANCELLED
+}
+
+enum StudentMovementType {
+  ENTRY
+  EXIT
+}
+
+enum IncidentSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum DisciplinaryActionStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum AuthorizationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum AlertSeverity {
+  NORMAL
+  IMPORTANT
+  CRITICAL
 }
 
 enum AssignmentStatus {
