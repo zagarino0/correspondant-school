@@ -40,7 +40,7 @@ export async function saveTeacherAttendance(
     enrollmentId: string;
     scheduleId: string;
     date: string;
-    status: "PRESENT" | "ABSENT" | "LATE" | "EXCUSED";
+    status: "PRESENT" | "ABSENT";
     arrivalTime?: string | null;
     reason?: string | null;
     note?: string | null;
