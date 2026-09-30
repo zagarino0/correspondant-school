@@ -39,7 +39,7 @@ export async function surveillantSchoolLifeRoutes(fastify: FastifyInstance) {
       const student = await fastify.prisma.student.findFirst({
         where: {
           id: studentId,
-          schoolId: request.user.schoolId ?? undefined,
+          ...(request.user.schoolId ? { schoolId: request.user.schoolId } : {}),
         },
         select: {
           id: true,
@@ -181,7 +181,7 @@ export async function surveillantSchoolLifeRoutes(fastify: FastifyInstance) {
       if (!parsed.success) return reply.status(400).send({ error: { code: "VALIDATION_ERROR", message: "Invalid student exit." } });
 
       const student = await fastify.prisma.student.findFirst({
-        where: { id: studentId, schoolId: request.user.schoolId ?? undefined },
+        where: { id: studentId, ...(request.user.schoolId ? { schoolId: request.user.schoolId } : {}) },
         select: { id: true, schoolId: true },
       });
       if (!student) return reply.status(404).send({ error: { code: "STUDENT_NOT_FOUND", message: "Student not found." } });
@@ -223,7 +223,7 @@ export async function surveillantSchoolLifeRoutes(fastify: FastifyInstance) {
       }).safeParse(request.body);
       if (!parsed.success) return reply.status(400).send({ error: { code: "VALIDATION_ERROR", message: "Invalid exit update." } });
 
-      const existing = await fastify.prisma.studentExit.findFirst({ where: { id: exitId, studentId, schoolId: request.user.schoolId ?? undefined } });
+      const existing = await fastify.prisma.studentExit.findFirst({ where: { id: exitId, studentId, ...(request.user.schoolId ? { schoolId: request.user.schoolId } : {}) } });
       if (!existing) return reply.status(404).send({ error: { code: "EXIT_NOT_FOUND", message: "Exit not found." } });
 
       const returnAt = parsed.data.returnAt === undefined ? undefined : parsed.data.returnAt ? new Date(parsed.data.returnAt) : null;
@@ -231,7 +231,8 @@ export async function surveillantSchoolLifeRoutes(fastify: FastifyInstance) {
         where: { id: exitId },
         data: {
           ...(parsed.data.status ? { status: parsed.data.status } : {}),
-          ...(parsed.data.returnAt !== undefined ? { returnAt } : {}),
+          ...(parsed.data.returnAt !== undefined && returnAt !== undefined ? { returnAt } : {}),
+          ...(parsed.data.returnAt === null ? { returnAt: null } : {}),
         },
       });
 
@@ -284,7 +285,7 @@ export async function surveillantSchoolLifeRoutes(fastify: FastifyInstance) {
       }).safeParse(request.body);
       if (!parsed.success) return reply.status(400).send({ error: { code: "VALIDATION_ERROR", message: "Invalid student movement." } });
 
-      const student = await fastify.prisma.student.findFirst({ where: { id: studentId, schoolId: request.user.schoolId ?? undefined }, select: { id: true, schoolId: true } });
+      const student = await fastify.prisma.student.findFirst({ where: { id: studentId, ...(request.user.schoolId ? { schoolId: request.user.schoolId } : {}) }, select: { id: true, schoolId: true } });
       if (!student) return reply.status(404).send({ error: { code: "STUDENT_NOT_FOUND", message: "Student not found." } });
 
       const item = await fastify.prisma.studentMovement.create({
@@ -319,7 +320,7 @@ export async function surveillantSchoolLifeRoutes(fastify: FastifyInstance) {
       if (!parsed.success) return reply.status(400).send({ error: { code: "VALIDATION_ERROR", message: "Invalid movement update." } });
 
       const existing = await fastify.prisma.studentMovement.findFirst({
-        where: { id: movementId, studentId, schoolId: request.user.schoolId ?? undefined },
+        where: { id: movementId, studentId, ...(request.user.schoolId ? { schoolId: request.user.schoolId } : {}) },
       });
       if (!existing) return reply.status(404).send({ error: { code: "MOVEMENT_NOT_FOUND", message: "Movement not found." } });
 
@@ -380,7 +381,7 @@ export async function surveillantSchoolLifeRoutes(fastify: FastifyInstance) {
       }).safeParse(request.body);
       if (!parsed.success) return reply.status(400).send({ error: { code: "VALIDATION_ERROR", message: "Invalid incident." } });
 
-      const student = await fastify.prisma.student.findFirst({ where: { id: studentId, schoolId: request.user.schoolId ?? undefined }, select: { id: true, schoolId: true } });
+      const student = await fastify.prisma.student.findFirst({ where: { id: studentId, ...(request.user.schoolId ? { schoolId: request.user.schoolId } : {}) }, select: { id: true, schoolId: true } });
       if (!student) return reply.status(404).send({ error: { code: "STUDENT_NOT_FOUND", message: "Student not found." } });
 
       const item = await fastify.prisma.incident.create({
@@ -417,7 +418,7 @@ export async function surveillantSchoolLifeRoutes(fastify: FastifyInstance) {
       if (!parsed.success) return reply.status(400).send({ error: { code: "VALIDATION_ERROR", message: "Invalid incident update." } });
 
       const existing = await fastify.prisma.incident.findFirst({
-        where: { id: incidentId, studentId, schoolId: request.user.schoolId ?? undefined },
+        where: { id: incidentId, studentId, ...(request.user.schoolId ? { schoolId: request.user.schoolId } : {}) },
       });
       if (!existing) return reply.status(404).send({ error: { code: "INCIDENT_NOT_FOUND", message: "Incident not found." } });
 
@@ -474,7 +475,7 @@ export async function surveillantSchoolLifeRoutes(fastify: FastifyInstance) {
       }).safeParse(request.body);
       if (!parsed.success) return reply.status(400).send({ error: { code: "VALIDATION_ERROR", message: "Invalid disciplinary action." } });
 
-      const student = await fastify.prisma.student.findFirst({ where: { id: studentId, schoolId: request.user.schoolId ?? undefined }, select: { id: true, schoolId: true } });
+      const student = await fastify.prisma.student.findFirst({ where: { id: studentId, ...(request.user.schoolId ? { schoolId: request.user.schoolId } : {}) }, select: { id: true, schoolId: true } });
       if (!student) return reply.status(404).send({ error: { code: "STUDENT_NOT_FOUND", message: "Student not found." } });
 
       if (parsed.data.incidentId) {
@@ -516,7 +517,7 @@ export async function surveillantSchoolLifeRoutes(fastify: FastifyInstance) {
       if (!parsed.success) return reply.status(400).send({ error: { code: "VALIDATION_ERROR", message: "Invalid disciplinary action update." } });
 
       const existing = await fastify.prisma.disciplinaryAction.findFirst({
-        where: { id: actionId, studentId, schoolId: request.user.schoolId ?? undefined },
+        where: { id: actionId, studentId, ...(request.user.schoolId ? { schoolId: request.user.schoolId } : {}) },
       });
       if (!existing) return reply.status(404).send({ error: { code: "DISCIPLINARY_ACTION_NOT_FOUND", message: "Disciplinary action not found." } });
 
@@ -571,7 +572,7 @@ export async function surveillantSchoolLifeRoutes(fastify: FastifyInstance) {
       }).safeParse(request.body);
       if (!parsed.success) return reply.status(400).send({ error: { code: "VALIDATION_ERROR", message: "Invalid school-life observation." } });
 
-      const student = await fastify.prisma.student.findFirst({ where: { id: studentId, schoolId: request.user.schoolId ?? undefined }, select: { id: true, schoolId: true } });
+      const student = await fastify.prisma.student.findFirst({ where: { id: studentId, ...(request.user.schoolId ? { schoolId: request.user.schoolId } : {}) }, select: { id: true, schoolId: true } });
       if (!student) return reply.status(404).send({ error: { code: "STUDENT_NOT_FOUND", message: "Student not found." } });
 
       const item = await fastify.prisma.schoolLifeObservation.create({
