@@ -108,7 +108,7 @@ export default function SurveillantAttendanceScreen() {
     return () => {
       mounted = false;
     };
-  }
+  }, []);
 
   useEffect(() => {
     if (!selectedSchedule) {
