@@ -11,11 +11,12 @@ import {
 import { useRouter } from "expo-router";
 import { useAuthStore } from "../../stores/authStore";
 
-import { getMySchedule, getMyTeacherSchedule } from "../../services/schedule/schedule.service";
+import { getMySchedule, getMyTeacherSchedule, getSchoolSchedule } from "../../services/schedule/schedule.service";
 import type {
   ScheduleDay,
   StudentSchedule,
   TeacherSchedule,
+  SchoolSchedule,
 } from "../../features/schedule/schedule.types";
 
 const dayLabels: Record<ScheduleDay, string> = {
@@ -62,6 +63,7 @@ function getScheduleForCell(
 export default function ScheduleScreen() {
   const router = useRouter();
   const role = useAuthStore((state) => state.user?.role);
+  const staffFunction = useAuthStore((state) => state.user?.staffFunction);
   const { width: screenWidth } = useWindowDimensions();
   const [schedules, setSchedules] = useState<Array<StudentSchedule | TeacherSchedule>>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -77,6 +79,11 @@ export default function ScheduleScreen() {
 
         if (role === "TEACHER") {
           const response = await getMyTeacherSchedule();
+          if (isMounted) {
+            setSchedules(response.schedules);
+          }
+        } else if (role === "STAFF" && staffFunction === "SURVEILLANT") {
+          const response = await getSchoolSchedule();
           if (isMounted) {
             setSchedules(response.schedules);
           }
@@ -104,7 +111,7 @@ export default function ScheduleScreen() {
     return () => {
       isMounted = false;
     };
-  }, [role]);
+  }, [role, staffFunction]);
 
   const timeSlots = useMemo(
     () => getUniqueTimeSlots(schedules),
@@ -134,7 +141,9 @@ export default function ScheduleScreen() {
           <Text style={styles.subtitle}>
             {role === "TEACHER"
               ? "Vos cours, classes et horaires de la semaine"
-              : "Votre planning de la semaine"}
+              : role === "STAFF" && staffFunction === "SURVEILLANT"
+                ? "Emploi du temps de toutes les classes de l’établissement"
+                : "Votre planning de la semaine"}
           </Text>
         </View>
       </View>
@@ -235,6 +244,20 @@ export default function ScheduleScreen() {
                               {"class" in schedule ? (
                                 <Text style={styles.classText} numberOfLines={2}>
                                   {(schedule as TeacherSchedule).class.name}
+                                </Text>
+                              ) : null}
+
+                              {"class" in schedule && !("teacher" in schedule) ? null : null}
+
+                              {"class" in schedule ? (
+                                <Text style={styles.classText} numberOfLines={2}>
+                                  {(schedule as TeacherSchedule).class.name}
+                                </Text>
+                              ) : null}
+
+                              {"teacher" in schedule ? (
+                                <Text style={styles.teacherText} numberOfLines={2}>
+                                  {(schedule as SchoolSchedule).teacher.firstName} {(schedule as SchoolSchedule).teacher.lastName}
                                 </Text>
                               ) : null}
 
@@ -358,6 +381,12 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: "600",
     color: "#374151",
+    textAlign: "center",
+  },
+  teacherText: {
+    marginTop: 3,
+    fontSize: 10,
+    color: "#475569",
     textAlign: "center",
   },
   roomText: {
