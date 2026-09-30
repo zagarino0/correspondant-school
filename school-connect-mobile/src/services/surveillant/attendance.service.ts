@@ -60,7 +60,7 @@ export async function createSurveillantLateAttendance(input: {
     input,
   );
   return response.data as {
-    attendance: {
+    item: {
       id: string;
       studentId: string;
       status: "LATE";
@@ -86,7 +86,7 @@ export async function updateSurveillantLateAttendance(
     input,
   );
   return response.data as {
-    attendance: {
+    item: {
       id: string;
       studentId: string;
       status: "LATE";
