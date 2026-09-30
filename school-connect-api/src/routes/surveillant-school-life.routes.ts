@@ -1021,5 +1021,3 @@ export async function surveillantSchoolLifeRoutes(fastify: FastifyInstance) {
   );
 
 }
-
-}
