@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import type { ReactNode } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -63,7 +64,7 @@ function Section({
 }: {
   title: string;
   count?: number;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <View style={styles.section}>
