@@ -435,6 +435,7 @@ export default function SurveillantSchoolLifeScreen() {
             </View>
 
             <Section title="ACCÈS OPÉRATIONNELS">
+              <ActionRow title="Présences / Retards" description="Contrôler automatiquement les élèves attendus selon le créneau de l'emploi du temps." onPress={() => router.push("/(app)/surveillant/attendance")} />
               <ActionRow title="Sorties élèves" description="Suivre les élèves actuellement sortis et les retours." onPress={() => setTab("exits")} />
               <ActionRow title="Mouvements" description="Consulter les entrées et sorties enregistrées aujourd'hui." onPress={() => setTab("movements")} />
               <ActionRow title="Incidents" description="Consulter les incidents et leur niveau de gravité." onPress={() => setTab("incidents")} />
