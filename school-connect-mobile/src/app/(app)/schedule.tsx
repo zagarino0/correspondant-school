@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
+  TextInput,
   ScrollView,
   StyleSheet,
   Text,
@@ -68,6 +69,8 @@ export default function ScheduleScreen() {
   const [schedules, setSchedules] = useState<Array<StudentSchedule | TeacherSchedule | SchoolSchedule>>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
+  const [classSearch, setClassSearch] = useState("");
 
   useEffect(() => {
     let isMounted = true;
@@ -113,9 +116,37 @@ export default function ScheduleScreen() {
     };
   }, [role, staffFunction]);
 
+  const isSurveillant = role === "STAFF" && staffFunction === "SURVEILLANT";
+
+  const classes = useMemo(() => {
+    if (!isSurveillant) return [];
+    const map = new Map<string, { id: string; name: string; level: string | null }>();
+    schedules.forEach((schedule) => {
+      if ("class" in schedule) {
+        map.set(schedule.class.id, schedule.class);
+      }
+    });
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [isSurveillant, schedules]);
+
+  const filteredClasses = useMemo(() => {
+    const query = classSearch.trim().toLowerCase();
+    if (!query) return classes;
+    return classes.filter((item) =>
+      item.name.toLowerCase().includes(query) || (item.level ?? "").toLowerCase().includes(query),
+    );
+  }, [classes, classSearch]);
+
+  const selectedClass = classes.find((item) => item.id === selectedClassId) ?? null;
+
+  const visibleSchedules = useMemo(() => {
+    if (!isSurveillant || !selectedClassId) return schedules;
+    return schedules.filter((schedule) => "class" in schedule && schedule.class.id === selectedClassId);
+  }, [isSurveillant, schedules, selectedClassId]);
+
   const timeSlots = useMemo(
-    () => getUniqueTimeSlots(schedules),
-    [schedules],
+    () => getUniqueTimeSlots(visibleSchedules),
+    [visibleSchedules],
   );
 
   const tableWidth = Math.max(screenWidth - 32, 640);
@@ -147,6 +178,45 @@ export default function ScheduleScreen() {
           </Text>
         </View>
       </View>
+
+      {isSurveillant && classes.length > 0 && !isLoading ? (
+        <View style={styles.classSelector}>
+          <View style={styles.selectorHeader}>
+            <View style={styles.selectorCopy}>
+              <Text style={styles.selectorLabel}>CLASSE</Text>
+              <Text style={styles.selectorTitle}>{selectedClass ? selectedClass.name : "Toutes les classes"}</Text>
+            </View>
+            <Pressable
+              style={styles.allClassesButton}
+              onPress={() => setSelectedClassId(null)}
+            >
+              <Text style={styles.allClassesText}>Toutes</Text>
+            </Pressable>
+          </View>
+          <View style={styles.classSearchBox}>
+            <Text style={styles.searchIcon}>⌕</Text>
+            <TextInput
+              value={classSearch}
+              onChangeText={setClassSearch}
+              placeholder="Rechercher une classe…"
+              placeholderTextColor="#94A3B8"
+              style={styles.classSearchInput}
+            />
+          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.classChips}>
+            {filteredClasses.map((item) => (
+              <Pressable
+                key={item.id}
+                style={[styles.classChip, selectedClassId === item.id && styles.classChipActive]}
+                onPress={() => setSelectedClassId(item.id)}
+              >
+                <Text style={[styles.classChipName, selectedClassId === item.id && styles.classChipTextActive]}>{item.name}</Text>
+                {item.level ? <Text style={[styles.classChipLevel, selectedClassId === item.id && styles.classChipTextActive]}>{item.level}</Text> : null}
+              </Pressable>
+            ))}
+          </ScrollView>
+        </View>
+      ) : null}
 
       {isLoading ? (
         <View style={styles.stateContainer}>
@@ -316,6 +386,30 @@ const styles = StyleSheet.create({
   horizontalContent: {
     paddingHorizontal: 16,
   },
+  classSelector: {
+    marginHorizontal: 16,
+    marginTop: 14,
+    padding: 14,
+    borderRadius: 14,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+  },
+  selectorHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
+  selectorCopy: { flex: 1 },
+  selectorLabel: { fontSize: 10, fontWeight: "900", letterSpacing: 0.8, color: "#64748B" },
+  selectorTitle: { marginTop: 3, fontSize: 16, fontWeight: "900", color: "#111827" },
+  allClassesButton: { paddingHorizontal: 11, paddingVertical: 8, borderRadius: 9, borderWidth: 1, borderColor: "#CBD5E1" },
+  allClassesText: { fontSize: 10, fontWeight: "900", color: "#344976" },
+  classSearchBox: { marginTop: 10, minHeight: 42, flexDirection: "row", alignItems: "center", paddingHorizontal: 11, borderRadius: 10, borderWidth: 1, borderColor: "#CBD5E1", backgroundColor: "#F8FAFC" },
+  searchIcon: { marginRight: 7, fontSize: 18, color: "#64748B" },
+  classSearchInput: { flex: 1, fontSize: 12, color: "#111827", paddingVertical: 8 },
+  classChips: { gap: 7, paddingTop: 10 },
+  classChip: { minWidth: 82, paddingHorizontal: 11, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: "#CBD5E1", backgroundColor: "#FFFFFF" },
+  classChipActive: { borderColor: "#344976", backgroundColor: "#344976" },
+  classChipName: { fontSize: 11, fontWeight: "900", color: "#344976" },
+  classChipLevel: { marginTop: 2, fontSize: 9, color: "#64748B" },
+  classChipTextActive: { color: "#FFFFFF" },
   table: {
     borderWidth: 1,
     borderColor: "#E5E7EB",
