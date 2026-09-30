@@ -1156,4 +1156,100 @@ export async function surveillantSchoolLifeRoutes(fastify: FastifyInstance) {
     },
   );
 
+
+  /**
+   * Le surveillant peut corriger uniquement les données d'un RETARD
+   * déjà enregistré. Il ne peut jamais rétablir P/A.
+   */
+  fastify.patch(
+    "/attendance/session/late/:attendanceId",
+    {
+      onRequest: [authenticate],
+      preHandler: [authorize("attendance-late.update")],
+    },
+    async (request, reply) => {
+      const { attendanceId } = request.params as { attendanceId: string };
+      const parsed = z.object({
+        arrivalTime: z.string().datetime().optional(),
+        reason: z.string().trim().max(500).nullable().optional(),
+        note: z.string().trim().max(1000).nullable().optional(),
+      }).safeParse(request.body);
+
+      if (!parsed.success) {
+        return reply.status(400).send({
+          error: {
+            code: "VALIDATION_ERROR",
+            message: "Les données du retard sont invalides.",
+          },
+        });
+      }
+
+      const schoolId = request.user.schoolId;
+      if (!schoolId) {
+        return reply.status(403).send({
+          error: {
+            code: "SCHOOL_REQUIRED",
+            message: "A school assignment is required.",
+          },
+        });
+      }
+
+      const attendance = await fastify.prisma.attendance.findFirst({
+        where: {
+          id: attendanceId,
+          status: "LATE",
+          scheduleId: { not: null },
+          student: { schoolId },
+        },
+        select: {
+          id: true,
+          date: true,
+          scheduleId: true,
+        },
+      });
+
+      if (!attendance) {
+        return reply.status(404).send({
+          error: {
+            code: "LATE_ATTENDANCE_NOT_FOUND",
+            message: "Retard introuvable.",
+          },
+        });
+      }
+
+      const arrivalTime =
+        parsed.data.arrivalTime === undefined
+          ? undefined
+          : new Date(parsed.data.arrivalTime);
+
+      if (arrivalTime && (
+        arrivalTime < attendance.date ||
+        arrivalTime >= new Date(attendance.date.getTime() + 24 * 60 * 60 * 1000)
+      )) {
+        return reply.status(400).send({
+          error: {
+            code: "INVALID_ARRIVAL_TIME",
+            message: "L'heure d'arrivée doit appartenir à la date du pointage.",
+          },
+        });
+      }
+
+      const updated = await fastify.prisma.attendance.update({
+        where: { id: attendance.id },
+        data: {
+          ...(arrivalTime !== undefined ? { arrivalTime } : {}),
+          ...(parsed.data.reason !== undefined ? { reason: parsed.data.reason } : {}),
+          ...(parsed.data.note !== undefined ? { note: parsed.data.note } : {}),
+          recordedBy: request.user.sub,
+          status: "LATE",
+        },
+      });
+
+      return reply.send({
+        item: updated,
+        rule: "SURVEILLANT_LATE_ONLY",
+      });
+    },
+  );
+
 }
