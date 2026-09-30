@@ -21,8 +21,30 @@ export const permissions = [
   "parent-summons.create",
   "parent-summons.update",
 
+  "student-exit.read",
+  "student-exit.create",
+  "student-exit.update",
+
+  "student-movement.read",
+  "student-movement.create",
+  "student-movement.update",
+
+  "incident.read",
+  "incident.create",
+  "incident.update",
+
+  "disciplinary-action.read",
+  "disciplinary-action.create",
+  "disciplinary-action.update",
+
   "observation.read",
   "observation.create",
+
+  "alert.read",
+  "alert.create",
+
+  "daily-report.read",
+  "daily-report.create",
 
   "assignment.read",
   "assignment.create",
