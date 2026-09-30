@@ -148,9 +148,14 @@ async function main() {
   );
 
   const students: Json[] = details.body?.students ?? [];
-  const student = students.find(
-    (item) => item?.student?.id && item?.enrollmentId,
-  );
+  // /me/classes/:classId returns the enrollment primary key as `id`.
+  // Normalize it to the `enrollmentId` name used by the attendance POST body.
+  const student = students
+    .map((item) => ({
+      ...item,
+      enrollmentId: item.enrollmentId ?? item.id,
+    }))
+    .find((item) => item?.student?.id && item?.enrollmentId);
 
   assert(
     student?.student?.id && student?.enrollmentId,
