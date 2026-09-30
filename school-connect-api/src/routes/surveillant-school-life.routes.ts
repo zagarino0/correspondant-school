@@ -10,7 +10,9 @@ const exitTypeSchema = z.enum(["TEMPORARY", "PERMANENT"]);
 const exitStatusSchema = z.enum(["OPEN", "COMPLETED", "CANCELLED"]);
 const movementTypeSchema = z.enum(["ENTRY", "EXIT"]);
 const incidentSeveritySchema = z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"]);
+const incidentStatusSchema = z.enum(["OPEN", "UNDER_REVIEW", "RESOLVED", "CLOSED"]);
 const disciplinaryStatusSchema = z.enum(["ACTIVE", "COMPLETED", "CANCELLED"]);
+const disciplinaryApprovalSchema = z.enum(["PENDING", "APPROVED", "REJECTED"]);
 const alertSeveritySchema = z.enum(["NORMAL", "IMPORTANT", "CRITICAL"]);
 
 function parseDate(value: string | undefined, fallback = new Date()) {
@@ -369,7 +371,8 @@ export async function surveillantSchoolLifeRoutes(fastify: FastifyInstance) {
         orderBy: { occurredAt: "desc" },
         take: 100,
         select: {
-          id: true, studentId: true, type: true, severity: true, description: true, occurredAt: true, reportedBy: true,
+          id: true, studentId: true, type: true, severity: true, status: true, description: true,
+          occurredAt: true, location: true, resolutionNote: true, resolvedAt: true, reportedBy: true, resolvedBy: true,
           student: { select: { firstName: true, lastName: true, studentNumber: true } },
           actions: { orderBy: { actionAt: "desc" }, take: 10, select: { id: true, type: true, status: true, actionAt: true, description: true } },
         },
@@ -391,6 +394,7 @@ export async function surveillantSchoolLifeRoutes(fastify: FastifyInstance) {
         severity: incidentSeveritySchema.default("MEDIUM"),
         description: z.string().trim().min(1).max(3000),
         occurredAt: z.string().datetime().optional(),
+        location: z.string().trim().max(200).nullable().optional(),
       }).safeParse(request.body);
       if (!parsed.success) return reply.status(400).send({ error: { code: "VALIDATION_ERROR", message: "Invalid incident." } });
 
@@ -405,6 +409,7 @@ export async function surveillantSchoolLifeRoutes(fastify: FastifyInstance) {
           severity: parsed.data.severity,
           description: parsed.data.description,
           occurredAt: new Date(parsed.data.occurredAt ?? new Date().toISOString()),
+          location: parsed.data.location ?? null,
           reportedBy: request.user.sub,
         },
       });
@@ -425,8 +430,11 @@ export async function surveillantSchoolLifeRoutes(fastify: FastifyInstance) {
       const parsed = z.object({
         type: z.string().trim().min(1).max(100).optional(),
         severity: incidentSeveritySchema.optional(),
+        status: incidentStatusSchema.optional(),
         description: z.string().trim().min(1).max(3000).optional(),
         occurredAt: z.string().datetime().optional(),
+        location: z.string().trim().max(200).nullable().optional(),
+        resolutionNote: z.string().trim().max(3000).nullable().optional(),
       }).safeParse(request.body);
       if (!parsed.success) return reply.status(400).send({ error: { code: "VALIDATION_ERROR", message: "Invalid incident update." } });
 
@@ -435,13 +443,22 @@ export async function surveillantSchoolLifeRoutes(fastify: FastifyInstance) {
       });
       if (!existing) return reply.status(404).send({ error: { code: "INCIDENT_NOT_FOUND", message: "Incident not found." } });
 
+      const nextStatus = parsed.data.status;
       const item = await fastify.prisma.incident.update({
         where: { id: incidentId },
         data: {
           ...(parsed.data.type ? { type: parsed.data.type } : {}),
           ...(parsed.data.severity ? { severity: parsed.data.severity } : {}),
+          ...(parsed.data.status ? { status: parsed.data.status } : {}),
           ...(parsed.data.description ? { description: parsed.data.description } : {}),
           ...(parsed.data.occurredAt ? { occurredAt: new Date(parsed.data.occurredAt) } : {}),
+          ...(parsed.data.location !== undefined ? { location: parsed.data.location } : {}),
+          ...(parsed.data.resolutionNote !== undefined ? { resolutionNote: parsed.data.resolutionNote } : {}),
+          ...(nextStatus === "RESOLVED" || nextStatus === "CLOSED"
+            ? { resolvedAt: new Date(), resolvedBy: request.user.sub }
+            : nextStatus && nextStatus !== "RESOLVED" && nextStatus !== "CLOSED"
+              ? { resolvedAt: null, resolvedBy: null }
+              : {}),
         },
       });
       return reply.send({ item });
@@ -464,7 +481,9 @@ export async function surveillantSchoolLifeRoutes(fastify: FastifyInstance) {
         orderBy: { actionAt: "desc" },
         take: 100,
         select: {
-          id: true, studentId: true, incidentId: true, type: true, status: true, description: true, actionAt: true, createdBy: true,
+          id: true, studentId: true, incidentId: true, type: true, status: true,
+          approvalStatus: true, description: true, decisionNote: true, actionAt: true,
+          dueAt: true, completedAt: true, createdBy: true, approvedBy: true, approvedAt: true, completedBy: true,
           student: { select: { firstName: true, lastName: true, studentNumber: true } },
         },
       });
@@ -484,7 +503,9 @@ export async function surveillantSchoolLifeRoutes(fastify: FastifyInstance) {
         incidentId: z.string().nullable().optional(),
         type: z.string().trim().min(1).max(100),
         description: z.string().trim().min(1).max(3000),
+        decisionNote: z.string().trim().max(3000).nullable().optional(),
         actionAt: z.string().datetime().optional(),
+        dueAt: z.string().datetime().nullable().optional(),
       }).safeParse(request.body);
       if (!parsed.success) return reply.status(400).send({ error: { code: "VALIDATION_ERROR", message: "Invalid disciplinary action." } });
 
@@ -503,7 +524,9 @@ export async function surveillantSchoolLifeRoutes(fastify: FastifyInstance) {
           incidentId: parsed.data.incidentId ?? null,
           type: parsed.data.type,
           description: parsed.data.description,
+          decisionNote: parsed.data.decisionNote ?? null,
           actionAt: new Date(parsed.data.actionAt ?? new Date().toISOString()),
+          dueAt: parsed.data.dueAt ? new Date(parsed.data.dueAt) : null,
           createdBy: request.user.sub,
         },
       });
@@ -524,8 +547,11 @@ export async function surveillantSchoolLifeRoutes(fastify: FastifyInstance) {
       const parsed = z.object({
         type: z.string().trim().min(1).max(100).optional(),
         status: disciplinaryStatusSchema.optional(),
+        approvalStatus: disciplinaryApprovalSchema.optional(),
         description: z.string().trim().min(1).max(3000).optional(),
+        decisionNote: z.string().trim().max(3000).nullable().optional(),
         actionAt: z.string().datetime().optional(),
+        dueAt: z.string().datetime().nullable().optional(),
       }).safeParse(request.body);
       if (!parsed.success) return reply.status(400).send({ error: { code: "VALIDATION_ERROR", message: "Invalid disciplinary action update." } });
 
@@ -534,16 +560,78 @@ export async function surveillantSchoolLifeRoutes(fastify: FastifyInstance) {
       });
       if (!existing) return reply.status(404).send({ error: { code: "DISCIPLINARY_ACTION_NOT_FOUND", message: "Disciplinary action not found." } });
 
+      if (parsed.data.approvalStatus !== undefined && request.user.role !== "SCHOOL_ADMIN") {
+        return reply.status(403).send({
+          error: { code: "ADMIN_APPROVAL_REQUIRED", message: "Only a school administrator can change disciplinary approval status." },
+        });
+      }
+
+      const existingData = await fastify.prisma.disciplinaryAction.findUnique({
+        where: { id: actionId },
+        select: { approvalStatus: true },
+      });
+
+      const approvalChanged =
+        parsed.data.approvalStatus !== undefined &&
+        parsed.data.approvalStatus !== existingData?.approvalStatus;
+
       const item = await fastify.prisma.disciplinaryAction.update({
         where: { id: actionId },
         data: {
           ...(parsed.data.type ? { type: parsed.data.type } : {}),
           ...(parsed.data.status ? { status: parsed.data.status } : {}),
           ...(parsed.data.description ? { description: parsed.data.description } : {}),
+          ...(parsed.data.decisionNote !== undefined ? { decisionNote: parsed.data.decisionNote } : {}),
           ...(parsed.data.actionAt ? { actionAt: new Date(parsed.data.actionAt) } : {}),
+          ...(parsed.data.dueAt !== undefined ? { dueAt: parsed.data.dueAt ? new Date(parsed.data.dueAt) : null } : {}),
+          ...(parsed.data.status === "COMPLETED"
+            ? { completedAt: new Date(), completedBy: request.user.sub }
+            : {}),
+          ...(approvalChanged && request.user.role === "SCHOOL_ADMIN"
+            ? {
+                approvalStatus: parsed.data.approvalStatus,
+                approvedAt: parsed.data.approvalStatus === "APPROVED" ? new Date() : null,
+                approvedBy: parsed.data.approvalStatus === "APPROVED" ? request.user.sub : null,
+              }
+            : {}),
         },
       });
       return reply.send({ item });
+    },
+  );
+
+  fastify.delete(
+    "/students/:studentId/disciplinary-actions/:actionId",
+    {
+      onRequest: [authenticate],
+      preHandler: [authorizeStudentResource("disciplinary-action.delete")],
+    },
+    async (request, reply) => {
+      const { studentId, actionId } = request.params as { studentId: string; actionId: string };
+
+      const existing = await fastify.prisma.disciplinaryAction.findFirst({
+        where: {
+          id: actionId,
+          studentId,
+          ...(request.user.schoolId ? { schoolId: request.user.schoolId } : {}),
+        },
+        select: { id: true, approvalStatus: true },
+      });
+
+      if (!existing) {
+        return reply.status(404).send({
+          error: { code: "DISCIPLINARY_ACTION_NOT_FOUND", message: "Disciplinary action not found." },
+        });
+      }
+
+      if (existing.approvalStatus === "APPROVED") {
+        return reply.status(409).send({
+          error: { code: "APPROVED_ACTION_IMMUTABLE", message: "An approved disciplinary action cannot be deleted." },
+        });
+      }
+
+      await fastify.prisma.disciplinaryAction.delete({ where: { id: actionId } });
+      return reply.status(204).send();
     },
   );
 
