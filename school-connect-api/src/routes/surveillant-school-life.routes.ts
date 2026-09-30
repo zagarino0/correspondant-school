@@ -1020,4 +1020,140 @@ export async function surveillantSchoolLifeRoutes(fastify: FastifyInstance) {
     },
   );
 
+
+  /**
+   * Le surveillant ne modifie jamais le pointage P/A du teacher.
+   * Il peut uniquement transformer un pointage existant en RETARD
+   * et enregistrer l'heure d'arrivée ainsi que le motif.
+   */
+  fastify.post(
+    "/attendance/session/late",
+    {
+      onRequest: [authenticate],
+      preHandler: [authorize("attendance-late.create")],
+    },
+    async (request, reply) => {
+      const parsed = z.object({
+        scheduleId: z.string().min(1),
+        date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+        studentId: z.string().min(1),
+        arrivalTime: z.string().datetime(),
+        reason: z.string().trim().max(500).nullable().optional(),
+        note: z.string().trim().max(1000).nullable().optional(),
+      }).safeParse(request.body);
+
+      if (!parsed.success) {
+        return reply.status(400).send({
+          error: {
+            code: "VALIDATION_ERROR",
+            message: "Les données du retard sont invalides.",
+          },
+        });
+      }
+
+      const schoolId = request.user.schoolId;
+      if (!schoolId) {
+        return reply.status(403).send({
+          error: {
+            code: "SCHOOL_REQUIRED",
+            message: "A school assignment is required.",
+          },
+        });
+      }
+
+      const sessionDate = new Date(`${parsed.data.date}T00:00:00.000Z`);
+      const nextDate = new Date(sessionDate);
+      nextDate.setUTCDate(nextDate.getUTCDate() + 1);
+
+      const arrivalTime = new Date(parsed.data.arrivalTime);
+      if (arrivalTime < sessionDate || arrivalTime >= nextDate) {
+        return reply.status(400).send({
+          error: {
+            code: "INVALID_ARRIVAL_TIME",
+            message: "L'heure d'arrivée doit appartenir à la date du pointage.",
+          },
+        });
+      }
+
+      const schedule = await fastify.prisma.schedule.findFirst({
+        where: {
+          id: parsed.data.scheduleId,
+          schoolId,
+          academicYear: { status: "ACTIVE", schoolId },
+        },
+        select: {
+          id: true,
+          classId: true,
+          schoolId: true,
+        },
+      });
+
+      if (!schedule) {
+        return reply.status(404).send({
+          error: {
+            code: "SCHEDULE_NOT_FOUND",
+            message: "Créneau introuvable.",
+          },
+        });
+      }
+
+      const enrollment = await fastify.prisma.studentEnrollment.findFirst({
+        where: {
+          studentId: parsed.data.studentId,
+          classId: schedule.classId,
+          status: "ACTIVE",
+          academicYear: { status: "ACTIVE", schoolId },
+          student: { schoolId, status: "ACTIVE" },
+        },
+        select: {
+          id: true,
+          studentId: true,
+        },
+      });
+
+      if (!enrollment) {
+        return reply.status(404).send({
+          error: {
+            code: "STUDENT_NOT_IN_CLASS",
+            message: "L'élève n'appartient pas à la classe de ce créneau.",
+          },
+        });
+      }
+
+      const attendance = await fastify.prisma.attendance.findFirst({
+        where: {
+          scheduleId: parsed.data.scheduleId,
+          studentId: parsed.data.studentId,
+          date: { gte: sessionDate, lt: nextDate },
+        },
+        orderBy: { updatedAt: "desc" },
+      });
+
+      if (!attendance) {
+        return reply.status(409).send({
+          error: {
+            code: "TEACHER_ATTENDANCE_REQUIRED",
+            message: "Le pointage du teacher doit être enregistré avant de déclarer un retard.",
+          },
+        });
+      }
+
+      const updated = await fastify.prisma.attendance.update({
+        where: { id: attendance.id },
+        data: {
+          status: "LATE",
+          arrivalTime,
+          reason: parsed.data.reason ?? null,
+          note: parsed.data.note ?? null,
+          recordedBy: request.user.sub,
+        },
+      });
+
+      return reply.send({
+        item: updated,
+        rule: "SURVEILLANT_LATE_ONLY",
+      });
+    },
+  );
+
 }
