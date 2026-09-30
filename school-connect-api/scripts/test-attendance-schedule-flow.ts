@@ -307,7 +307,7 @@ async function main() {
   // Pour tester l'isolation par schedule, on consulte donc les créneaux de
   // la même classe et du même jour, quel que soit le teacher affecté.
   const classSchedules = await request(
-    `/api/v1/schedules?classId=${encodeURIComponent(schedule.classId)}&dayOfWeek=${encodeURIComponent(schedule.dayOfWeek)}`,
+    `/api/v1/schedules?classId=${encodeURIComponent(schedule.classId)}`,
     { headers: teacherHeaders },
   );
 
