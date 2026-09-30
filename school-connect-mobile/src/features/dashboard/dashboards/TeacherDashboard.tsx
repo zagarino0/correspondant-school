@@ -149,6 +149,7 @@ export function TeacherDashboard({ firstName }: TeacherDashboardProps) {
         todaySchedules.map(async (schedule) => {
           const response = await getTeacherAttendance(
             schedule.classId,
+            schedule.id,
             dashboardResponse.date,
           );
           return {
@@ -264,7 +265,7 @@ export function TeacherDashboard({ firstName }: TeacherDashboardProps) {
     async (
       activity: ActivityClass,
       student: TeacherAttendanceRow,
-      status: "PRESENT" | "ABSENT" | "LATE",
+      status: "PRESENT" | "ABSENT",
     ) => {
       if (activity.schedule.id !== activeActivity?.schedule.id) return;
 
@@ -274,6 +275,7 @@ export function TeacherDashboard({ firstName }: TeacherDashboardProps) {
 
         await saveTeacherAttendance(activity.schedule.classId, {
           enrollmentId: student.enrollmentId,
+          scheduleId: activity.schedule.id,
           date,
           status,
         });
@@ -693,9 +695,7 @@ export function TeacherDashboard({ firstName }: TeacherDashboardProps) {
 
                               <View style={styles.attendanceColumn}>
                                 <View style={styles.attendanceButtons}>
-                                  {(Object.keys(attendanceLabels) as Array<
-                                    keyof typeof attendanceLabels
-                                  >).map((status) => (
+                                  (["ABSENT", "PRESENT"] as const).map((status) => (
                                     <Pressable
                                       key={status}
                                       disabled={isSaving}
