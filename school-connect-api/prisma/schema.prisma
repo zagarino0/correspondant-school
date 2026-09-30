@@ -72,7 +72,10 @@ model User {
   recordedStudentExits     StudentExit[]             @relation("StudentExitRecordedBy")
   recordedStudentMovements StudentMovement[]         @relation("StudentMovementRecordedBy")
   reportedIncidents        Incident[]                @relation("IncidentReportedBy")
+  resolvedIncidents        Incident[]                @relation("IncidentResolvedBy")
   disciplinaryActions      DisciplinaryAction[]      @relation("DisciplinaryActionCreatedBy")
+  approvedDisciplinaryActions DisciplinaryAction[]   @relation("DisciplinaryActionApprovedBy")
+  completedDisciplinaryActions DisciplinaryAction[] @relation("DisciplinaryActionCompletedBy")
   schoolLifeObservations   SchoolLifeObservation[]   @relation("SchoolLifeObservationCreatedBy")
   parentAuthorizations     ParentAuthorization[]
   alertRecipients          Alert[]                   @relation("AlertRecipient")
@@ -444,22 +447,30 @@ model Incident {
   id          String           @id @default(cuid())
   schoolId    String
   studentId   String
-  type        String
-  severity    IncidentSeverity @default(MEDIUM)
-  description String
-  occurredAt  DateTime
-  reportedBy  String
-  createdAt   DateTime         @default(now())
+  type          String
+  severity      IncidentSeverity @default(MEDIUM)
+  status        IncidentStatus @default(OPEN)
+  description   String
+  occurredAt    DateTime
+  location      String?
+  resolutionNote String?
+  resolvedAt    DateTime?
+  reportedBy    String
+  resolvedBy    String?
+  createdAt     DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
   school      School           @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   student     Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
   reporter    User             @relation("IncidentReportedBy", fields: [reportedBy], references: [id])
+  resolver    User?            @relation("IncidentResolvedBy", fields: [resolvedBy], references: [id])
   actions     DisciplinaryAction[]
 
   @@index([schoolId, occurredAt])
   @@index([studentId, occurredAt])
   @@index([severity, occurredAt])
+  @@index([status, occurredAt])
   @@index([reportedBy])
+  @@index([resolvedBy])
 }
 
 model DisciplinaryAction {
@@ -467,23 +478,35 @@ model DisciplinaryAction {
   schoolId    String
   studentId   String
   incidentId  String?
-  type        String
-  status      DisciplinaryActionStatus @default(ACTIVE)
-  description String
-  actionAt    DateTime
-  createdBy   String
-  createdAt   DateTime                 @default(now())
+  type           String
+  status         DisciplinaryActionStatus @default(ACTIVE)
+  approvalStatus DisciplinaryApprovalStatus @default(PENDING)
+  description    String
+  decisionNote   String?
+  actionAt       DateTime
+  dueAt          DateTime?
+  completedAt    DateTime?
+  createdBy      String
+  approvedBy     String?
+  approvedAt     DateTime?
+  completedBy    String?
+  createdAt      DateTime                 @default(now())
   updatedAt   DateTime                 @updatedAt
   school      School                   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   student     Student                  @relation(fields: [studentId], references: [id], onDelete: Cascade)
   incident    Incident?                @relation(fields: [incidentId], references: [id], onDelete: SetNull)
   creator     User                     @relation("DisciplinaryActionCreatedBy", fields: [createdBy], references: [id])
+  approver    User?                    @relation("DisciplinaryActionApprovedBy", fields: [approvedBy], references: [id])
+  completer   User?                    @relation("DisciplinaryActionCompletedBy", fields: [completedBy], references: [id])
 
   @@index([schoolId, actionAt])
   @@index([studentId, actionAt])
   @@index([incidentId])
   @@index([status])
+  @@index([approvalStatus])
   @@index([createdBy])
+  @@index([approvedBy])
+  @@index([completedBy])
 }
 
 model SchoolLifeObservation {
@@ -948,6 +971,19 @@ enum IncidentSeverity {
   MEDIUM
   HIGH
   CRITICAL
+}
+
+enum IncidentStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED
+  CLOSED
+}
+
+enum DisciplinaryApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 enum DisciplinaryActionStatus {
