@@ -16,6 +16,253 @@ const alertSeveritySchema = z.enum(["NORMAL", "IMPORTANT", "CRITICAL"]);
 function parseDate(value: string | undefined, fallback = new Date()) {
   const date = value ? new Date(value) : fallback;
   return Number.isNaN(date.getTime()) ? null : date;
+
+  fastify.get(
+    "/attendance/session",
+    {
+      onRequest: [authenticate],
+      preHandler: [authorize("attendance.read")],
+    },
+    async (request, reply) => {
+      const query = request.query as { scheduleId?: string; date?: string };
+      const { scheduleId, date } = query;
+
+      if (!scheduleId || !date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        return reply.status(400).send({
+          error: {
+            code: "INVALID_ATTENDANCE_SESSION",
+            message: "scheduleId et date (YYYY-MM-DD) sont requis.",
+          },
+        });
+      }
+
+      const sessionDate = new Date(`${date}T00:00:00.000Z`);
+      if (Number.isNaN(sessionDate.getTime())) {
+        return reply.status(400).send({
+          error: { code: "INVALID_DATE", message: "La date est invalide." },
+        });
+      }
+
+      const nextDate = new Date(sessionDate);
+      nextDate.setUTCDate(nextDate.getUTCDate() + 1);
+
+      const schoolId = request.user.schoolId;
+      if (!schoolId) {
+        return reply.status(403).send({
+          error: { code: "SCHOOL_REQUIRED", message: "A school assignment is required." },
+        });
+      }
+
+      const schedule = await fastify.prisma.schedule.findFirst({
+        where: {
+          id: scheduleId,
+          schoolId,
+          academicYear: { status: "ACTIVE", schoolId },
+        },
+        select: {
+          id: true,
+          classId: true,
+          subject: true,
+          dayOfWeek: true,
+          startTime: true,
+          endTime: true,
+          room: true,
+          class: { select: { id: true, name: true, level: true } },
+          teacher: { select: { id: true, firstName: true, lastName: true } },
+        },
+      });
+
+      if (!schedule) {
+        return reply.status(404).send({
+          error: { code: "SCHEDULE_NOT_FOUND", message: "Créneau introuvable." },
+        });
+      }
+
+      const enrollments = await fastify.prisma.studentEnrollment.findMany({
+        where: {
+          classId: schedule.classId,
+          status: "ACTIVE",
+          academicYear: { status: "ACTIVE", schoolId },
+          student: { schoolId, status: "ACTIVE" },
+        },
+        orderBy: [
+          { student: { lastName: "asc" } },
+          { student: { firstName: "asc" } },
+        ],
+        select: {
+          id: true,
+          studentId: true,
+          student: {
+            select: {
+              id: true,
+              studentNumber: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
+      });
+
+      const attendances = await fastify.prisma.attendance.findMany({
+        where: {
+          scheduleId,
+          date: { gte: sessionDate, lt: nextDate },
+          studentId: { in: enrollments.map((item) => item.studentId) },
+        },
+        select: {
+          id: true,
+          studentId: true,
+          status: true,
+          arrivalTime: true,
+          reason: true,
+          note: true,
+          recordedBy: true,
+          updatedAt: true,
+        },
+      });
+
+      const attendanceByStudent = new Map(
+        attendances.map((item) => [item.studentId, item]),
+      );
+
+      return reply.send({
+        date,
+        schedule,
+        students: enrollments.map((enrollment) => ({
+          enrollmentId: enrollment.id,
+          ...enrollment.student,
+          attendance: attendanceByStudent.get(enrollment.studentId) ?? null,
+        })),
+      });
+    },
+  );
+
+  fastify.post(
+    "/attendance/session",
+    {
+      onRequest: [authenticate],
+      preHandler: [authorize("attendance.update")],
+    },
+    async (request, reply) => {
+      const parsed = z.object({
+        scheduleId: z.string().min(1),
+        date: z.string().regex(/^\\d{4}-\\d{2}-\\d{2}$/),
+        records: z.array(
+          z.object({
+            studentId: z.string().min(1),
+            status: z.enum(["PRESENT", "ABSENT", "LATE"]),
+            arrivalTime: z.string().datetime().nullable().optional(),
+            reason: z.string().trim().max(500).nullable().optional(),
+            note: z.string().trim().max(1000).nullable().optional(),
+          }),
+        ).min(1),
+      }).safeParse(request.body);
+
+      if (!parsed.success) {
+        return reply.status(400).send({
+          error: {
+            code: "VALIDATION_ERROR",
+            message: "Les données de présence sont invalides.",
+          },
+        });
+      }
+
+      const schoolId = request.user.schoolId;
+      if (!schoolId) {
+        return reply.status(403).send({
+          error: { code: "SCHOOL_REQUIRED", message: "A school assignment is required." },
+        });
+      }
+
+      const sessionDate = new Date(`${parsed.data.date}T00:00:00.000Z`);
+      const nextDate = new Date(sessionDate);
+      nextDate.setUTCDate(nextDate.getUTCDate() + 1);
+
+      const schedule = await fastify.prisma.schedule.findFirst({
+        where: {
+          id: parsed.data.scheduleId,
+          schoolId,
+          academicYear: { status: "ACTIVE", schoolId },
+        },
+        select: { id: true, classId: true, schoolId: true },
+      });
+
+      if (!schedule) {
+        return reply.status(404).send({
+          error: { code: "SCHEDULE_NOT_FOUND", message: "Créneau introuvable." },
+        });
+      }
+
+      const enrollments = await fastify.prisma.studentEnrollment.findMany({
+        where: {
+          classId: schedule.classId,
+          status: "ACTIVE",
+          academicYear: { status: "ACTIVE", schoolId },
+          student: { schoolId, status: "ACTIVE" },
+        },
+        select: { id: true, studentId: true },
+      });
+
+      const enrollmentByStudent = new Map(
+        enrollments.map((item) => [item.studentId, item]),
+      );
+
+      for (const record of parsed.data.records) {
+        if (!enrollmentByStudent.has(record.studentId)) {
+          return reply.status(400).send({
+            error: {
+              code: "STUDENT_NOT_IN_CLASS",
+              message: `L'élève ${record.studentId} n'appartient pas à la classe de ce créneau.`,
+            },
+          });
+        }
+      }
+
+      const saved = await fastify.prisma.$transaction(
+        parsed.data.records.map((record) => {
+          const enrollment = enrollmentByStudent.get(record.studentId)!;
+          const sessionKey = `${parsed.data.scheduleId}:${parsed.data.date}:${record.studentId}`;
+          const arrivalTime =
+            record.arrivalTime === undefined || record.arrivalTime === null
+              ? null
+              : new Date(record.arrivalTime);
+
+          return fastify.prisma.attendance.upsert({
+            where: { sessionKey },
+            create: {
+              studentId: record.studentId,
+              enrollmentId: enrollment.id,
+              scheduleId: parsed.data.scheduleId,
+              sessionKey,
+              date: sessionDate,
+              status: record.status,
+              arrivalTime,
+              reason: record.reason ?? null,
+              note: record.note ?? null,
+              recordedBy: request.user.sub,
+            },
+            update: {
+              status: record.status,
+              arrivalTime,
+              reason: record.reason ?? null,
+              note: record.note ?? null,
+              recordedBy: request.user.sub,
+              date: sessionDate,
+              scheduleId: parsed.data.scheduleId,
+            },
+          });
+        }),
+      );
+
+      return reply.status(200).send({
+        date: parsed.data.date,
+        scheduleId: parsed.data.scheduleId,
+        count: saved.length,
+        attendances: saved,
+      });
+    },
+  );
+
 }
 
 function dayRange(date: Date) {
