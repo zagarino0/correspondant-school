@@ -49,6 +49,8 @@ export default function SurveillantAttendanceScreen() {
   const router = useRouter();
   const [schedules, setSchedules] = useState<SchoolSchedule[]>([]);
   const [selectedScheduleId, setSelectedScheduleId] = useState<string | null>(null);
+  const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
+  const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [session, setSession] = useState<Awaited<ReturnType<typeof getSurveillantAttendanceSession>> | null>(null);
   const [loadingSchedules, setLoadingSchedules] = useState(true);
   const [loadingSession, setLoadingSession] = useState(false);
@@ -67,9 +69,36 @@ export default function SurveillantAttendanceScreen() {
       .sort((a, b) => a.startTime.localeCompare(b.startTime));
   }, [schedules]);
 
+  const classOptions = useMemo(() => {
+    const seen = new Set<string>();
+    return todaySchedules.filter((item) => {
+      if (seen.has(item.classId)) return false;
+      seen.add(item.classId);
+      return true;
+    });
+  }, [todaySchedules]);
+
+  const subjectOptions = useMemo(() => {
+    const source = selectedClassId
+      ? todaySchedules.filter((item) => item.classId === selectedClassId)
+      : todaySchedules;
+    const seen = new Set<string>();
+    return source.filter((item) => {
+      if (seen.has(item.subject)) return false;
+      seen.add(item.subject);
+      return true;
+    });
+  }, [todaySchedules, selectedClassId]);
+
+  const filteredSchedules = useMemo(() => {
+    return todaySchedules
+      .filter((item) => !selectedClassId || item.classId === selectedClassId)
+      .filter((item) => !selectedSubject || item.subject === selectedSubject);
+  }, [todaySchedules, selectedClassId, selectedSubject]);
+
   const selectedSchedule =
-    todaySchedules.find((item) => item.id === selectedScheduleId) ??
-    todaySchedules[0] ??
+    filteredSchedules.find((item) => item.id === selectedScheduleId) ??
+    filteredSchedules[0] ??
     null;
 
   useEffect(() => {
@@ -86,6 +115,8 @@ export default function SurveillantAttendanceScreen() {
           .filter((item) => item.dayOfWeek === getTodayKey())
           .sort((a, b) => a.startTime.localeCompare(b.startTime));
         if (today.length > 0) {
+          setSelectedClassId(today[0].classId);
+          setSelectedSubject(null);
           const now = new Date();
           const currentMinutes = now.getHours() * 60 + now.getMinutes();
           const active = today.find((item) => {
@@ -256,10 +287,70 @@ export default function SurveillantAttendanceScreen() {
         ) : (
           <>
             <View style={styles.scheduleCard}>
-              <Text style={styles.sectionLabel}>CRÉNEAUX DU JOUR</Text>
-              <Text style={styles.scheduleHint}>Sélectionnez le cours à consulter.</Text>
+              <Text style={styles.sectionLabel}>FILTRES</Text>
+              <Text style={styles.scheduleHint}>La date détermine les séances disponibles. Choisissez ensuite la classe et la matière.</Text>
+
+              <Text style={styles.filterLabel}>CLASSE</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scheduleChips}>
-                {todaySchedules.map((item) => {
+                <Pressable
+                  style={[styles.filterChip, !selectedClassId && styles.filterChipActive]}
+                  onPress={() => {
+                    setSelectedClassId(null);
+                    setSelectedSubject(null);
+                    setSelectedScheduleId(null);
+                  }}
+                >
+                  <Text style={[styles.filterChipText, !selectedClassId && styles.activeText]}>Toutes</Text>
+                </Pressable>
+                {classOptions.map((item) => {
+                  const active = item.classId === selectedClassId;
+                  return (
+                    <Pressable
+                      key={item.classId}
+                      style={[styles.filterChip, active && styles.filterChipActive]}
+                      onPress={() => {
+                        setSelectedClassId(item.classId);
+                        setSelectedSubject(null);
+                        setSelectedScheduleId(null);
+                      }}
+                    >
+                      <Text style={[styles.filterChipText, active && styles.activeText]}>{item.class.name}</Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+
+              <Text style={styles.filterLabel}>MATIÈRE</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scheduleChips}>
+                <Pressable
+                  style={[styles.filterChip, !selectedSubject && styles.filterChipActive]}
+                  onPress={() => {
+                    setSelectedSubject(null);
+                    setSelectedScheduleId(null);
+                  }}
+                >
+                  <Text style={[styles.filterChipText, !selectedSubject && styles.activeText]}>Toutes</Text>
+                </Pressable>
+                {subjectOptions.map((item) => {
+                  const active = item.subject === selectedSubject;
+                  return (
+                    <Pressable
+                      key={item.subject}
+                      style={[styles.filterChip, active && styles.filterChipActive]}
+                      onPress={() => {
+                        setSelectedSubject(item.subject);
+                        setSelectedScheduleId(null);
+                      }}
+                    >
+                      <Text style={[styles.filterChipText, active && styles.activeText]}>{item.subject}</Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+
+              <Text style={styles.filterLabel}>SÉANCE</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scheduleChips}>
+                {filteredSchedules.map((item) => {
                   const active = item.id === selectedSchedule?.id;
                   return (
                     <Pressable key={item.id} style={[styles.scheduleChip, active && styles.scheduleChipActive]} onPress={() => setSelectedScheduleId(item.id)}>
@@ -270,6 +361,9 @@ export default function SurveillantAttendanceScreen() {
                   );
                 })}
               </ScrollView>
+              {filteredSchedules.length === 0 ? (
+                <Text style={styles.noScheduleText}>Aucune séance ne correspond à ces filtres.</Text>
+              ) : null}
             </View>
 
             {loadingSession ? (
@@ -367,6 +461,11 @@ const styles = StyleSheet.create({
   ruleActive: { marginTop: 4, fontSize: 10, fontWeight: "900", color: "#344976" },
   scheduleCard: { padding: 14, borderRadius: 16, borderWidth: 1, borderColor: "#D9DEE5", backgroundColor: "#FFFFFF" },
   sectionLabel: { fontSize: 9, fontWeight: "900", letterSpacing: 0.8, color: "#64748B" },
+  filterLabel: { marginTop: 12, marginBottom: 6, fontSize: 8, fontWeight: "900", letterSpacing: 0.7, color: "#94A3B8" },
+  filterChip: { paddingHorizontal: 11, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: "#CBD5E1", backgroundColor: "#F8FAFC" },
+  filterChipActive: { borderColor: "#344976", backgroundColor: "#344976" },
+  filterChipText: { fontSize: 9, fontWeight: "900", color: "#475569" },
+  noScheduleText: { marginTop: 10, fontSize: 10, color: "#64748B" },
   scheduleHint: { marginTop: 4, fontSize: 10, color: "#64748B" },
   scheduleChips: { gap: 9, marginTop: 10 },
   scheduleChip: { minWidth: 145, padding: 11, borderRadius: 12, borderWidth: 1, borderColor: "#CBD5E1", backgroundColor: "#F8FAFC" },
