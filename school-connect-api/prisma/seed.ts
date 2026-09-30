@@ -401,6 +401,7 @@ async function main() {
     { classIndex: 1, subject: "Sciences", dayOfWeek: ScheduleDay.THURSDAY, startTime: "10:30", endTime: "11:30", room: "Laboratoire" },
     { classIndex: 2, subject: "Sciences", dayOfWeek: ScheduleDay.MONDAY, startTime: "10:30", endTime: "11:30", room: "Laboratoire" },
     { classIndex: 2, subject: "Mathématiques", dayOfWeek: ScheduleDay.WEDNESDAY, startTime: "08:00", endTime: "09:00", room: "Salle C1" },
+    { classIndex: 2, subject: "Français", dayOfWeek: ScheduleDay.WEDNESDAY, startTime: "09:15", endTime: "10:15", room: "Salle C1" },
     { classIndex: 2, subject: "Français", dayOfWeek: ScheduleDay.FRIDAY, startTime: "09:15", endTime: "10:15", room: "Salle C1" },
   ];
 
