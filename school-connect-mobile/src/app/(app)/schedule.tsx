@@ -288,7 +288,7 @@ export default function ScheduleScreen() {
 
                   {timetableDays.map((day) => {
                     const cellSchedules = getScheduleForCell(
-                      schedules,
+                      visibleSchedules,
                       day,
                       timeSlot,
                     );
