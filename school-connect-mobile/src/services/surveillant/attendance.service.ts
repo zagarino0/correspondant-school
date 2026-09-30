@@ -47,30 +47,54 @@ export async function getSurveillantAttendanceSession(
   return response.data;
 }
 
-export async function saveSurveillantAttendanceSession(input: {
+export async function createSurveillantLateAttendance(input: {
   scheduleId: string;
   date: string;
-  records: Array<{
-    studentId: string;
-    status: SurveillantAttendanceStatus;
-    arrivalTime?: string | null;
-    reason?: string | null;
-    note?: string | null;
-  }>;
+  studentId: string;
+  arrivalTime: string;
+  reason?: string | null;
+  note?: string | null;
 }) {
   const response = await apiClient.post(
-    "/api/v1/surveillant/school-life/attendance/session",
+    "/api/v1/surveillant/school-life/attendance/session/late",
     input,
   );
   return response.data as {
-    date: string;
-    scheduleId: string;
-    count: number;
-    attendances: Array<{
+    attendance: {
       id: string;
       studentId: string;
-      status: SurveillantAttendanceStatus;
+      status: "LATE";
       arrivalTime: string | null;
-    }>;
+      reason: string | null;
+      note: string | null;
+      recordedBy: string;
+      updatedAt: string;
+    };
+  };
+}
+
+export async function updateSurveillantLateAttendance(
+  attendanceId: string,
+  input: {
+    arrivalTime?: string | null;
+    reason?: string | null;
+    note?: string | null;
+  },
+) {
+  const response = await apiClient.patch(
+    `/api/v1/surveillant/school-life/attendance/session/late/${attendanceId}`,
+    input,
+  );
+  return response.data as {
+    attendance: {
+      id: string;
+      studentId: string;
+      status: "LATE";
+      arrivalTime: string | null;
+      reason: string | null;
+      note: string | null;
+      recordedBy: string;
+      updatedAt: string;
+    };
   };
 }
