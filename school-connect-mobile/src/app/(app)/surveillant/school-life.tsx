@@ -24,6 +24,8 @@ import {
   createSchoolLifeIncident,
   updateSchoolLifeIncident,
   getSchoolLifeIncidents,
+  createSchoolLifeDisciplinaryAction,
+  updateSchoolLifeDisciplinaryAction,
   getSchoolLifeMovements,
   type SchoolLifeAuthorizationItem,
   type SchoolLifeDisciplinaryItem,
@@ -75,6 +77,7 @@ export default function SurveillantSchoolLifeScreen() {
   const [showExitModal, setShowExitModal] = useState(false);
   const [showMovementModal, setShowMovementModal] = useState(false);
   const [showIncidentModal, setShowIncidentModal] = useState(false);
+  const [showDisciplineModal, setShowDisciplineModal] = useState(false);
   const [students, setStudents] = useState<StudentListItem[]>([]);
   const [studentSearch, setStudentSearch] = useState("");
   const [selectedStudent, setSelectedStudent] = useState<StudentListItem | null>(null);
@@ -97,6 +100,13 @@ export default function SurveillantSchoolLifeScreen() {
   const [incidentDescription, setIncidentDescription] = useState("");
   const [savingIncident, setSavingIncident] = useState(false);
   const [editingIncident, setEditingIncident] = useState<SchoolLifeIncidentItem | null>(null);
+  const [selectedDisciplineStudent, setSelectedDisciplineStudent] = useState<StudentListItem | null>(null);
+  const [disciplineType, setDisciplineType] = useState("");
+  const [disciplineDescription, setDisciplineDescription] = useState("");
+  const [disciplineDecisionNote, setDisciplineDecisionNote] = useState("");
+  const [disciplineActionAt, setDisciplineActionAt] = useState("");
+  const [savingDiscipline, setSavingDiscipline] = useState(false);
+  const [editingDiscipline, setEditingDiscipline] = useState<SchoolLifeDisciplinaryItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -182,6 +192,30 @@ export default function SurveillantSchoolLifeScreen() {
   const openCreateIncident = () => {
     resetIncidentForm();
     setShowIncidentModal(true);
+  };
+
+  const resetDisciplineForm = () => {
+    setSelectedDisciplineStudent(null);
+    setDisciplineType("");
+    setDisciplineDescription("");
+    setDisciplineDecisionNote("");
+    setDisciplineActionAt("");
+    setEditingDiscipline(null);
+  };
+
+  const openCreateDiscipline = () => {
+    resetDisciplineForm();
+    setShowDisciplineModal(true);
+  };
+
+  const openEditDiscipline = (item: SchoolLifeDisciplinaryItem) => {
+    setEditingDiscipline(item);
+    setSelectedDisciplineStudent(null);
+    setDisciplineType(item.type);
+    setDisciplineDescription(item.description);
+    setDisciplineDecisionNote(item.decisionNote ?? "");
+    setDisciplineActionAt(item.actionAt);
+    setShowDisciplineModal(true);
   };
 
   const openEditIncident = (item: SchoolLifeIncidentItem) => {
@@ -298,6 +332,40 @@ export default function SurveillantSchoolLifeScreen() {
       setError("Impossible d'enregistrer le mouvement.");
     } finally {
       setSavingMovement(false);
+    }
+  };
+
+  const submitDiscipline = async () => {
+    if ((!editingDiscipline && !selectedDisciplineStudent) || !disciplineType.trim() || !disciplineDescription.trim()) {
+      setError("Élève, type et description de la mesure sont obligatoires.");
+      return;
+    }
+
+    setSavingDiscipline(true);
+    setError(null);
+    try {
+      if (editingDiscipline) {
+        await updateSchoolLifeDisciplinaryAction(editingDiscipline.studentId, editingDiscipline.id, {
+          type: disciplineType.trim(),
+          description: disciplineDescription.trim(),
+          decisionNote: disciplineDecisionNote.trim() || null,
+          actionAt: disciplineActionAt || undefined,
+        });
+      } else {
+        await createSchoolLifeDisciplinaryAction(selectedDisciplineStudent!.id, {
+          type: disciplineType.trim(),
+          description: disciplineDescription.trim(),
+          decisionNote: disciplineDecisionNote.trim() || null,
+          actionAt: disciplineActionAt || new Date().toISOString(),
+        });
+      }
+      setShowDisciplineModal(false);
+      resetDisciplineForm();
+      await load();
+    } catch {
+      setError("Impossible d'enregistrer la mesure disciplinaire.");
+    } finally {
+      setSavingDiscipline(false);
     }
   };
 
@@ -549,17 +617,38 @@ export default function SurveillantSchoolLifeScreen() {
         ) : null}
 
         {tab === "discipline" ? (
-          <Section title="SUIVI DISCIPLINAIRE">
+          <>
+          <View style={styles.exitToolbar}>
+            <View style={styles.exitToolbarCopy}>
+              <Text style={styles.exitToolbarTitle}>Suivi disciplinaire</Text>
+              <Text style={styles.exitToolbarText}>Le surveillant propose et suit une mesure. La validation définitive appartient au School Admin.</Text>
+            </View>
+            <Pressable style={styles.primaryButton} onPress={openCreateDiscipline}>
+              <Text style={styles.primaryButtonText}>+ Nouvelle mesure</Text>
+            </Pressable>
+          </View>
+          <Section title="MESURES DISCIPLINAIRES">
             {discipline.length === 0 ? <Empty text="Aucune mesure disciplinaire enregistrée." /> : discipline.slice(0, 50).map((item) => (
               <ItemCard key={item.id}>
                 <View style={styles.itemHeader}>
                   <Text style={styles.itemTitle}>{studentName(item.student)}</Text>
-                  <Badge text={item.status} />
+                  <Badge text={item.approvalStatus === "PENDING" ? "À VALIDER" : item.approvalStatus} />
                 </View>
                 <Text style={styles.itemMeta}>{item.type} · {dateTime(item.actionAt)}</Text>
                 <Text style={styles.itemText}>{item.description}</Text>
+                <Text style={styles.itemMeta}>Statut : {item.status} · Validation : {item.approvalStatus}</Text>
+                <Pressable
+                  style={styles.completeButton}
+                  onPress={() => openEditDiscipline(item)}
+                  disabled={item.approvalStatus === "APPROVED"}
+                >
+                  <Text style={styles.completeButtonText}>
+                    {item.approvalStatus === "APPROVED" ? "Mesure validée" : "Modifier / suivre"}
+                  </Text>
+                </Pressable>
               </ItemCard>
             ))}</Section>
+          </>
         ) : null}
 
         {tab === "authorizations" ? (
@@ -804,6 +893,98 @@ export default function SurveillantSchoolLifeScreen() {
               >
                 <Text style={styles.submitButtonText}>
                   {savingIncident ? "Enregistrement…" : editingIncident ? "Enregistrer le suivi" : "Enregistrer l'incident"}
+                </Text>
+              </Pressable>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={showDisciplineModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowDisciplineModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <View>
+                <Text style={styles.modalEyebrow}>{editingDiscipline ? "SUIVI DISCIPLINAIRE" : "NOUVELLE MESURE"}</Text>
+                <Text style={styles.modalTitle}>{editingDiscipline ? "Modifier la mesure" : "Créer une mesure"}</Text>
+              </View>
+              <Pressable onPress={() => setShowDisciplineModal(false)} style={styles.modalClose}>
+                <Text style={styles.modalCloseText}>×</Text>
+              </Pressable>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+              <Text style={styles.formLabel}>ÉLÈVE</Text>
+              {editingDiscipline ? (
+                <View style={styles.selectedStudent}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.selectedStudentName}>{studentName(editingDiscipline.student)}</Text>
+                    <Text style={styles.selectedStudentMeta}>{editingDiscipline.student.studentNumber}</Text>
+                  </View>
+                </View>
+              ) : selectedDisciplineStudent ? (
+                <View style={styles.selectedStudent}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.selectedStudentName}>{studentName(selectedDisciplineStudent)}</Text>
+                    <Text style={styles.selectedStudentMeta}>{selectedDisciplineStudent.studentNumber}</Text>
+                  </View>
+                  <Pressable onPress={() => setSelectedDisciplineStudent(null)}>
+                    <Text style={styles.changeText}>Changer</Text>
+                  </Pressable>
+                </View>
+              ) : (
+                <View style={styles.studentPicker}>
+                  {students.slice(0, 12).map((student) => (
+                    <Pressable key={student.id} style={styles.studentOption} onPress={() => setSelectedDisciplineStudent(student)}>
+                      <Text style={styles.studentOptionName}>{studentName(student)}</Text>
+                      <Text style={styles.studentOptionMeta}>{student.studentNumber} · {student.enrollments[0]?.class.name ?? "Sans classe"}</Text>
+                    </Pressable>
+                  ))}
+                  {students.length === 0 ? <Text style={styles.emptyPicker}>Aucun élève trouvé.</Text> : null}
+                </View>
+              )}
+
+              <Text style={styles.formLabel}>TYPE DE MESURE</Text>
+              <TextInput
+                value={disciplineType}
+                onChangeText={setDisciplineType}
+                placeholder="Ex. Avertissement, retenue, convocation parent"
+                placeholderTextColor="#94A3B8"
+                style={styles.input}
+              />
+
+              <Text style={styles.formLabel}>DESCRIPTION</Text>
+              <TextInput
+                value={disciplineDescription}
+                onChangeText={setDisciplineDescription}
+                placeholder="Décrire la mesure décidée/proposée"
+                placeholderTextColor="#94A3B8"
+                multiline
+                style={[styles.input, styles.textarea]}
+              />
+
+              <Text style={styles.formLabel}>NOTE DE DÉCISION</Text>
+              <TextInput
+                value={disciplineDecisionNote}
+                onChangeText={setDisciplineDecisionNote}
+                placeholder="Contexte ou justification"
+                placeholderTextColor="#94A3B8"
+                multiline
+                style={[styles.input, styles.textarea]}
+              />
+
+              <Pressable
+                style={[styles.submitButton, savingDiscipline && styles.buttonDisabled]}
+                onPress={() => void submitDiscipline()}
+                disabled={savingDiscipline}
+              >
+                <Text style={styles.submitButtonText}>
+                  {savingDiscipline ? "Enregistrement…" : "Enregistrer la mesure"}
                 </Text>
               </Pressable>
             </ScrollView>
