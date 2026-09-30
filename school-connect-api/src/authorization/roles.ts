@@ -30,6 +30,15 @@ export const rolePermissions: Record<Role, readonly Permission[]> = {
     "attendance.update",
     "attendance.delete",
 
+    "incident.read",
+    "incident.create",
+    "incident.update",
+
+    "disciplinary-action.read",
+    "disciplinary-action.create",
+    "disciplinary-action.update",
+    "disciplinary-action.delete",
+
     "assignment.read",
     "assignment.create",
     "assignment.update",
@@ -91,6 +100,9 @@ export const rolePermissions: Record<Role, readonly Permission[]> = {
 
     "observation.read",
     "observation.create",
+
+    "incident.read",
+    "incident.create",
 
     "assignment.read",
     "assignment.create",
