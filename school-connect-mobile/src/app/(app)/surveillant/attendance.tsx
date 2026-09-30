@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
@@ -12,9 +14,9 @@ import { useRouter } from "expo-router";
 import { getSchoolSchedule } from "../../../services/schedule/schedule.service";
 import type { SchoolSchedule } from "../../../features/schedule/schedule.types";
 import {
+  createSurveillantLateAttendance,
   getSurveillantAttendanceSession,
-  saveSurveillantAttendanceSession,
-  type SurveillantAttendanceStatus,
+  updateSurveillantLateAttendance,
   type SurveillantAttendanceStudent,
 } from "../../../services/surveillant/attendance.service";
 
@@ -48,11 +50,15 @@ export default function SurveillantAttendanceScreen() {
   const [schedules, setSchedules] = useState<SchoolSchedule[]>([]);
   const [selectedScheduleId, setSelectedScheduleId] = useState<string | null>(null);
   const [session, setSession] = useState<Awaited<ReturnType<typeof getSurveillantAttendanceSession>> | null>(null);
-  const [statuses, setStatuses] = useState<Record<string, SurveillantAttendanceStatus | null>>({});
   const [loadingSchedules, setLoadingSchedules] = useState(true);
   const [loadingSession, setLoadingSession] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lateStudent, setLateStudent] = useState<SurveillantAttendanceStudent | null>(null);
+  const [arrivalTime, setArrivalTime] = useState("");
+  const [reason, setReason] = useState("");
+  const [note, setNote] = useState("");
+  const [modalError, setModalError] = useState<string | null>(null);
 
   const todaySchedules = useMemo(() => {
     const today = getTodayKey();
@@ -99,116 +105,15 @@ export default function SurveillantAttendanceScreen() {
     }
 
     void load();
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!selectedSchedule) {
-      setSession(null);
-      return;
-    }
-
-    let mounted = true;
-
-    async function loadSession() {
-      try {
-        setLoadingSession(true);
-        setError(null);
-        const response = await getSurveillantAttendanceSession(
-          selectedSchedule!.id,
-          getDateKey(),
-        );
-        if (!mounted) return;
-        setSession(response);
-        const next: Record<string, SurveillantAttendanceStatus | null> = {};
-        response.students.forEach((student) => {
-          next[student.id] = student.attendance?.status ?? null;
-        });
-        setStatuses(next);
-      } catch {
-        if (mounted) setError("Impossible de charger les élèves attendus.");
-      } finally {
-        if (mounted) setLoadingSession(false);
-      }
-    }
-
-    void loadSession();
-    return () => {
-      mounted = false;
-    };
-  }, [selectedSchedule?.id]);
-
-  function setStatus(studentId: string, status: SurveillantAttendanceStatus) {
-    setStatuses((current) => ({ ...current, [studentId]: status }));
-  }
-
-  function markAllPresent() {
-    if (!session) return;
-    const next: Record<string, SurveillantAttendanceStatus> = {};
-    session.students.forEach((student) => {
-      next[student.id] = "PRESENT";
-    });
-    setStatuses(next);
-  }
-
-  async function save() {
-    if (!session || !selectedSchedule) return;
-
-    const incomplete = session.students.filter((student) => !statuses[student.id]);
-    if (incomplete.length > 0) {
-      setError(`Il reste ${incomplete.length} élève(s) sans statut.`);
-      return;
-    }
-
-    try {
-      setSaving(true);
-      setError(null);
-      await saveSurveillantAttendanceSession({
-        scheduleId: selectedSchedule.id,
-        date: getDateKey(),
-        records: session.students.map((student) => ({
-          studentId: student.id,
-          status: statuses[student.id]!,
-          arrivalTime:
-            statuses[student.id] === "LATE"
-              ? new Date().toISOString()
-              : student.attendance?.arrivalTime ?? null,
-        })),
-      });
-
-      const refreshed = await getSurveillantAttendanceSession(
-        selectedSchedule.id,
-        getDateKey(),
-      );
-      setSession(refreshed);
-      const next: Record<string, SurveillantAttendanceStatus | null> = {};
-      refreshed.students.forEach((student) => {
-        next[student.id] = student.attendance?.status ?? null;
-      });
-      setStatuses(next);
-    } catch {
-      setError("Impossible d'enregistrer les présences.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  const presentCount = session?.students.filter((student) => statuses[student.id] === "PRESENT").length ?? 0;
-  const absentCount = session?.students.filter((student) => statuses[student.id] === "ABSENT").length ?? 0;
-  const lateCount = session?.students.filter((student) => statuses[student.id] === "LATE").length ?? 0;
-  const pendingCount = (session?.students.length ?? 0) - presentCount - absentCount - lateCount;
-
-  return (
+    return (
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <View style={styles.headerCopy}>
-            <Text style={styles.eyebrow}>VIE SCOLAIRE · PRÉSENCES</Text>
-            <Text style={styles.title}>Présences / Retards</Text>
+            <Text style={styles.eyebrow}>VIE SCOLAIRE · POINTAGE</Text>
+            <Text style={styles.title}>Suivi des présences + retards</Text>
             <Text style={styles.subtitle}>
-              Les élèves attendus sont déterminés automatiquement à partir du créneau sélectionné.
+              P/A sont saisis par l'enseignant. Le surveillant consulte le pointage et enregistre uniquement les retards.
             </Text>
           </View>
           <Pressable style={styles.backButton} onPress={() => router.back()}>
@@ -216,45 +121,29 @@ export default function SurveillantAttendanceScreen() {
           </Pressable>
         </View>
 
+        <View style={styles.ruleCard}>
+          <Text style={styles.ruleTitle}>RÈGLE DE POINTAGE</Text>
+          <Text style={styles.ruleText}>P = présent · A = absent · lecture seule</Text>
+          <Text style={styles.ruleActive}>R = retard · action du surveillant</Text>
+        </View>
+
         {loadingSchedules ? (
-          <View style={styles.state}>
-            <ActivityIndicator />
-            <Text style={styles.stateText}>Chargement de l'emploi du temps…</Text>
-          </View>
+          <View style={styles.state}><ActivityIndicator /><Text style={styles.stateText}>Chargement de l'emploi du temps…</Text></View>
         ) : todaySchedules.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyTitle}>Aucun cours aujourd'hui</Text>
-            <Text style={styles.emptyText}>
-              Aucun créneau n'est planifié pour aujourd'hui dans l'établissement.
-            </Text>
-          </View>
+          <View style={styles.emptyCard}><Text style={styles.emptyTitle}>Aucun cours aujourd'hui</Text><Text style={styles.emptyText}>Aucun créneau n'est planifié pour aujourd'hui.</Text></View>
         ) : (
           <>
             <View style={styles.scheduleCard}>
-              <View style={styles.scheduleCardHeader}>
-                <View>
-                  <Text style={styles.sectionLabel}>CRÉNEAUX DU JOUR</Text>
-                  <Text style={styles.scheduleHint}>Sélectionnez la classe et le cours à contrôler.</Text>
-                </View>
-              </View>
+              <Text style={styles.sectionLabel}>CRÉNEAUX DU JOUR</Text>
+              <Text style={styles.scheduleHint}>Sélectionnez le cours à consulter.</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scheduleChips}>
                 {todaySchedules.map((item) => {
                   const active = item.id === selectedSchedule?.id;
                   return (
-                    <Pressable
-                      key={item.id}
-                      style={[styles.scheduleChip, active && styles.scheduleChipActive]}
-                      onPress={() => setSelectedScheduleId(item.id)}
-                    >
-                      <Text style={[styles.scheduleTime, active && styles.activeText]}>
-                        {item.startTime}–{item.endTime}
-                      </Text>
-                      <Text style={[styles.scheduleClass, active && styles.activeText]}>
-                        {item.class.name}
-                      </Text>
-                      <Text style={[styles.scheduleSubject, active && styles.activeMutedText]}>
-                        {item.subject}
-                      </Text>
+                    <Pressable key={item.id} style={[styles.scheduleChip, active && styles.scheduleChipActive]} onPress={() => setSelectedScheduleId(item.id)}>
+                      <Text style={[styles.scheduleTime, active && styles.activeText]}>{item.startTime}–{item.endTime}</Text>
+                      <Text style={[styles.scheduleClass, active && styles.activeText]}>{item.class.name}</Text>
+                      <Text style={[styles.scheduleSubject, active && styles.activeMutedText]}>{item.subject}</Text>
                     </Pressable>
                   );
                 })}
@@ -262,128 +151,102 @@ export default function SurveillantAttendanceScreen() {
             </View>
 
             {loadingSession ? (
-              <View style={styles.state}>
-                <ActivityIndicator />
-                <Text style={styles.stateText}>Chargement des élèves attendus…</Text>
-              </View>
+              <View style={styles.state}><ActivityIndicator /><Text style={styles.stateText}>Chargement du pointage…</Text></View>
             ) : session && selectedSchedule ? (
               <>
                 <View style={styles.sessionHeader}>
                   <View style={styles.sessionCopy}>
                     <Text style={styles.sessionClass}>{session.schedule.class.name}</Text>
-                    <Text style={styles.sessionMeta}>
-                      {session.schedule.subject} · {session.schedule.startTime}–{session.schedule.endTime}
-                      {session.schedule.room ? ` · ${session.schedule.room}` : ""}
-                    </Text>
-                    <Text style={styles.sessionTeacher}>
-                      Enseignant : {session.schedule.teacher.firstName} {session.schedule.teacher.lastName}
-                    </Text>
+                    <Text style={styles.sessionMeta}>{session.schedule.subject} · {session.schedule.startTime}–{session.schedule.endTime}{session.schedule.room ? ` · ${session.schedule.room}` : ""}</Text>
+                    <Text style={styles.sessionTeacher}>Enseignant : {session.schedule.teacher.firstName} {session.schedule.teacher.lastName}</Text>
                   </View>
-                  <Pressable style={styles.presentAllButton} onPress={markAllPresent}>
-                    <Text style={styles.presentAllText}>Tous présents</Text>
-                  </Pressable>
                 </View>
 
                 <View style={styles.stats}>
                   <Stat label="Présents" value={presentCount} />
                   <Stat label="Absents" value={absentCount} />
                   <Stat label="Retards" value={lateCount} />
-                  <Stat label="À renseigner" value={pendingCount} />
+                  <Stat label="Non pointés" value={pendingCount} />
                 </View>
 
                 <View style={styles.listCard}>
                   <View style={styles.listHeader}>
                     <Text style={styles.listTitle}>ÉLÈVES ATTENDUS · {session.students.length}</Text>
-                    <Text style={styles.listHint}>A = absent · P = présent · R = retard</Text>
+                    <Text style={styles.listHint}>P/A = lecture seule · R = action surveillant</Text>
                   </View>
-
                   {session.students.map((student, index) => {
-                    const status = statuses[student.id] ?? null;
+                    const status = student.attendance?.status ?? null;
+                    const isLate = status === "LATE";
                     return (
                       <View key={student.id} style={styles.studentRow}>
-                        <View style={styles.studentIndex}>
-                          <Text style={styles.indexText}>{index + 1}</Text>
-                        </View>
+                        <View style={styles.studentIndex}><Text style={styles.indexText}>{index + 1}</Text></View>
                         <View style={styles.studentCopy}>
                           <Text style={styles.studentName}>{studentName(student)}</Text>
                           <Text style={styles.studentMeta}>{student.studentNumber}</Text>
+                          <Text style={styles.statusText}>
+                            {status === "PRESENT" ? "Présent" : status === "ABSENT" ? "Absent" : isLate ? `Retard · ${formatTime(student.attendance?.arrivalTime ?? null)}` : "Non pointé"}
+                          </Text>
+                          {isLate && student.attendance?.reason ? <Text style={styles.lateMeta}>{student.attendance.reason}</Text> : null}
                         </View>
-                        <View style={styles.statusRow}>
-                          {([
-                            ["ABSENT", "A"],
-                            ["PRESENT", "P"],
-                            ["LATE", "R"],
-                          ] as const).map(([value, label]) => (
-                            <Pressable
-                              key={value}
-                              style={[
-                                styles.statusButton,
-                                status === value && styles.statusButtonActive,
-                              ]}
-                              onPress={() => setStatus(student.id, value)}
-                            >
-                              <Text style={[
-                                styles.statusButtonText,
-                                status === value && styles.statusButtonTextActive,
-                              ]}>
-                                {label}
-                              </Text>
-                            </Pressable>
-                          ))}
-                        </View>
+                        <Pressable style={styles.lateAction} onPress={() => openLateModal(student)} disabled={!student.attendance}>
+                          <Text style={styles.lateActionText}>{isLate ? "Modifier retard" : "Marquer retard"}</Text>
+                        </Pressable>
                       </View>
                     );
                   })}
                 </View>
-
-                <Pressable
-                  style={[styles.saveButton, saving && styles.disabled]}
-                  onPress={() => void save()}
-                  disabled={saving}
-                >
-                  <Text style={styles.saveText}>
-                    {saving ? "Enregistrement…" : "Enregistrer les présences"}
-                  </Text>
-                </Pressable>
               </>
             ) : null}
           </>
         )}
-
-        {error ? (
-          <View style={styles.errorBox}>
-            <Text style={styles.errorText}>{error}</Text>
-          </View>
-        ) : null}
+        {error ? <View style={styles.errorBox}><Text style={styles.errorText}>{error}</Text></View> : null}
       </ScrollView>
+
+      <Modal visible={Boolean(lateStudent)} transparent animationType="slide" onRequestClose={closeLateModal}>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <View><Text style={styles.modalEyebrow}>RETARD</Text><Text style={styles.modalTitle}>{lateStudent ? studentName(lateStudent) : ""}</Text></View>
+              <Pressable onPress={closeLateModal} disabled={saving}><Text style={styles.closeText}>Fermer</Text></Pressable>
+            </View>
+            <Text style={styles.fieldLabel}>HEURE D'ARRIVÉE *</Text>
+            <TextInput value={arrivalTime} onChangeText={setArrivalTime} placeholder="08:15" keyboardType="numbers-and-punctuation" maxLength={5} style={styles.input} />
+            <Text style={styles.fieldLabel}>MOTIF</Text>
+            <TextInput value={reason} onChangeText={setReason} placeholder="Motif du retard" style={styles.input} />
+            <Text style={styles.fieldLabel}>NOTE</Text>
+            <TextInput value={note} onChangeText={setNote} placeholder="Information complémentaire" multiline style={[styles.input, styles.noteInput]} />
+            {modalError ? <View style={styles.modalError}><Text style={styles.modalErrorText}>{modalError}</Text></View> : null}
+            <Pressable style={[styles.modalSave, saving && styles.disabled]} onPress={() => void saveLate()} disabled={saving}>
+              <Text style={styles.modalSaveText}>{saving ? "Enregistrement…" : "Enregistrer le retard"}</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
-
 function Stat({ label, value }: { label: string; value: number }) {
-  return (
-    <View style={styles.stat}>
-      <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
-    </View>
-  );
+  return <View style={styles.stat}><Text style={styles.statValue}>{value}</Text><Text style={styles.statLabel}>{label}</Text></View>;
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: "#F8FAFC" },
   content: { padding: 16, paddingBottom: 40 },
-  header: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 16 },
+  header: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 12 },
   headerCopy: { flex: 1 },
   eyebrow: { fontSize: 9, fontWeight: "900", letterSpacing: 1.2, color: "#64748B" },
-  title: { marginTop: 4, fontSize: 26, fontWeight: "900", color: "#344976" },
+  title: { marginTop: 4, fontSize: 25, fontWeight: "900", color: "#344976" },
   subtitle: { marginTop: 5, fontSize: 12, lineHeight: 18, color: "#64748B" },
   backButton: { paddingHorizontal: 12, paddingVertical: 9, borderRadius: 10, borderWidth: 1, borderColor: "#D9DEE5", backgroundColor: "#FFFFFF" },
   backText: { fontSize: 10, fontWeight: "900", color: "#344976" },
+  ruleCard: { padding: 14, marginBottom: 12, borderRadius: 16, borderWidth: 1, borderColor: "#D9DEE5", backgroundColor: "#FFFFFF" },
+  ruleTitle: { fontSize: 9, fontWeight: "900", letterSpacing: 0.8, color: "#64748B" },
+  ruleText: { marginTop: 7, fontSize: 10, color: "#475569" },
+  ruleActive: { marginTop: 4, fontSize: 10, fontWeight: "900", color: "#344976" },
   scheduleCard: { padding: 14, borderRadius: 16, borderWidth: 1, borderColor: "#D9DEE5", backgroundColor: "#FFFFFF" },
-  scheduleCardHeader: { marginBottom: 10 },
   sectionLabel: { fontSize: 9, fontWeight: "900", letterSpacing: 0.8, color: "#64748B" },
   scheduleHint: { marginTop: 4, fontSize: 10, color: "#64748B" },
-  scheduleChips: { gap: 9 },
+  scheduleChips: { gap: 9, marginTop: 10 },
   scheduleChip: { minWidth: 145, padding: 11, borderRadius: 12, borderWidth: 1, borderColor: "#CBD5E1", backgroundColor: "#F8FAFC" },
   scheduleChipActive: { borderColor: "#344976", backgroundColor: "#344976" },
   scheduleTime: { fontSize: 9, fontWeight: "900", color: "#64748B" },
@@ -391,13 +254,11 @@ const styles = StyleSheet.create({
   scheduleSubject: { marginTop: 3, fontSize: 10, color: "#64748B" },
   activeText: { color: "#FFFFFF" },
   activeMutedText: { color: "#DCE4F2" },
-  sessionHeader: { marginTop: 14, padding: 15, borderRadius: 16, backgroundColor: "#344976", flexDirection: "row", alignItems: "center", gap: 12 },
+  sessionHeader: { marginTop: 14, padding: 15, borderRadius: 16, backgroundColor: "#344976" },
   sessionCopy: { flex: 1 },
   sessionClass: { fontSize: 20, fontWeight: "900", color: "#FFFFFF" },
   sessionMeta: { marginTop: 4, fontSize: 10, color: "#E2E8F0" },
   sessionTeacher: { marginTop: 4, fontSize: 10, color: "#CBD5E1" },
-  presentAllButton: { paddingHorizontal: 11, paddingVertical: 9, borderRadius: 10, backgroundColor: "#FFFFFF" },
-  presentAllText: { fontSize: 9, fontWeight: "900", color: "#344976" },
   stats: { flexDirection: "row", flexWrap: "wrap", gap: 9, marginTop: 12 },
   stat: { flex: 1, minWidth: 78, padding: 12, borderRadius: 13, borderWidth: 1, borderColor: "#D9DEE5", backgroundColor: "#FFFFFF" },
   statValue: { fontSize: 19, fontWeight: "900", color: "#344976" },
@@ -406,20 +267,16 @@ const styles = StyleSheet.create({
   listHeader: { padding: 14, borderBottomWidth: 1, borderBottomColor: "#EEF2F7" },
   listTitle: { fontSize: 10, fontWeight: "900", letterSpacing: 0.6, color: "#344976" },
   listHint: { marginTop: 4, fontSize: 9, color: "#64748B" },
-  studentRow: { minHeight: 68, flexDirection: "row", alignItems: "center", gap: 9, paddingHorizontal: 10, borderBottomWidth: 1, borderBottomColor: "#EEF2F7" },
+  studentRow: { minHeight: 78, flexDirection: "row", alignItems: "center", gap: 9, paddingHorizontal: 10, borderBottomWidth: 1, borderBottomColor: "#EEF2F7" },
   studentIndex: { width: 24, height: 24, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: "#F1F5F9" },
   indexText: { fontSize: 9, fontWeight: "900", color: "#64748B" },
-  studentCopy: { flex: 1 },
+  studentCopy: { flex: 1, minWidth: 0 },
   studentName: { fontSize: 12, fontWeight: "900", color: "#334155" },
   studentMeta: { marginTop: 2, fontSize: 9, color: "#64748B" },
-  statusRow: { flexDirection: "row", gap: 5 },
-  statusButton: { width: 32, height: 32, alignItems: "center", justifyContent: "center", borderRadius: 9, borderWidth: 1, borderColor: "#CBD5E1", backgroundColor: "#FFFFFF" },
-  statusButtonActive: { borderColor: "#344976", backgroundColor: "#344976" },
-  statusButtonText: { fontSize: 10, fontWeight: "900", color: "#64748B" },
-  statusButtonTextActive: { color: "#FFFFFF" },
-  saveButton: { marginTop: 14, paddingVertical: 14, alignItems: "center", borderRadius: 12, backgroundColor: "#344976" },
-  saveText: { color: "#FFFFFF", fontSize: 11, fontWeight: "900" },
-  disabled: { opacity: 0.55 },
+  statusText: { marginTop: 5, fontSize: 9, fontWeight: "900", color: "#475569" },
+  lateMeta: { marginTop: 2, fontSize: 9, color: "#92400E" },
+  lateAction: { paddingHorizontal: 9, paddingVertical: 8, borderRadius: 9, borderWidth: 1, borderColor: "#CBD5E1", backgroundColor: "#FFFFFF" },
+  lateActionText: { fontSize: 9, fontWeight: "900", color: "#344976" },
   state: { paddingVertical: 50, alignItems: "center" },
   stateText: { marginTop: 10, fontSize: 11, color: "#64748B" },
   emptyCard: { padding: 20, borderRadius: 16, borderWidth: 1, borderColor: "#D9DEE5", backgroundColor: "#FFFFFF" },
@@ -427,4 +284,18 @@ const styles = StyleSheet.create({
   emptyText: { marginTop: 6, fontSize: 11, lineHeight: 17, color: "#64748B" },
   errorBox: { marginTop: 12, padding: 12, borderRadius: 12, backgroundColor: "#FEE2E2" },
   errorText: { fontSize: 11, lineHeight: 16, color: "#991B1B", fontWeight: "700" },
+  modalBackdrop: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(15,23,42,0.45)" },
+  modalCard: { padding: 18, borderTopLeftRadius: 22, borderTopRightRadius: 22, backgroundColor: "#FFFFFF" },
+  modalHeader: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 18 },
+  modalEyebrow: { fontSize: 9, fontWeight: "900", letterSpacing: 0.8, color: "#64748B" },
+  modalTitle: { marginTop: 3, fontSize: 19, fontWeight: "900", color: "#344976" },
+  closeText: { fontSize: 10, fontWeight: "900", color: "#64748B" },
+  fieldLabel: { marginTop: 10, marginBottom: 6, fontSize: 9, fontWeight: "900", letterSpacing: 0.7, color: "#64748B" },
+  input: { minHeight: 44, paddingHorizontal: 12, borderRadius: 10, borderWidth: 1, borderColor: "#CBD5E1", backgroundColor: "#FFFFFF", fontSize: 12, color: "#334155" },
+  noteInput: { minHeight: 76, paddingTop: 11, textAlignVertical: "top" },
+  modalError: { marginTop: 10, padding: 10, borderRadius: 9, backgroundColor: "#FEE2E2" },
+  modalErrorText: { fontSize: 10, lineHeight: 15, color: "#991B1B", fontWeight: "700" },
+  modalSave: { marginTop: 14, paddingVertical: 14, alignItems: "center", borderRadius: 12, backgroundColor: "#344976" },
+  modalSaveText: { color: "#FFFFFF", fontSize: 11, fontWeight: "900" },
+  disabled: { opacity: 0.55 },
 });
