@@ -463,7 +463,7 @@ export async function surveillantSchoolLifeRoutes(fastify: FastifyInstance) {
           ...(parsed.data.resolutionNote !== undefined ? { resolutionNote: parsed.data.resolutionNote } : {}),
           ...(nextStatus === "RESOLVED" || nextStatus === "CLOSED"
             ? { resolvedAt: new Date(), resolvedBy: request.user.sub }
-            : nextStatus && nextStatus !== "RESOLVED" && nextStatus !== "CLOSED"
+            : nextStatus
               ? { resolvedAt: null, resolvedBy: null }
               : {}),
         },
@@ -611,7 +611,7 @@ export async function surveillantSchoolLifeRoutes(fastify: FastifyInstance) {
           ...(parsed.data.status === "COMPLETED"
             ? { completedAt: new Date(), completedBy: request.user.sub }
             : {}),
-          ...(approvalChanged && request.user.role === "SCHOOL_ADMIN"
+          ...(approvalChanged && request.user.role === "SCHOOL_ADMIN" && parsed.data.approvalStatus
             ? {
                 approvalStatus: parsed.data.approvalStatus,
                 approvedAt: parsed.data.approvalStatus === "APPROVED" ? new Date() : null,
