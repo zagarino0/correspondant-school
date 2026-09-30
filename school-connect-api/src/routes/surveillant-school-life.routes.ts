@@ -589,36 +589,6 @@ export async function surveillantSchoolLifeRoutes(fastify: FastifyInstance) {
 
 
 
-  fastify.patch(
-    "/students/:studentId/observations/:observationId",
-    {
-      onRequest: [authenticate],
-      preHandler: [authorizeStudentResource("observation.update")],
-    },
-    async (request, reply) => {
-      const { studentId, observationId } = request.params as { studentId: string; observationId: string };
-      const parsed = z.object({
-        content: z.string().trim().min(1).max(3000).optional(),
-        observedAt: z.string().datetime().optional(),
-      }).safeParse(request.body);
-      if (!parsed.success) return reply.status(400).send({ error: { code: "VALIDATION_ERROR", message: "Invalid observation update." } });
-
-      const existing = await fastify.prisma.schoolLifeObservation.findFirst({
-        where: { id: observationId, studentId, schoolId: request.user.schoolId ?? undefined },
-      });
-      if (!existing) return reply.status(404).send({ error: { code: "OBSERVATION_NOT_FOUND", message: "Observation not found." } });
-
-      const item = await fastify.prisma.schoolLifeObservation.update({
-        where: { id: observationId },
-        data: {
-          ...(parsed.data.content ? { content: parsed.data.content } : {}),
-          ...(parsed.data.observedAt ? { observedAt: new Date(parsed.data.observedAt) } : {}),
-        },
-      });
-      return reply.send({ item });
-    },
-  );
-
   fastify.get(
     "/authorizations",
     {
