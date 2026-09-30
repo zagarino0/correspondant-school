@@ -62,21 +62,29 @@ const staffPermissions: Record<StaffFunction, readonly Permission[]> = {
    * SURVEILLANT
    *
    * Vie scolaire opérationnelle :
-   * - consultation des élèves de son établissement
-   * - présence, absences et corrections de présence
-   * - événements de retard / absence (journal append-only)
-   * - convocations des parents
-   * - annonces et messagerie
-   * - consultation de l'emploi du temps
+   * - consultation et recherche des élèves de son établissement
+   * - présence, absences et retards
+   * - sorties temporaires et définitives
+   * - mouvements des élèves pendant les heures scolaires
+   * - incidents et suivi disciplinaire
+   * - observations de vie scolaire non pédagogiques
+   * - vérification des autorisations parentales
+   * - suivi des convocations et communication
+   * - alertes importantes et rapport quotidien
    *
    * Les permissions sont volontairement limitées :
    * le surveillant ne gère ni les élèves, ni les classes, ni les
    * emplois du temps, ni les notes, ni les paiements, ni les dossiers
    * médicaux ou les paramètres de l'établissement.
+   *
+   * Les ressources de vie scolaire sont journalisées et ne disposent
+   * pas de permission de suppression afin de préserver l'historique.
    */
   SURVEILLANT: [
+    // Recherche / fiche vie scolaire
     "student.read",
 
+    // Présences, absences et retards
     "attendance.read",
     "attendance.create",
     "attendance.update",
@@ -84,17 +92,55 @@ const staffPermissions: Record<StaffFunction, readonly Permission[]> = {
     "attendance-event.read",
     "attendance-event.create",
 
+    // Sorties temporaires / définitives
+    "student-exit.read",
+    "student-exit.create",
+    "student-exit.update",
+
+    // Mouvements des élèves
+    "student-movement.read",
+    "student-movement.create",
+    "student-movement.update",
+
+    // Incidents disciplinaires / suivi disciplinaire
+    "incident.read",
+    "incident.create",
+    "incident.update",
+
+    "disciplinary-action.read",
+    "disciplinary-action.create",
+    "disciplinary-action.update",
+
+    // Observations de vie scolaire
+    "observation.read",
+    "observation.create",
+
+    // Autorisations parentales
+    "authorization.read",
+
+    // Convocations des parents
     "parent-summons.read",
     "parent-summons.create",
 
+    // Emploi du temps nécessaire au contrôle de la vie scolaire
     "schedule.read",
 
+    // Communication
     "message.read",
     "message.send",
 
     "announcement.read",
     "announcement.create",
 
+    // Alertes importantes
+    "alert.read",
+    "alert.create",
+
+    // Rapport quotidien de vie scolaire
+    "daily-report.read",
+    "daily-report.create",
+
+    // Tickets / signalements internes
     "ticket.read",
     "ticket.create",
     "ticket.update",
