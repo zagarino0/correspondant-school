@@ -1,3 +1,5 @@
+import { hasStaffPermission } from "../src/authorization/staff-permissions.js";
+
 const BASE_URL = process.env.TEST_API_URL ?? "http://localhost:4000";
 const WS_URL = process.env.TEST_WS_URL ?? BASE_URL.replace(/^http/, "ws") + "/ws";
 const EMAIL = process.env.TEST_SURVEILLANT_EMAIL ?? "staff@school-connect.local";
@@ -34,7 +36,21 @@ function assert(condition: unknown, message: string): asserts condition {
 }
 
 async function main() {
-  console.log(`[1/8] Login Surveillant: ${EMAIL}`);
+  console.log("[1/9] Contrôle RBAC SURVEILLANT");
+  assert(
+    hasStaffPermission("SURVEILLANT", "attendance-late.create"),
+    "SURVEILLANT doit avoir attendance-late.create",
+  );
+  assert(
+    hasStaffPermission("SURVEILLANT", "attendance-late.update"),
+    "SURVEILLANT doit avoir attendance-late.update",
+  );
+  assert(
+    !hasStaffPermission("SURVEILLANT", "attendance.update"),
+    "SURVEILLANT ne doit pas avoir attendance.update",
+  );
+
+  console.log(`[2/9] Login Surveillant: ${EMAIL}`);
   const auth = await request("/api/v1/auth/login", {
     method: "POST",
     body: JSON.stringify({ email: EMAIL, password: PASSWORD }),
@@ -48,7 +64,7 @@ async function main() {
   const token = auth.accessToken;
   const authHeaders = { authorization: `Bearer ${token}` };
 
-  console.log("[2/8] Recherche de l'élève B001");
+  console.log("[3/9] Recherche de l'élève B001");
   const students = await request("/api/v1/students?search=B001&page=1&pageSize=10", {
     headers: authHeaders,
   });
@@ -61,7 +77,7 @@ async function main() {
   const future = new Date(now.getTime() + 60 * 60 * 1000);
   const marker = `integration-${Date.now()}`;
 
-  console.log("[3/8] Sortie: création -> lecture -> modification");
+  console.log("[4/9] Sortie: création -> lecture -> modification");
   const exit = await request(`/api/v1/surveillant/school-life/students/${studentId}/exits`, {
     method: "POST",
     headers: authHeaders,
@@ -88,7 +104,7 @@ async function main() {
   });
   assert(updatedExit.item.status === "COMPLETED", "Sortie non modifiée");
 
-  console.log("[4/8] Mouvement: création -> lecture -> modification");
+  console.log("[5/9] Mouvement: création -> lecture -> modification");
   const movement = await request(`/api/v1/surveillant/school-life/students/${studentId}/movements`, {
     method: "POST",
     headers: authHeaders,
@@ -112,7 +128,7 @@ async function main() {
   });
   assert(updatedMovement.item.type === "ENTRY", "Mouvement non modifié");
 
-  console.log("[5/8] Incident: création -> lecture -> modification");
+  console.log("[6/9] Incident: création -> lecture -> modification");
   const incident = await request(`/api/v1/surveillant/school-life/students/${studentId}/incidents`, {
     method: "POST",
     headers: authHeaders,
@@ -137,7 +153,7 @@ async function main() {
   });
   assert(updatedIncident.item.severity === "HIGH", "Incident non modifié");
 
-  console.log("[6/8] Fiche vie scolaire complète");
+  console.log("[7/9] Fiche vie scolaire complète");
   const profile = await request(`/api/v1/surveillant/school-life/students/${studentId}/life-profile`, {
     headers: authHeaders,
   });
@@ -150,7 +166,7 @@ async function main() {
   assert(Array.isArray(profile.student?.parentAuthorizations), "parentAuthorizations absent");
   assert(Array.isArray(profile.student?.parentSummons), "parentSummons absent");
 
-  console.log("[7/8] Alerte realtime: WebSocket -> POST alert -> réception");
+  console.log("[8/9] Alerte realtime: WebSocket -> POST alert -> réception");
   const ws = new WebSocket(`${WS_URL}?accessToken=${encodeURIComponent(token)}`);
   const realtime = await new Promise<Json>((resolve, reject) => {
     const timeout = setTimeout(() => {
@@ -203,13 +219,13 @@ async function main() {
   assert(realtime.type === "school-life:alert", "Événement realtime incorrect");
   assert(realtime.payload?.message === marker, "Payload realtime incorrect");
 
-  console.log("[8/8] Contrôle final des alertes");
+  console.log("[9/9] Contrôle final des alertes");
   const alerts = await request("/api/v1/surveillant/school-life/alerts", {
     headers: authHeaders,
   });
   assert(alerts.items?.some((item: Json) => item.message === marker), "Alerte absente de la lecture");
 
-  console.log("\n✓ Surveillant school-life integration OK");
+  console.log("\n✓ Surveillant RBAC + school-life integration OK");
   console.log(`  Student: ${studentId}`);
   console.log(`  Exit: ${exit.item.id}`);
   console.log(`  Movement: ${movement.item.id}`);
