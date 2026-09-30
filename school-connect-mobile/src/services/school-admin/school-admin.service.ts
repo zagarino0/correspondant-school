@@ -11,6 +11,8 @@ import type {
   BulkStudentInput,
   UpdatePersonnelInput,
   BulkPersonnelInput,
+  SchoolAdminDisciplinaryActionsResponse,
+  UpdateSchoolAdminDisciplinaryActionInput,
 } from "./school-admin.types";
 
 export async function getSchoolAdminDashboard(): Promise<SchoolAdminDashboardResponse> {
@@ -122,6 +124,26 @@ export async function bulkCreateSchoolPersonnel(
   const response = await apiClient.post(
     "/api/v1/school-admin/personnel/bulk",
     { personnel },
+  );
+  return response.data;
+}
+
+
+export async function getSchoolAdminDisciplinaryActions(): Promise<SchoolAdminDisciplinaryActionsResponse> {
+  const response = await apiClient.get<SchoolAdminDisciplinaryActionsResponse>(
+    "/api/v1/surveillant/school-life/disciplinary-actions",
+  );
+  return response.data;
+}
+
+export async function updateSchoolAdminDisciplinaryAction(
+  studentId: string,
+  actionId: string,
+  input: UpdateSchoolAdminDisciplinaryActionInput,
+) {
+  const response = await apiClient.patch(
+    `/api/v1/surveillant/school-life/students/${studentId}/disciplinary-actions/${actionId}`,
+    input,
   );
   return response.data;
 }
