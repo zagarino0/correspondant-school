@@ -105,7 +105,129 @@ export default function SurveillantAttendanceScreen() {
     }
 
     void load();
-    return (
+    return () => {
+      mounted = false;
+    };
+  }
+
+  useEffect(() => {
+    if (!selectedSchedule) {
+      setSession(null);
+      return;
+    }
+
+    let mounted = true;
+
+    async function loadSession() {
+      try {
+        setLoadingSession(true);
+        setError(null);
+        const response = await getSurveillantAttendanceSession(
+          selectedSchedule!.id,
+          getDateKey(),
+        );
+        if (mounted) setSession(response);
+      } catch {
+        if (mounted) setError("Impossible de charger le pointage de la classe.");
+      } finally {
+        if (mounted) setLoadingSession(false);
+      }
+    }
+
+    void loadSession();
+    return () => {
+      mounted = false;
+    };
+  }, [selectedSchedule?.id]);
+
+  function formatTime(value: string | null) {
+    if (!value) return "—";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  }
+
+  function openLateModal(student: SurveillantAttendanceStudent) {
+    const existing = student.attendance?.status === "LATE"
+      ? student.attendance
+      : null;
+    setLateStudent(student);
+    setArrivalTime(existing?.arrivalTime ? formatTime(existing.arrivalTime) : "");
+    setReason(existing?.reason ?? "");
+    setNote(existing?.note ?? "");
+    setModalError(null);
+  }
+
+  function closeLateModal() {
+    if (saving) return;
+    setLateStudent(null);
+    setModalError(null);
+  }
+
+  async function saveLate() {
+    if (!lateStudent || !selectedSchedule) return;
+
+    const time = arrivalTime.trim();
+    if (!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(time)) {
+      setModalError("Indiquez une heure au format HH:MM.");
+      return;
+    }
+
+    try {
+      setSaving(true);
+      setModalError(null);
+
+      const arrival = new Date(
+        `${getDateKey()}T${time}:00`,
+      ).toISOString();
+
+      if (lateStudent.attendance?.status === "LATE") {
+        await updateSurveillantLateAttendance(lateStudent.attendance.id, {
+          arrivalTime: arrival,
+          reason: reason.trim() || null,
+          note: note.trim() || null,
+        });
+      } else {
+        await createSurveillantLateAttendance({
+          scheduleId: selectedSchedule.id,
+          date: getDateKey(),
+          studentId: lateStudent.id,
+          arrivalTime: arrival,
+          reason: reason.trim() || null,
+          note: note.trim() || null,
+        });
+      }
+
+      const refreshed = await getSurveillantAttendanceSession(
+        selectedSchedule.id,
+        getDateKey(),
+      );
+      setSession(refreshed);
+      setLateStudent(null);
+    } catch (err) {
+      const message =
+        typeof err === "object" &&
+        err !== null &&
+        "response" in err &&
+        typeof (err as { response?: { data?: { error?: { message?: unknown } } } }).response?.data?.error?.message === "string"
+          ? String((err as { response?: { data?: { error?: { message?: string } } } }).response?.data?.error?.message)
+          : "Impossible d'enregistrer le retard.";
+      setModalError(message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const presentCount =
+    session?.students.filter((student) => student.attendance?.status === "PRESENT").length ?? 0;
+  const absentCount =
+    session?.students.filter((student) => student.attendance?.status === "ABSENT").length ?? 0;
+  const lateCount =
+    session?.students.filter((student) => student.attendance?.status === "LATE").length ?? 0;
+  const pendingCount =
+    (session?.students.length ?? 0) - presentCount - absentCount - lateCount;
+
+  return (
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
