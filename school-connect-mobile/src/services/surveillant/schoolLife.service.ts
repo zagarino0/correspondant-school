@@ -245,6 +245,39 @@ export async function getSchoolLifeIncidents(params?: {
   return response.data.items;
 }
 
+export async function createSchoolLifeIncident(
+  studentId: string,
+  input: {
+    type: string;
+    severity: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+    description: string;
+    occurredAt?: string;
+  },
+): Promise<SchoolLifeIncidentItem> {
+  const response = await apiClient.post<{ item: SchoolLifeIncidentItem }>(
+    `/api/v1/surveillant/school-life/students/${studentId}/incidents`,
+    input,
+  );
+  return response.data.item;
+}
+
+export async function updateSchoolLifeIncident(
+  studentId: string,
+  incidentId: string,
+  input: {
+    type?: string;
+    severity?: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+    description?: string;
+    occurredAt?: string;
+  },
+): Promise<SchoolLifeIncidentItem> {
+  const response = await apiClient.patch<{ item: SchoolLifeIncidentItem }>(
+    `/api/v1/surveillant/school-life/students/${studentId}/incidents/${incidentId}`,
+    input,
+  );
+  return response.data.item;
+}
+
 export async function getSchoolLifeDisciplinaryActions(): Promise<SchoolLifeDisciplinaryItem[]> {
   const response = await apiClient.get<{ items: SchoolLifeDisciplinaryItem[] }>(
     "/api/v1/surveillant/school-life/disciplinary-actions",
