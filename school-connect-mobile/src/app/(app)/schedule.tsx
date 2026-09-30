@@ -65,7 +65,7 @@ export default function ScheduleScreen() {
   const role = useAuthStore((state) => state.user?.role);
   const staffFunction = useAuthStore((state) => state.user?.staffFunction);
   const { width: screenWidth } = useWindowDimensions();
-  const [schedules, setSchedules] = useState<Array<StudentSchedule | TeacherSchedule>>([]);
+  const [schedules, setSchedules] = useState<Array<StudentSchedule | TeacherSchedule | SchoolSchedule>>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
