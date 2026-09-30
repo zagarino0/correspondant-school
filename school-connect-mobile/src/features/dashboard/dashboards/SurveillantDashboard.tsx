@@ -358,6 +358,13 @@ export function SurveillantDashboard({ firstName }: Props) {
               <Text style={styles.quickActionDescription}>Sorties, mouvements, incidents et autorisations</Text>
             </View>
           </Pressable>
+          <Pressable style={styles.quickAction} onPress={() => router.push("/(app)/schedule")}>
+            <Text style={styles.quickActionIcon}>E</Text>
+            <View style={styles.quickActionCopy}>
+              <Text style={styles.quickActionLabel}>Emploi du temps</Text>
+              <Text style={styles.quickActionDescription}>Consulter le planning de toutes les classes</Text>
+            </View>
+          </Pressable>
         </View>
 
         <SectionTitle title="SUIVI DU JOUR" />
