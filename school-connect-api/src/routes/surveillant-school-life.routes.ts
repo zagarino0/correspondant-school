@@ -26,6 +26,19 @@ function dayRange(date: Date) {
   return { start, end };
 }
 
+function getScheduleDayFromDate(date: Date) {
+  const days = [
+    "SUNDAY",
+    "MONDAY",
+    "TUESDAY",
+    "WEDNESDAY",
+    "THURSDAY",
+    "FRIDAY",
+    "SATURDAY",
+  ] as const;
+  return days[date.getUTCDay()];
+}
+
 export async function surveillantSchoolLifeRoutes(fastify: FastifyInstance) {
   fastify.get(
     "/students/:studentId/life-profile",
@@ -835,6 +848,15 @@ export async function surveillantSchoolLifeRoutes(fastify: FastifyInstance) {
         });
       }
 
+      if (schedule.dayOfWeek !== getScheduleDayFromDate(sessionDate)) {
+        return reply.status(400).send({
+          error: {
+            code: "SCHEDULE_DATE_MISMATCH",
+            message: "Le créneau sélectionné n'est pas prévu ce jour-là.",
+          },
+        });
+      }
+
       const enrollments = await fastify.prisma.studentEnrollment.findMany({
         where: {
           classId: schedule.classId,
@@ -947,6 +969,15 @@ export async function surveillantSchoolLifeRoutes(fastify: FastifyInstance) {
       if (!schedule) {
         return reply.status(404).send({
           error: { code: "SCHEDULE_NOT_FOUND", message: "Créneau introuvable." },
+        });
+      }
+
+      if (schedule.dayOfWeek !== getScheduleDayFromDate(sessionDate)) {
+        return reply.status(400).send({
+          error: {
+            code: "SCHEDULE_DATE_MISMATCH",
+            message: "Le créneau sélectionné n'est pas prévu ce jour-là.",
+          },
         });
       }
 
@@ -1085,6 +1116,7 @@ export async function surveillantSchoolLifeRoutes(fastify: FastifyInstance) {
           id: true,
           classId: true,
           schoolId: true,
+          dayOfWeek: true,
         },
       });
 
@@ -1093,6 +1125,15 @@ export async function surveillantSchoolLifeRoutes(fastify: FastifyInstance) {
           error: {
             code: "SCHEDULE_NOT_FOUND",
             message: "Créneau introuvable.",
+          },
+        });
+      }
+
+      if (schedule.dayOfWeek !== getScheduleDayFromDate(sessionDate)) {
+        return reply.status(400).send({
+          error: {
+            code: "SCHEDULE_DATE_MISMATCH",
+            message: "Le créneau sélectionné n'est pas prévu ce jour-là.",
           },
         });
       }
