@@ -1,19 +1,25 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   ActivityIndicator,
+  Modal,
   Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { getStudents } from "../../../services/students/student.service";
+import type { StudentListItem } from "../../../services/students/student.types";
 
 import {
   getSchoolLifeAuthorizations,
   getSchoolLifeDisciplinaryActions,
   getSchoolLifeExits,
+  createSchoolLifeExit,
+  updateSchoolLifeExit,
   getSchoolLifeIncidents,
   getSchoolLifeMovements,
   type SchoolLifeAuthorizationItem,
@@ -63,6 +69,17 @@ export default function SurveillantSchoolLifeScreen() {
   const [incidents, setIncidents] = useState<SchoolLifeIncidentItem[]>([]);
   const [discipline, setDiscipline] = useState<SchoolLifeDisciplinaryItem[]>([]);
   const [authorizations, setAuthorizations] = useState<SchoolLifeAuthorizationItem[]>([]);
+  const [showExitModal, setShowExitModal] = useState(false);
+  const [students, setStudents] = useState<StudentListItem[]>([]);
+  const [studentSearch, setStudentSearch] = useState("");
+  const [selectedStudent, setSelectedStudent] = useState<StudentListItem | null>(null);
+  const [exitType, setExitType] = useState<"TEMPORARY" | "PERMANENT">("TEMPORARY");
+  const [authorizedPersonName, setAuthorizedPersonName] = useState("");
+  const [authorizedPersonPhone, setAuthorizedPersonPhone] = useState("");
+  const [exitReason, setExitReason] = useState("");
+  const [savingExit, setSavingExit] = useState(false);
+  const [exitActionId, setExitActionId] = useState<string | null>(null);
+  const [loadingStudents, setLoadingStudents] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -99,6 +116,79 @@ export default function SurveillantSchoolLifeScreen() {
       setError("Impossible de rafraîchir la vie scolaire.");
     } finally {
       setRefreshing(false);
+    }
+  };
+
+  const filteredStudents = useMemo(() => {
+    const query = studentSearch.trim().toLowerCase();
+    if (!query) return students;
+    return students.filter((student) =>
+      `${student.lastName} ${student.firstName} ${student.studentNumber}`.toLowerCase().includes(query),
+    );
+  }, [students, studentSearch]);
+
+  const resetExitForm = () => {
+    setSelectedStudent(null);
+    setStudentSearch("");
+    setExitType("TEMPORARY");
+    setAuthorizedPersonName("");
+    setAuthorizedPersonPhone("");
+    setExitReason("");
+  };
+
+  const openCreateExit = async () => {
+    resetExitForm();
+    setShowExitModal(true);
+    setLoadingStudents(true);
+    try {
+      const response = await getStudents({ status: "ACTIVE", page: 1, pageSize: 50 });
+      setStudents(response.students);
+    } catch {
+      setError("Impossible de charger les élèves.");
+    } finally {
+      setLoadingStudents(false);
+    }
+  };
+
+  const submitExit = async () => {
+    if (!selectedStudent || !authorizedPersonName.trim() || !exitReason.trim()) {
+      setError("Élève, personne autorisée et motif sont obligatoires.");
+      return;
+    }
+
+    setSavingExit(true);
+    setError(null);
+    try {
+      await createSchoolLifeExit(selectedStudent.id, {
+        type: exitType,
+        authorizedPersonName: authorizedPersonName.trim(),
+        authorizedPersonPhone: authorizedPersonPhone.trim() || null,
+        reason: exitReason.trim(),
+        exitAt: new Date().toISOString(),
+      });
+      setShowExitModal(false);
+      resetExitForm();
+      await load();
+    } catch {
+      setError("Impossible d'enregistrer la sortie.");
+    } finally {
+      setSavingExit(false);
+    }
+  };
+
+  const completeExit = async (item: SchoolLifeExitItem) => {
+    setExitActionId(item.id);
+    setError(null);
+    try {
+      await updateSchoolLifeExit(item.studentId, item.id, {
+        status: "COMPLETED",
+        returnAt: new Date().toISOString(),
+      });
+      await load();
+    } catch {
+      setError("Impossible d'enregistrer le retour de l'élève.");
+    } finally {
+      setExitActionId(null);
     }
   };
 
@@ -205,7 +295,17 @@ export default function SurveillantSchoolLifeScreen() {
         ) : null}
 
         {tab === "exits" ? (
-          <Section title="SORTIES DU JOUR">
+          <>
+            <View style={styles.exitToolbar}>
+              <View style={styles.exitToolbarCopy}>
+                <Text style={styles.exitToolbarTitle}>Gestion des sorties</Text>
+                <Text style={styles.exitToolbarText}>Enregistrer un départ et clôturer le retour de l'élève.</Text>
+              </View>
+              <Pressable style={styles.primaryButton} onPress={() => void openCreateExit()}>
+                <Text style={styles.primaryButtonText}>+ Nouvelle sortie</Text>
+              </Pressable>
+            </View>
+            <Section title="SORTIES DU JOUR">
             {exits.length === 0 ? <Empty text="Aucune sortie enregistrée aujourd'hui." /> : exits.map((item) => (
               <ItemCard key={item.id}>
                 <View style={styles.itemHeader}>
@@ -215,7 +315,18 @@ export default function SurveillantSchoolLifeScreen() {
                 <Text style={styles.itemMeta}>{item.student.studentNumber} · {item.type === "TEMPORARY" ? "Temporaire" : "Définitive"}</Text>
                 <Text style={styles.itemText}>{item.reason}</Text>
                 <Text style={styles.itemMeta}>Départ {dateTime(item.exitAt)} · Retour {dateTime(item.returnAt)}</Text>
-                <Text style={styles.itemMeta}>Personne autorisée : {item.authorizedPersonName}</Text>
+                <Text style={styles.itemMeta}>Personne autorisée : {item.authorizedPersonName}{item.authorizedPersonPhone ? ` · ${item.authorizedPersonPhone}` : ""}</Text>
+                {item.status === "OPEN" ? (
+                  <Pressable
+                    style={styles.completeButton}
+                    onPress={() => void completeExit(item)}
+                    disabled={exitActionId === item.id}
+                  >
+                    <Text style={styles.completeButtonText}>
+                      {exitActionId === item.id ? "Enregistrement…" : "Enregistrer le retour"}
+                    </Text>
+                  </Pressable>
+                ) : null}
               </ItemCard>
             ))}</Section>
         ) : null}
@@ -277,6 +388,126 @@ export default function SurveillantSchoolLifeScreen() {
         ) : null}
       </ScrollView>
     </View>
+      <Modal
+        visible={showExitModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowExitModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <View>
+                <Text style={styles.modalEyebrow}>NOUVELLE SORTIE</Text>
+                <Text style={styles.modalTitle}>Enregistrer un départ</Text>
+              </View>
+              <Pressable onPress={() => setShowExitModal(false)} style={styles.modalClose}>
+                <Text style={styles.modalCloseText}>×</Text>
+              </Pressable>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+              <Text style={styles.formLabel}>ÉLÈVE</Text>
+              {selectedStudent ? (
+                <View style={styles.selectedStudent}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.selectedStudentName}>{studentName(selectedStudent)}</Text>
+                    <Text style={styles.selectedStudentMeta}>
+                      {selectedStudent.studentNumber} · {selectedStudent.enrollments[0]?.class.name ?? "Sans classe"}
+                    </Text>
+                  </View>
+                  <Pressable onPress={() => setSelectedStudent(null)}>
+                    <Text style={styles.changeText}>Changer</Text>
+                  </Pressable>
+                </View>
+              ) : (
+                <>
+                  <TextInput
+                    value={studentSearch}
+                    onChangeText={setStudentSearch}
+                    placeholder="Rechercher un élève ou matricule…"
+                    placeholderTextColor="#94A3B8"
+                    style={styles.input}
+                  />
+                  {loadingStudents ? (
+                    <ActivityIndicator style={styles.studentsLoader} />
+                  ) : (
+                    <View style={styles.studentPicker}>
+                      {filteredStudents.slice(0, 12).map((student) => (
+                        <Pressable
+                          key={student.id}
+                          style={styles.studentOption}
+                          onPress={() => setSelectedStudent(student)}
+                        >
+                          <Text style={styles.studentOptionName}>{studentName(student)}</Text>
+                          <Text style={styles.studentOptionMeta}>
+                            {student.studentNumber} · {student.enrollments[0]?.class.name ?? "Sans classe"}
+                          </Text>
+                        </Pressable>
+                      ))}
+                      {filteredStudents.length === 0 ? <Text style={styles.emptyPicker}>Aucun élève trouvé.</Text> : null}
+                    </View>
+                  )}
+                </>
+              )}
+
+              <Text style={styles.formLabel}>TYPE DE SORTIE</Text>
+              <View style={styles.typeRow}>
+                {(["TEMPORARY", "PERMANENT"] as const).map((type) => (
+                  <Pressable
+                    key={type}
+                    style={[styles.typeButton, exitType === type && styles.typeButtonActive]}
+                    onPress={() => setExitType(type)}
+                  >
+                    <Text style={[styles.typeButtonText, exitType === type && styles.typeButtonTextActive]}>
+                      {type === "TEMPORARY" ? "Temporaire" : "Définitive"}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+
+              <Text style={styles.formLabel}>PERSONNE AUTORISÉE</Text>
+              <TextInput
+                value={authorizedPersonName}
+                onChangeText={setAuthorizedPersonName}
+                placeholder="Nom et prénom"
+                placeholderTextColor="#94A3B8"
+                style={styles.input}
+              />
+
+              <Text style={styles.formLabel}>TÉLÉPHONE</Text>
+              <TextInput
+                value={authorizedPersonPhone}
+                onChangeText={setAuthorizedPersonPhone}
+                placeholder="Numéro de téléphone (optionnel)"
+                placeholderTextColor="#94A3B8"
+                keyboardType="phone-pad"
+                style={styles.input}
+              />
+
+              <Text style={styles.formLabel}>MOTIF</Text>
+              <TextInput
+                value={exitReason}
+                onChangeText={setExitReason}
+                placeholder="Motif de la sortie"
+                placeholderTextColor="#94A3B8"
+                multiline
+                style={[styles.input, styles.textarea]}
+              />
+
+              <Pressable
+                style={[styles.submitButton, savingExit && styles.buttonDisabled]}
+                onPress={() => void submitExit()}
+                disabled={savingExit}
+              >
+                <Text style={styles.submitButtonText}>
+                  {savingExit ? "Enregistrement…" : "Enregistrer la sortie"}
+                </Text>
+              </Pressable>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
   );
 }
 
@@ -380,6 +611,42 @@ const styles = StyleSheet.create({
   badge: { paddingHorizontal: 8, paddingVertical: 5, borderRadius: 8, backgroundColor: "#EEF2F7" },
   badgeText: { fontSize: 8, fontWeight: "900", color: "#344976" },
   empty: { padding: 18, fontSize: 11, color: "#64748B" },
+  exitToolbar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12, marginTop: 2, marginBottom: 14, padding: 14, borderRadius: 15, borderWidth: 1, borderColor: "#D9DEE5", backgroundColor: "#FFFFFF" },
+  exitToolbarCopy: { flex: 1 },
+  exitToolbarTitle: { fontSize: 13, fontWeight: "900", color: "#344976" },
+  exitToolbarText: { marginTop: 3, fontSize: 10, lineHeight: 15, color: "#64748B" },
+  primaryButton: { paddingHorizontal: 12, paddingVertical: 10, borderRadius: 10, backgroundColor: "#344976" },
+  primaryButtonText: { color: "#FFFFFF", fontSize: 10, fontWeight: "900" },
+  completeButton: { marginTop: 10, alignSelf: "flex-start", paddingHorizontal: 11, paddingVertical: 8, borderRadius: 9, backgroundColor: "#EEF2F7" },
+  completeButtonText: { color: "#344976", fontSize: 10, fontWeight: "900" },
+  modalOverlay: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(15,23,42,0.45)" },
+  modalCard: { maxHeight: "92%", padding: 18, borderTopLeftRadius: 22, borderTopRightRadius: 22, backgroundColor: "#FFFFFF" },
+  modalHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 },
+  modalEyebrow: { fontSize: 9, fontWeight: "900", letterSpacing: 1, color: "#64748B" },
+  modalTitle: { marginTop: 3, fontSize: 21, fontWeight: "900", color: "#344976" },
+  modalClose: { width: 36, height: 36, alignItems: "center", justifyContent: "center", borderRadius: 18, backgroundColor: "#F1F5F9" },
+  modalCloseText: { fontSize: 25, color: "#475569", lineHeight: 28 },
+  formLabel: { marginTop: 14, marginBottom: 7, fontSize: 9, fontWeight: "900", letterSpacing: 0.8, color: "#64748B" },
+  input: { minHeight: 44, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 10, borderWidth: 1, borderColor: "#CBD5E1", backgroundColor: "#F8FAFC", color: "#111827", fontSize: 12 },
+  textarea: { minHeight: 84, textAlignVertical: "top" },
+  selectedStudent: { flexDirection: "row", alignItems: "center", gap: 10, padding: 12, borderRadius: 11, borderWidth: 1, borderColor: "#CBD5E1", backgroundColor: "#F8FAFC" },
+  selectedStudentName: { fontSize: 12, fontWeight: "900", color: "#344976" },
+  selectedStudentMeta: { marginTop: 3, fontSize: 10, color: "#64748B" },
+  changeText: { fontSize: 10, fontWeight: "900", color: "#344976" },
+  studentPicker: { marginTop: 7, maxHeight: 190, borderRadius: 10, borderWidth: 1, borderColor: "#E2E8F0", overflow: "hidden" },
+  studentOption: { padding: 10, borderBottomWidth: 1, borderBottomColor: "#EEF2F7" },
+  studentOptionName: { fontSize: 11, fontWeight: "800", color: "#334155" },
+  studentOptionMeta: { marginTop: 2, fontSize: 9, color: "#64748B" },
+  emptyPicker: { padding: 12, fontSize: 10, color: "#64748B" },
+  studentsLoader: { marginTop: 12 },
+  typeRow: { flexDirection: "row", gap: 8 },
+  typeButton: { flex: 1, paddingVertical: 10, alignItems: "center", borderRadius: 10, borderWidth: 1, borderColor: "#CBD5E1", backgroundColor: "#FFFFFF" },
+  typeButtonActive: { borderColor: "#344976", backgroundColor: "#344976" },
+  typeButtonText: { fontSize: 10, fontWeight: "800", color: "#475569" },
+  typeButtonTextActive: { color: "#FFFFFF" },
+  submitButton: { marginTop: 18, marginBottom: 10, paddingVertical: 13, alignItems: "center", borderRadius: 11, backgroundColor: "#344976" },
+  submitButtonText: { color: "#FFFFFF", fontSize: 11, fontWeight: "900" },
+  buttonDisabled: { opacity: 0.55 },
   errorBox: { marginBottom: 12, padding: 12, borderRadius: 12, backgroundColor: "#FEE2E2" },
   errorText: { fontSize: 11, color: "#991B1B", fontWeight: "700" },
   retryText: { marginTop: 7, fontSize: 11, color: "#991B1B", fontWeight: "900" },
