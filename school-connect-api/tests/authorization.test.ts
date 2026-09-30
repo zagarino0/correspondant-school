@@ -147,26 +147,63 @@ describe("Student RBAC", () => {
 describe("Surveillant RBAC", () => {
   const surveillant = StaffFunction.SURVEILLANT;
 
-  it("autorise la consultation des élèves", () => {
+  it("autorise la recherche et la fiche vie scolaire", () => {
     expect(hasStaffPermission(surveillant, "student.read")).toBe(true);
   });
 
-  it("autorise la gestion opérationnelle des présences", () => {
+  it("autorise la gestion opérationnelle des présences et retards", () => {
     expect(hasStaffPermission(surveillant, "attendance.read")).toBe(true);
     expect(hasStaffPermission(surveillant, "attendance.create")).toBe(true);
     expect(hasStaffPermission(surveillant, "attendance.update")).toBe(true);
     expect(hasStaffPermission(surveillant, "attendance.delete")).toBe(false);
-  });
-
-  it("autorise les événements de retard et d'absence sans suppression", () => {
     expect(hasStaffPermission(surveillant, "attendance-event.read")).toBe(true);
     expect(hasStaffPermission(surveillant, "attendance-event.create")).toBe(true);
   });
 
-  it("autorise les convocations sans suppression", () => {
+  it("autorise les sorties temporaires et définitives sans suppression", () => {
+    expect(hasStaffPermission(surveillant, "student-exit.read")).toBe(true);
+    expect(hasStaffPermission(surveillant, "student-exit.create")).toBe(true);
+    expect(hasStaffPermission(surveillant, "student-exit.update")).toBe(true);
+  });
+
+  it("autorise le suivi des mouvements des élèves sans suppression", () => {
+    expect(hasStaffPermission(surveillant, "student-movement.read")).toBe(true);
+    expect(hasStaffPermission(surveillant, "student-movement.create")).toBe(true);
+    expect(hasStaffPermission(surveillant, "student-movement.update")).toBe(true);
+  });
+
+  it("autorise les incidents et le suivi disciplinaire sans suppression", () => {
+    expect(hasStaffPermission(surveillant, "incident.read")).toBe(true);
+    expect(hasStaffPermission(surveillant, "incident.create")).toBe(true);
+    expect(hasStaffPermission(surveillant, "incident.update")).toBe(true);
+
+    expect(hasStaffPermission(surveillant, "disciplinary-action.read")).toBe(true);
+    expect(hasStaffPermission(surveillant, "disciplinary-action.create")).toBe(true);
+    expect(hasStaffPermission(surveillant, "disciplinary-action.update")).toBe(true);
+  });
+
+  it("autorise les observations de vie scolaire", () => {
+    expect(hasStaffPermission(surveillant, "observation.read")).toBe(true);
+    expect(hasStaffPermission(surveillant, "observation.create")).toBe(true);
+  });
+
+  it("autorise la vérification des autorisations parentales", () => {
+    expect(hasStaffPermission(surveillant, "authorization.read")).toBe(true);
+    expect(hasStaffPermission(surveillant, "authorization.create")).toBe(false);
+    expect(hasStaffPermission(surveillant, "authorization.update")).toBe(false);
+  });
+
+  it("autorise le suivi des convocations sans modification ni suppression", () => {
     expect(hasStaffPermission(surveillant, "parent-summons.read")).toBe(true);
     expect(hasStaffPermission(surveillant, "parent-summons.create")).toBe(true);
     expect(hasStaffPermission(surveillant, "parent-summons.update")).toBe(false);
+  });
+
+  it("autorise les alertes importantes et les rapports quotidiens", () => {
+    expect(hasStaffPermission(surveillant, "alert.read")).toBe(true);
+    expect(hasStaffPermission(surveillant, "alert.create")).toBe(true);
+    expect(hasStaffPermission(surveillant, "daily-report.read")).toBe(true);
+    expect(hasStaffPermission(surveillant, "daily-report.create")).toBe(true);
   });
 
   it("autorise la messagerie et les annonces", () => {
