@@ -48,7 +48,9 @@ export function authorize(permission: Permission) {
 
       const allowed = hasStaffPermission(staffProfile.function, permission);
 
-      request.log.debug(
+      // Keep this at info level so a 403 can be diagnosed with the default
+      // LOG_LEVEL=info used by the development server. Never log credentials.
+      request.log.info(
         {
           userId: request.user.sub,
           role,
@@ -56,6 +58,8 @@ export function authorize(permission: Permission) {
           permission,
           allowed,
           schoolId: request.user.schoolId,
+          path: request.url,
+          method: request.method,
         },
         "Authorization check",
       );
@@ -74,13 +78,15 @@ export function authorize(permission: Permission) {
 
     const allowed = hasPermission(role, permission);
 
-    request.log.debug(
+    request.log.info(
       {
         userId: request.user.sub,
         role,
         permission,
         allowed,
         schoolId: request.user.schoolId,
+        path: request.url,
+        method: request.method,
       },
       "Authorization check",
     );
