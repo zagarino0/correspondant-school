@@ -303,16 +303,30 @@ async function main() {
   // attendance from the selected schedule.
   console.log("[6/6] Contrôle d’un schedule différent de la même classe");
 
-  const otherSchedule = schedules.find(
-    (item) =>
+  // Le dashboard Teacher ne contient que les créneaux du teacher connecté.
+  // Pour tester l'isolation par schedule, on consulte donc les créneaux de
+  // la même classe et du même jour, quel que soit le teacher affecté.
+  const classSchedules = await request(
+    `/api/v1/schedules?classId=${encodeURIComponent(schedule.classId)}&dayOfWeek=${encodeURIComponent(schedule.dayOfWeek)}`,
+    { headers: teacherHeaders },
+  );
+
+  assert(
+    classSchedules.response.ok,
+    `Schedules de la classe -> ${classSchedules.response.status}: ${JSON.stringify(classSchedules.body)}`,
+  );
+
+  const otherSchedule = (classSchedules.body?.schedules ?? []).find(
+    (item: Json) =>
       item?.id &&
       item.id !== schedule.id &&
-      item.classId === schedule.classId,
+      item.classId === schedule.classId &&
+      item.dayOfWeek === schedule.dayOfWeek,
   );
 
   assert(
     otherSchedule?.id,
-    `Impossible de tester le schedule différent : aucun deuxième créneau de la classe ${schedule.classId} n’est présent dans le dashboard du ${date}.`,
+    `Impossible de tester le schedule différent : aucun deuxième créneau de la classe ${schedule.classId} le ${schedule.dayOfWeek} n'est configuré.`,
   );
 
   const wrong = await request(
