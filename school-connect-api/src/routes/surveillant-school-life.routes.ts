@@ -575,6 +575,23 @@ export async function surveillantSchoolLifeRoutes(fastify: FastifyInstance) {
         parsed.data.approvalStatus !== undefined &&
         parsed.data.approvalStatus !== existingData?.approvalStatus;
 
+      if (
+        existingData?.approvalStatus === "APPROVED" &&
+        request.user.role !== "SCHOOL_ADMIN" &&
+        (parsed.data.type !== undefined ||
+          parsed.data.description !== undefined ||
+          parsed.data.decisionNote !== undefined ||
+          parsed.data.actionAt !== undefined ||
+          parsed.data.dueAt !== undefined)
+      ) {
+        return reply.status(409).send({
+          error: {
+            code: "APPROVED_ACTION_IMMUTABLE",
+            message: "An approved disciplinary action can only be followed or validated by a school administrator.",
+          },
+        });
+      }
+
       const item = await fastify.prisma.disciplinaryAction.update({
         where: { id: actionId },
         data: {
