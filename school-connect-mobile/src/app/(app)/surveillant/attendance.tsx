@@ -199,7 +199,7 @@ export default function SurveillantAttendanceScreen() {
     if (!lateStudent || !selectedSchedule) return;
 
     const time = arrivalTime.trim();
-    if (!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(time)) {
+    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) {
       setModalError("Indiquez une heure au format HH:MM.");
       return;
     }
