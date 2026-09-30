@@ -12,6 +12,8 @@ export const permissions = [
   "attendance.read",
   "attendance.create",
   "attendance.update",
+  "attendance-late.create",
+  "attendance-late.update",
   "attendance.delete",
 
   "attendance-event.read",
