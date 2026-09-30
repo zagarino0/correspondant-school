@@ -963,7 +963,7 @@ export async function surveillantSchoolLifeRoutes(fastify: FastifyInstance) {
           schoolId,
           academicYear: { status: "ACTIVE", schoolId },
         },
-        select: { id: true, classId: true, schoolId: true },
+        select: { id: true, classId: true, schoolId: true, dayOfWeek: true },
       });
 
       if (!schedule) {
