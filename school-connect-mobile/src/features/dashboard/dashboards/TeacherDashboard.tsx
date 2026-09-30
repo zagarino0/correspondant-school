@@ -695,7 +695,7 @@ export function TeacherDashboard({ firstName }: TeacherDashboardProps) {
 
                               <View style={styles.attendanceColumn}>
                                 <View style={styles.attendanceButtons}>
-                                  (["ABSENT", "PRESENT"] as const).map((status) => (
+                                  {(["ABSENT", "PRESENT"] as const).map((status) => (
                                     <Pressable
                                       key={status}
                                       disabled={isSaving}
