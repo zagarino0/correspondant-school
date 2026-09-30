@@ -161,6 +161,39 @@ export async function getSchoolLifeExits(params?: {
   return response.data.items;
 }
 
+export async function createSchoolLifeExit(
+  studentId: string,
+  input: {
+    type: "TEMPORARY" | "PERMANENT";
+    authorizedPersonName: string;
+    authorizedPersonPhone?: string | null;
+    reason: string;
+    exitAt?: string;
+    returnAt?: string | null;
+  },
+): Promise<SchoolLifeExitItem> {
+  const response = await apiClient.post<{ item: SchoolLifeExitItem }>(
+    `/api/v1/surveillant/school-life/students/${studentId}/exits`,
+    input,
+  );
+  return response.data.item;
+}
+
+export async function updateSchoolLifeExit(
+  studentId: string,
+  exitId: string,
+  input: {
+    status?: "OPEN" | "COMPLETED" | "CANCELLED";
+    returnAt?: string | null;
+  },
+): Promise<SchoolLifeExitItem> {
+  const response = await apiClient.patch<{ item: SchoolLifeExitItem }>(
+    `/api/v1/surveillant/school-life/students/${studentId}/exits/${exitId}`,
+    input,
+  );
+  return response.data.item;
+}
+
 export async function getSchoolLifeMovements(params?: {
   date?: string;
 }): Promise<SchoolLifeMovementItem[]> {
