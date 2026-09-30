@@ -20,7 +20,8 @@
     "db:up": "docker compose up -d postgres",
     "db:down": "docker compose down",
     "db:logs": "docker compose logs -f postgres",
-    "postinstall": "prisma skills sync || exit 0"
+    "postinstall": "prisma skills sync || exit 0",
+    "test:surveillant-school-life": "tsx scripts/test-surveillant-school-life.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
