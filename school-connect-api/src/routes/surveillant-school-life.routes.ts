@@ -1,0 +1,668 @@
+import type { FastifyInstance } from "fastify";
+import { z } from "zod";
+
+import { authenticate } from "../middleware/authenticate.js";
+import { authorize } from "../middleware/authorize.js";
+import { authorizeStudentResource } from "../middleware/authorize-student-resource.js";
+import { publishToUser } from "../realtime/message-events.js";
+
+const exitTypeSchema = z.enum(["TEMPORARY", "PERMANENT"]);
+const exitStatusSchema = z.enum(["OPEN", "COMPLETED", "CANCELLED"]);
+const movementTypeSchema = z.enum(["ENTRY", "EXIT"]);
+const incidentSeveritySchema = z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"]);
+const disciplinaryStatusSchema = z.enum(["ACTIVE", "COMPLETED", "CANCELLED"]);
+const alertSeveritySchema = z.enum(["NORMAL", "IMPORTANT", "CRITICAL"]);
+
+function parseDate(value: string | undefined, fallback = new Date()) {
+  const date = value ? new Date(value) : fallback;
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function dayRange(date: Date) {
+  const start = new Date(date);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 1);
+  return { start, end };
+}
+
+export async function surveillantSchoolLifeRoutes(fastify: FastifyInstance) {
+  fastify.get(
+    "/students/:studentId/life-profile",
+    {
+      onRequest: [authenticate],
+      preHandler: [authorizeStudentResource("student.read")],
+    },
+    async (request, reply) => {
+      const { studentId } = request.params as { studentId: string };
+
+      const student = await fastify.prisma.student.findFirst({
+        where: {
+          id: studentId,
+          schoolId: request.user.schoolId ?? undefined,
+        },
+        select: {
+          id: true,
+          studentNumber: true,
+          firstName: true,
+          lastName: true,
+          status: true,
+          parents: {
+            select: {
+              relationship: true,
+              isPrimary: true,
+              parent: { select: { id: true, firstName: true, lastName: true, phone: true } },
+            },
+          },
+          enrollments: {
+            where: { status: "ACTIVE" },
+            select: {
+              class: { select: { id: true, name: true, level: true } },
+              academicYear: { select: { id: true, name: true } },
+            },
+            take: 1,
+          },
+          attendances: {
+            orderBy: { date: "desc" },
+            take: 20,
+            select: { id: true, date: true, status: true, arrivalTime: true, reason: true, note: true },
+          },
+          studentExits: {
+            orderBy: { exitAt: "desc" },
+            take: 20,
+            select: {
+              id: true, type: true, status: true, authorizedPersonName: true,
+              authorizedPersonPhone: true, reason: true, exitAt: true, returnAt: true,
+            },
+          },
+          studentMovements: {
+            orderBy: { occurredAt: "desc" },
+            take: 20,
+            select: { id: true, type: true, reason: true, occurredAt: true },
+          },
+          incidents: {
+            orderBy: { occurredAt: "desc" },
+            take: 20,
+            select: { id: true, type: true, severity: true, description: true, occurredAt: true },
+          },
+          disciplinaryActions: {
+            orderBy: { actionAt: "desc" },
+            take: 20,
+            select: { id: true, incidentId: true, type: true, status: true, description: true, actionAt: true },
+          },
+          schoolLifeObservations: {
+            orderBy: { observedAt: "desc" },
+            take: 20,
+            select: { id: true, content: true, observedAt: true, createdAt: true },
+          },
+          parentAuthorizations: {
+            orderBy: { requestedAt: "desc" },
+            take: 20,
+            select: { id: true, parentId: true, type: true, status: true, reason: true, requestedAt: true, decidedAt: true },
+          },
+          parentSummons: {
+            orderBy: { createdAt: "desc" },
+            take: 20,
+            select: { id: true, parentId: true, reason: true, status: true, scheduledAt: true, createdAt: true },
+          },
+        },
+      });
+
+      if (!student) {
+        return reply.status(404).send({
+          error: { code: "STUDENT_NOT_FOUND", message: "Student not found." },
+        });
+      }
+
+      return reply.send({ student });
+    },
+  );
+
+  fastify.get(
+    "/exits",
+    {
+      onRequest: [authenticate],
+      preHandler: [authorize("student-exit.read")],
+    },
+    async (request, reply) => {
+      const query = request.query as {
+        studentId?: string;
+        date?: string;
+        status?: string;
+        type?: string;
+      };
+      const schoolId = request.user.schoolId;
+      if (!schoolId) return reply.status(403).send({ error: { code: "SCHOOL_REQUIRED", message: "A school assignment is required." } });
+
+      const date = parseDate(query.date);
+      if (query.date && !date) return reply.status(400).send({ error: { code: "INVALID_DATE", message: "The date is invalid." } });
+
+      const where = {
+        schoolId,
+        ...(query.studentId ? { studentId: query.studentId } : {}),
+        ...(query.status && exitStatusSchema.safeParse(query.status).success ? { status: query.status as "OPEN" | "COMPLETED" | "CANCELLED" } : {}),
+        ...(query.type && exitTypeSchema.safeParse(query.type).success ? { type: query.type as "TEMPORARY" | "PERMANENT" } : {}),
+        ...(query.date ? { exitAt: { gte: dayRange(date!).start, lt: dayRange(date!).end } } : {}),
+      };
+
+      const items = await fastify.prisma.studentExit.findMany({
+        where,
+        orderBy: { exitAt: "desc" },
+        take: 100,
+        select: {
+          id: true, studentId: true, type: true, status: true,
+          authorizedPersonName: true, authorizedPersonPhone: true,
+          reason: true, exitAt: true, returnAt: true, recordedBy: true,
+          student: { select: { firstName: true, lastName: true, studentNumber: true } },
+        },
+      });
+
+      return reply.send({ items });
+    },
+  );
+
+  fastify.post(
+    "/students/:studentId/exits",
+    {
+      onRequest: [authenticate],
+      preHandler: [authorizeStudentResource("student-exit.create")],
+    },
+    async (request, reply) => {
+      const { studentId } = request.params as { studentId: string };
+      const parsed = z.object({
+        type: exitTypeSchema,
+        authorizedPersonName: z.string().trim().min(2).max(150),
+        authorizedPersonPhone: z.string().trim().max(30).nullable().optional(),
+        reason: z.string().trim().min(1).max(500),
+        exitAt: z.string().datetime().optional(),
+        returnAt: z.string().datetime().nullable().optional(),
+      }).safeParse(request.body);
+
+      if (!parsed.success) return reply.status(400).send({ error: { code: "VALIDATION_ERROR", message: "Invalid student exit." } });
+
+      const student = await fastify.prisma.student.findFirst({
+        where: { id: studentId, schoolId: request.user.schoolId ?? undefined },
+        select: { id: true, schoolId: true },
+      });
+      if (!student) return reply.status(404).send({ error: { code: "STUDENT_NOT_FOUND", message: "Student not found." } });
+
+      const exitAt = new Date(parsed.data.exitAt ?? new Date().toISOString());
+      const returnAt = parsed.data.returnAt ? new Date(parsed.data.returnAt) : null;
+      if (returnAt && returnAt < exitAt) return reply.status(400).send({ error: { code: "INVALID_RETURN_TIME", message: "Return time cannot precede exit time." } });
+
+      const item = await fastify.prisma.studentExit.create({
+        data: {
+          schoolId: student.schoolId,
+          studentId,
+          type: parsed.data.type,
+          status: returnAt || parsed.data.type === "PERMANENT" ? "COMPLETED" : "OPEN",
+          authorizedPersonName: parsed.data.authorizedPersonName,
+          authorizedPersonPhone: parsed.data.authorizedPersonPhone ?? null,
+          reason: parsed.data.reason,
+          exitAt,
+          returnAt,
+          recordedBy: request.user.sub,
+        },
+      });
+
+      return reply.status(201).send({ item });
+    },
+  );
+
+  fastify.patch(
+    "/students/:studentId/exits/:exitId",
+    {
+      onRequest: [authenticate],
+      preHandler: [authorizeStudentResource("student-exit.update")],
+    },
+    async (request, reply) => {
+      const { studentId, exitId } = request.params as { studentId: string; exitId: string };
+      const parsed = z.object({
+        status: exitStatusSchema.optional(),
+        returnAt: z.string().datetime().nullable().optional(),
+      }).safeParse(request.body);
+      if (!parsed.success) return reply.status(400).send({ error: { code: "VALIDATION_ERROR", message: "Invalid exit update." } });
+
+      const existing = await fastify.prisma.studentExit.findFirst({ where: { id: exitId, studentId, schoolId: request.user.schoolId ?? undefined } });
+      if (!existing) return reply.status(404).send({ error: { code: "EXIT_NOT_FOUND", message: "Exit not found." } });
+
+      const returnAt = parsed.data.returnAt === undefined ? undefined : parsed.data.returnAt ? new Date(parsed.data.returnAt) : null;
+      const item = await fastify.prisma.studentExit.update({
+        where: { id: exitId },
+        data: {
+          ...(parsed.data.status ? { status: parsed.data.status } : {}),
+          ...(parsed.data.returnAt !== undefined ? { returnAt } : {}),
+        },
+      });
+
+      return reply.send({ item });
+    },
+  );
+
+  fastify.get(
+    "/movements",
+    {
+      onRequest: [authenticate],
+      preHandler: [authorize("student-movement.read")],
+    },
+    async (request, reply) => {
+      const query = request.query as { studentId?: string; date?: string };
+      const schoolId = request.user.schoolId;
+      if (!schoolId) return reply.status(403).send({ error: { code: "SCHOOL_REQUIRED", message: "A school assignment is required." } });
+      const date = parseDate(query.date);
+      if (query.date && !date) return reply.status(400).send({ error: { code: "INVALID_DATE", message: "The date is invalid." } });
+
+      const items = await fastify.prisma.studentMovement.findMany({
+        where: {
+          schoolId,
+          ...(query.studentId ? { studentId: query.studentId } : {}),
+          ...(query.date ? { occurredAt: { gte: dayRange(date!).start, lt: dayRange(date!).end } } : {}),
+        },
+        orderBy: { occurredAt: "desc" },
+        take: 100,
+        select: {
+          id: true, studentId: true, type: true, reason: true, occurredAt: true,
+          student: { select: { firstName: true, lastName: true, studentNumber: true } },
+        },
+      });
+      return reply.send({ items });
+    },
+  );
+
+  fastify.post(
+    "/students/:studentId/movements",
+    {
+      onRequest: [authenticate],
+      preHandler: [authorizeStudentResource("student-movement.create")],
+    },
+    async (request, reply) => {
+      const { studentId } = request.params as { studentId: string };
+      const parsed = z.object({
+        type: movementTypeSchema,
+        reason: z.string().trim().min(1).max(500),
+        occurredAt: z.string().datetime().optional(),
+      }).safeParse(request.body);
+      if (!parsed.success) return reply.status(400).send({ error: { code: "VALIDATION_ERROR", message: "Invalid student movement." } });
+
+      const student = await fastify.prisma.student.findFirst({ where: { id: studentId, schoolId: request.user.schoolId ?? undefined }, select: { id: true, schoolId: true } });
+      if (!student) return reply.status(404).send({ error: { code: "STUDENT_NOT_FOUND", message: "Student not found." } });
+
+      const item = await fastify.prisma.studentMovement.create({
+        data: {
+          schoolId: student.schoolId,
+          studentId,
+          type: parsed.data.type,
+          reason: parsed.data.reason,
+          occurredAt: new Date(parsed.data.occurredAt ?? new Date().toISOString()),
+          recordedBy: request.user.sub,
+        },
+      });
+      return reply.status(201).send({ item });
+    },
+  );
+
+  fastify.get(
+    "/incidents",
+    {
+      onRequest: [authenticate],
+      preHandler: [authorize("incident.read")],
+    },
+    async (request, reply) => {
+      const query = request.query as { studentId?: string; severity?: string };
+      const schoolId = request.user.schoolId;
+      if (!schoolId) return reply.status(403).send({ error: { code: "SCHOOL_REQUIRED", message: "A school assignment is required." } });
+
+      const items = await fastify.prisma.incident.findMany({
+        where: {
+          schoolId,
+          ...(query.studentId ? { studentId: query.studentId } : {}),
+          ...(query.severity && incidentSeveritySchema.safeParse(query.severity).success ? { severity: query.severity as "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" } : {}),
+        },
+        orderBy: { occurredAt: "desc" },
+        take: 100,
+        select: {
+          id: true, studentId: true, type: true, severity: true, description: true, occurredAt: true, reportedBy: true,
+          student: { select: { firstName: true, lastName: true, studentNumber: true } },
+          actions: { orderBy: { actionAt: "desc" }, take: 10, select: { id: true, type: true, status: true, actionAt: true, description: true } },
+        },
+      });
+      return reply.send({ items });
+    },
+  );
+
+  fastify.post(
+    "/students/:studentId/incidents",
+    {
+      onRequest: [authenticate],
+      preHandler: [authorizeStudentResource("incident.create")],
+    },
+    async (request, reply) => {
+      const { studentId } = request.params as { studentId: string };
+      const parsed = z.object({
+        type: z.string().trim().min(1).max(100),
+        severity: incidentSeveritySchema.default("MEDIUM"),
+        description: z.string().trim().min(1).max(3000),
+        occurredAt: z.string().datetime().optional(),
+      }).safeParse(request.body);
+      if (!parsed.success) return reply.status(400).send({ error: { code: "VALIDATION_ERROR", message: "Invalid incident." } });
+
+      const student = await fastify.prisma.student.findFirst({ where: { id: studentId, schoolId: request.user.schoolId ?? undefined }, select: { id: true, schoolId: true } });
+      if (!student) return reply.status(404).send({ error: { code: "STUDENT_NOT_FOUND", message: "Student not found." } });
+
+      const item = await fastify.prisma.incident.create({
+        data: {
+          schoolId: student.schoolId,
+          studentId,
+          type: parsed.data.type,
+          severity: parsed.data.severity,
+          description: parsed.data.description,
+          occurredAt: new Date(parsed.data.occurredAt ?? new Date().toISOString()),
+          reportedBy: request.user.sub,
+        },
+      });
+      return reply.status(201).send({ item });
+    },
+  );
+
+  fastify.get(
+    "/disciplinary-actions",
+    {
+      onRequest: [authenticate],
+      preHandler: [authorize("disciplinary-action.read")],
+    },
+    async (request, reply) => {
+      const query = request.query as { studentId?: string };
+      const schoolId = request.user.schoolId;
+      if (!schoolId) return reply.status(403).send({ error: { code: "SCHOOL_REQUIRED", message: "A school assignment is required." } });
+
+      const items = await fastify.prisma.disciplinaryAction.findMany({
+        where: { schoolId, ...(query.studentId ? { studentId: query.studentId } : {}) },
+        orderBy: { actionAt: "desc" },
+        take: 100,
+        select: {
+          id: true, studentId: true, incidentId: true, type: true, status: true, description: true, actionAt: true, createdBy: true,
+          student: { select: { firstName: true, lastName: true, studentNumber: true } },
+        },
+      });
+      return reply.send({ items });
+    },
+  );
+
+  fastify.post(
+    "/students/:studentId/disciplinary-actions",
+    {
+      onRequest: [authenticate],
+      preHandler: [authorizeStudentResource("disciplinary-action.create")],
+    },
+    async (request, reply) => {
+      const { studentId } = request.params as { studentId: string };
+      const parsed = z.object({
+        incidentId: z.string().nullable().optional(),
+        type: z.string().trim().min(1).max(100),
+        description: z.string().trim().min(1).max(3000),
+        actionAt: z.string().datetime().optional(),
+      }).safeParse(request.body);
+      if (!parsed.success) return reply.status(400).send({ error: { code: "VALIDATION_ERROR", message: "Invalid disciplinary action." } });
+
+      const student = await fastify.prisma.student.findFirst({ where: { id: studentId, schoolId: request.user.schoolId ?? undefined }, select: { id: true, schoolId: true } });
+      if (!student) return reply.status(404).send({ error: { code: "STUDENT_NOT_FOUND", message: "Student not found." } });
+
+      if (parsed.data.incidentId) {
+        const incident = await fastify.prisma.incident.findFirst({ where: { id: parsed.data.incidentId, studentId, schoolId: student.schoolId }, select: { id: true } });
+        if (!incident) return reply.status(400).send({ error: { code: "INCIDENT_NOT_FOUND", message: "Incident not found for this student." } });
+      }
+
+      const item = await fastify.prisma.disciplinaryAction.create({
+        data: {
+          schoolId: student.schoolId,
+          studentId,
+          incidentId: parsed.data.incidentId ?? null,
+          type: parsed.data.type,
+          description: parsed.data.description,
+          actionAt: new Date(parsed.data.actionAt ?? new Date().toISOString()),
+          createdBy: request.user.sub,
+        },
+      });
+      return reply.status(201).send({ item });
+    },
+  );
+
+  fastify.get(
+    "/observations",
+    {
+      onRequest: [authenticate],
+      preHandler: [authorize("observation.read")],
+    },
+    async (request, reply) => {
+      const query = request.query as { studentId?: string };
+      const schoolId = request.user.schoolId;
+      if (!schoolId) return reply.status(403).send({ error: { code: "SCHOOL_REQUIRED", message: "A school assignment is required." } });
+
+      const items = await fastify.prisma.schoolLifeObservation.findMany({
+        where: { schoolId, ...(query.studentId ? { studentId: query.studentId } : {}) },
+        orderBy: { observedAt: "desc" },
+        take: 100,
+        select: {
+          id: true, studentId: true, content: true, observedAt: true, createdAt: true,
+          student: { select: { firstName: true, lastName: true, studentNumber: true } },
+        },
+      });
+      return reply.send({ items });
+    },
+  );
+
+  fastify.post(
+    "/students/:studentId/observations",
+    {
+      onRequest: [authenticate],
+      preHandler: [authorizeStudentResource("observation.create")],
+    },
+    async (request, reply) => {
+      const { studentId } = request.params as { studentId: string };
+      const parsed = z.object({
+        content: z.string().trim().min(1).max(3000),
+        observedAt: z.string().datetime().optional(),
+      }).safeParse(request.body);
+      if (!parsed.success) return reply.status(400).send({ error: { code: "VALIDATION_ERROR", message: "Invalid school-life observation." } });
+
+      const student = await fastify.prisma.student.findFirst({ where: { id: studentId, schoolId: request.user.schoolId ?? undefined }, select: { id: true, schoolId: true } });
+      if (!student) return reply.status(404).send({ error: { code: "STUDENT_NOT_FOUND", message: "Student not found." } });
+
+      const item = await fastify.prisma.schoolLifeObservation.create({
+        data: {
+          schoolId: student.schoolId,
+          studentId,
+          content: parsed.data.content,
+          observedAt: new Date(parsed.data.observedAt ?? new Date().toISOString()),
+          createdBy: request.user.sub,
+        },
+      });
+      return reply.status(201).send({ item });
+    },
+  );
+
+  fastify.get(
+    "/authorizations",
+    {
+      onRequest: [authenticate],
+      preHandler: [authorize("authorization.read")],
+    },
+    async (request, reply) => {
+      const query = request.query as { studentId?: string; status?: string };
+      const schoolId = request.user.schoolId;
+      if (!schoolId) return reply.status(403).send({ error: { code: "SCHOOL_REQUIRED", message: "A school assignment is required." } });
+
+      const items = await fastify.prisma.parentAuthorization.findMany({
+        where: {
+          schoolId,
+          ...(query.studentId ? { studentId: query.studentId } : {}),
+          ...(query.status && ["PENDING", "APPROVED", "REJECTED"].includes(query.status)
+            ? { status: query.status as "PENDING" | "APPROVED" | "REJECTED" }
+            : {}),
+        },
+        orderBy: { requestedAt: "desc" },
+        take: 100,
+        select: {
+          id: true, studentId: true, parentId: true, type: true, status: true,
+          reason: true, requestedAt: true, decidedAt: true,
+          student: { select: { firstName: true, lastName: true, studentNumber: true } },
+          parent: { select: { firstName: true, lastName: true, phone: true } },
+        },
+      });
+      return reply.send({ items });
+    },
+  );
+
+  fastify.get(
+    "/alerts",
+    {
+      onRequest: [authenticate],
+      preHandler: [authorize("alert.read")],
+    },
+    async (request, reply) => {
+      const schoolId = request.user.schoolId;
+      if (!schoolId) return reply.status(403).send({ error: { code: "SCHOOL_REQUIRED", message: "A school assignment is required." } });
+
+      const items = await fastify.prisma.alert.findMany({
+        where: {
+          schoolId,
+          OR: [
+            { recipientId: request.user.sub },
+            { createdBy: request.user.sub },
+          ],
+        },
+        orderBy: { createdAt: "desc" },
+        take: 100,
+        select: {
+          id: true, studentId: true, recipientId: true, severity: true, title: true,
+          message: true, readAt: true, createdAt: true,
+          student: { select: { firstName: true, lastName: true, studentNumber: true } },
+        },
+      });
+      return reply.send({ items });
+    },
+  );
+
+  fastify.post(
+    "/alerts",
+    {
+      onRequest: [authenticate],
+      preHandler: [authorize("alert.create")],
+    },
+    async (request, reply) => {
+      const parsed = z.object({
+        studentId: z.string().nullable().optional(),
+        recipientId: z.string().nullable().optional(),
+        severity: alertSeveritySchema.default("NORMAL"),
+        title: z.string().trim().min(1).max(150),
+        message: z.string().trim().min(1).max(2000),
+      }).safeParse(request.body);
+      if (!parsed.success) return reply.status(400).send({ error: { code: "VALIDATION_ERROR", message: "Invalid alert." } });
+
+      const schoolId = request.user.schoolId;
+      if (!schoolId) return reply.status(403).send({ error: { code: "SCHOOL_REQUIRED", message: "A school assignment is required." } });
+
+      if (parsed.data.studentId) {
+        const student = await fastify.prisma.student.findFirst({ where: { id: parsed.data.studentId, schoolId }, select: { id: true } });
+        if (!student) return reply.status(404).send({ error: { code: "STUDENT_NOT_FOUND", message: "Student not found." } });
+      }
+
+      if (parsed.data.recipientId) {
+        const recipient = await fastify.prisma.user.findFirst({ where: { id: parsed.data.recipientId, schoolId }, select: { id: true } });
+        if (!recipient) return reply.status(404).send({ error: { code: "RECIPIENT_NOT_FOUND", message: "Recipient not found in this school." } });
+      }
+
+      const item = await fastify.prisma.alert.create({
+        data: {
+          schoolId,
+          studentId: parsed.data.studentId ?? null,
+          recipientId: parsed.data.recipientId ?? null,
+          severity: parsed.data.severity,
+          title: parsed.data.title,
+          message: parsed.data.message,
+          createdBy: request.user.sub,
+        },
+      });
+
+      if (item.recipientId) publishToUser(item.recipientId, "school-life:alert", item);
+      return reply.status(201).send({ item });
+    },
+  );
+
+  fastify.get(
+    "/daily-reports",
+    {
+      onRequest: [authenticate],
+      preHandler: [authorize("daily-report.read")],
+    },
+    async (request, reply) => {
+      const schoolId = request.user.schoolId;
+      if (!schoolId) return reply.status(403).send({ error: { code: "SCHOOL_REQUIRED", message: "A school assignment is required." } });
+
+      const items = await fastify.prisma.dailyReport.findMany({
+        where: { schoolId },
+        orderBy: { reportDate: "desc" },
+        take: 60,
+        select: {
+          id: true, reportDate: true, summary: true, absences: true, lates: true,
+          incidents: true, exits: true, movements: true, createdBy: true, createdAt: true,
+        },
+      });
+      return reply.send({ items });
+    },
+  );
+
+  fastify.post(
+    "/daily-reports",
+    {
+      onRequest: [authenticate],
+      preHandler: [authorize("daily-report.create")],
+    },
+    async (request, reply) => {
+      const parsed = z.object({
+        reportDate: z.string().datetime().optional(),
+        summary: z.string().trim().min(1).max(5000),
+      }).safeParse(request.body);
+      if (!parsed.success) return reply.status(400).send({ error: { code: "VALIDATION_ERROR", message: "Invalid daily report." } });
+
+      const schoolId = request.user.schoolId;
+      if (!schoolId) return reply.status(403).send({ error: { code: "SCHOOL_REQUIRED", message: "A school assignment is required." } });
+
+      const reportDate = new Date(parsed.data.reportDate ?? new Date().toISOString());
+      const { start, end } = dayRange(reportDate);
+
+      const [absences, lates, incidents, exits, movements] = await Promise.all([
+        fastify.prisma.attendance.count({ where: { date: { gte: start, lt: end }, status: "ABSENT", student: { schoolId } } }),
+        fastify.prisma.attendance.count({ where: { date: { gte: start, lt: end }, status: "LATE", student: { schoolId } } }),
+        fastify.prisma.incident.count({ where: { schoolId, occurredAt: { gte: start, lt: end } } }),
+        fastify.prisma.studentExit.count({ where: { schoolId, exitAt: { gte: start, lt: end } } }),
+        fastify.prisma.studentMovement.count({ where: { schoolId, occurredAt: { gte: start, lt: end } } }),
+      ]);
+
+      const item = await fastify.prisma.dailyReport.upsert({
+        where: { schoolId_reportDate: { schoolId, reportDate: start } },
+        create: {
+          schoolId,
+          reportDate: start,
+          summary: parsed.data.summary,
+          absences,
+          lates,
+          incidents,
+          exits,
+          movements,
+          createdBy: request.user.sub,
+        },
+        update: {
+          summary: parsed.data.summary,
+          absences,
+          lates,
+          incidents,
+          exits,
+          movements,
+        },
+      });
+
+      return reply.status(201).send({ item });
+    },
+  );
+}
