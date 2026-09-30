@@ -159,3 +159,36 @@ export type BulkPersonnelInput = {
   password: string;
   function: StaffFunction;
 };
+
+
+export type SchoolAdminDisciplinaryAction = {
+  id: string;
+  studentId: string;
+  incidentId: string | null;
+  type: string;
+  status: "ACTIVE" | "COMPLETED" | "CANCELLED";
+  approvalStatus: "PENDING" | "APPROVED" | "REJECTED";
+  description: string;
+  decisionNote: string | null;
+  actionAt: string;
+  dueAt: string | null;
+  completedAt: string | null;
+  createdBy: string;
+  approvedBy: string | null;
+  approvedAt: string | null;
+  completedBy: string | null;
+  student: {
+    firstName: string;
+    lastName: string;
+    studentNumber: string;
+  };
+};
+
+export type SchoolAdminDisciplinaryActionsResponse = {
+  items: SchoolAdminDisciplinaryAction[];
+};
+
+export type UpdateSchoolAdminDisciplinaryActionInput = {
+  approvalStatus?: "APPROVED" | "REJECTED";
+  decisionNote?: string | null;
+};
