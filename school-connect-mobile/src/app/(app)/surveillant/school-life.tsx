@@ -339,6 +339,7 @@ export default function SurveillantSchoolLifeScreen() {
                 ) : null}
               </ItemCard>
             ))}</Section>
+          </>
         ) : null}
 
         {tab === "movements" ? (
