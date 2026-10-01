@@ -360,3 +360,15 @@ export async function getSchoolLifeAuthorizations(): Promise<SchoolLifeAuthoriza
   );
   return response.data.items;
 }
+
+export async function decideSchoolLifeAuthorization(
+  authorizationId: string,
+  status: "APPROVED" | "REJECTED",
+): Promise<SchoolLifeAuthorizationItem> {
+  const response = await apiClient.patch<{ item: SchoolLifeAuthorizationItem }>(
+    `/api/v1/surveillant/school-life/authorizations/${authorizationId}`,
+    { status },
+  );
+
+  return response.data.item;
+}
