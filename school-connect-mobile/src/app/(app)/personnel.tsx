@@ -3,10 +3,13 @@ import { router } from "expo-router";
 import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { deleteSchoolPersonnel, getSchoolAdminDashboard } from "../../services/school-admin/school-admin.service";
 import type { SchoolAdminDashboardResponse } from "../../services/school-admin/school-admin.types";
+import { hasPermission } from "../../features/secretariat/access";
+import { useAuthStore } from "../../stores/authStore";
 
 const labels: Record<string,string> = { ADMINISTRATION:"Administration", SURVEILLANT:"Surveillance", SECRETARIAT:"Secrétariat", COMPTABILITE:"Comptabilité", INFIRMIER:"Infirmerie" };
 
 export default function PersonnelScreen(){
+  const user = useAuthStore((state) => state.user);
   const [data,setData]=useState<SchoolAdminDashboardResponse|null>(null);
   const [loading,setLoading]=useState(true); const [refreshing,setRefreshing]=useState(false);
   const load=useCallback(async()=>{try{setData(await getSchoolAdminDashboard());}catch(error:any){Alert.alert("Erreur",error?.response?.data?.error?.message??"Impossible de charger le personnel.");}finally{setLoading(false);setRefreshing(false);}},[]);
@@ -34,8 +37,8 @@ export default function PersonnelScreen(){
     <View style={styles.header}>
       <View style={styles.headerText}><Text style={styles.title}>Personnel</Text><Text style={styles.subtitle}>{data?.personnel.length??0} personne(s) active(s)</Text></View>
       <View style={styles.actions}>
-        <Pressable style={styles.secondaryButton} onPress={()=>router.push("/(app)/personnel-import")}><Text style={styles.secondaryText}>Excel</Text></Pressable>
-        <Pressable style={styles.addButton} onPress={()=>router.push("/(app)/personnel-create")}><Text style={styles.addButtonText}>+ Ajouter</Text></Pressable>
+        {hasPermission(user, "user.create") ? <Pressable style={styles.secondaryButton} onPress={()=>router.push("/(app)/personnel-import")}><Text style={styles.secondaryText}>Excel</Text></Pressable> : null}
+        {hasPermission(user, "user.create") ? <Pressable style={styles.addButton} onPress={()=>router.push("/(app)/personnel-create")}><Text style={styles.addButtonText}>+ Ajouter</Text></Pressable> : null}
       </View>
     </View>
     {groups.map(([key,items])=><View key={key} style={styles.group}>
@@ -44,8 +47,8 @@ export default function PersonnelScreen(){
         <View style={styles.main}><Text style={styles.name}>{p.lastName} {p.firstName}</Text><Text style={styles.email}>{p.email}</Text></View>
         <Text style={styles.status}>{p.status==="ACTIVE"?"Actif":p.status}</Text>
         <View style={styles.rowActions}>
-          <Pressable style={styles.editButton} onPress={()=>router.push({pathname:"/(app)/personnel-edit",params:{assignmentId:p.assignmentId}})}><Text style={styles.editText}>Modifier</Text></Pressable>
-          <Pressable style={styles.deleteButton} onPress={()=>void remove(p.assignmentId,`${p.lastName} ${p.firstName}`)}><Text style={styles.deleteText}>Supprimer</Text></Pressable>
+          {hasPermission(user, "user.update") ? <Pressable style={styles.editButton} onPress={()=>router.push({pathname:"/(app)/personnel-edit",params:{assignmentId:p.assignmentId}})}><Text style={styles.editText}>Modifier</Text></Pressable> : null}
+          {hasPermission(user, "user.delete") ? <Pressable style={styles.deleteButton} onPress={()=>void remove(p.assignmentId,`${p.lastName} ${p.firstName}`)}><Text style={styles.deleteText}>Supprimer</Text></Pressable> : null}
         </View>
       </View>)}
     </View>)}
