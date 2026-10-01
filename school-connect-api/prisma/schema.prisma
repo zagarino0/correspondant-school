@@ -29,9 +29,15 @@ model School {
   disciplinaryActions DisciplinaryAction[]
   schoolLifeObservations SchoolLifeObservation[]
   parentAuthorizations ParentAuthorization[]
+  meetings         Meeting[]
+  payments         Payment[]
   alerts           Alert[]
   dailyReports     DailyReport[]
   users            User[]
+  documents        Document[]
+  meetings         Meeting[]
+  payments         Payment[]
+  tickets          Ticket[]
 }
 
 model User {
@@ -83,6 +89,11 @@ model User {
   createdDailyReports      DailyReport[]             @relation("DailyReportCreatedBy")
   staffProfile             StaffProfile?
   studentProfile           Student?
+  createdDocuments         Document[]              @relation("DocumentCreatedBy")
+  createdMeetings           Meeting[]               @relation("MeetingCreatedBy")
+  receivedPayments          Payment[]               @relation("PaymentReceivedBy")
+  createdTickets            Ticket[]                @relation("TicketCreatedBy")
+  assignedTickets           Ticket[]                @relation("TicketAssignedTo")
   teacherClassAssignments  TeacherClass[]            @relation("TeacherClassAssignments")
   school                   School?                   @relation(fields: [schoolId], references: [id])
 
@@ -869,6 +880,111 @@ model MedicalHistory {
   @@index([targetUserId, createdAt])
   @@index([actorUserId, createdAt])
 }
+
+
+model Document {
+  id          String   @id @default(cuid())
+  schoolId    String
+  createdBy   String
+  title       String
+  type        String
+  description String?
+  fileUrl     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  school      School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  creator     User     @relation("DocumentCreatedBy", fields: [createdBy], references: [id])
+  @@index([schoolId])
+  @@index([createdBy])
+}
+
+model Meeting {
+  id          String        @id @default(cuid())
+  schoolId    String
+  createdBy   String
+  studentId   String?
+  title       String
+  type        String
+  description String?
+  scheduledAt DateTime
+  status      MeetingStatus @default(SCHEDULED)
+  notes       String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  school      School        @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  creator     User          @relation("MeetingCreatedBy", fields: [createdBy], references: [id])
+  student     Student?      @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  @@index([schoolId, scheduledAt])
+  @@index([studentId])
+  @@index([createdBy])
+}
+
+model Payment {
+  id          String        @id @default(cuid())
+  schoolId    String
+  receivedBy  String
+  studentId   String?
+  amount      Decimal       @db.Decimal(12, 2)
+  currency    String        @default("MGA")
+  method      String
+  reference   String?
+  description String?
+  status      PaymentStatus @default(RECORDED)
+  paidAt      DateTime      @default(now())
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  school      School        @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  receiver    User          @relation("PaymentReceivedBy", fields: [receivedBy], references: [id])
+  student     Student?      @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  @@index([schoolId, paidAt])
+  @@index([studentId])
+  @@index([receivedBy])
+}
+
+model Ticket {
+  id          String       @id @default(cuid())
+  schoolId    String
+  createdBy   String
+  assignedTo  String?
+  subject     String
+  description String
+  priority    TicketPriority @default(NORMAL)
+  status      TicketStatus @default(OPEN)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  school      School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  creator     User         @relation("TicketCreatedBy", fields: [createdBy], references: [id])
+  assignee    User?        @relation("TicketAssignedTo", fields: [assignedTo], references: [id], onDelete: SetNull)
+  @@index([schoolId, status])
+  @@index([createdBy])
+  @@index([assignedTo])
+}
+
+enum MeetingStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  RECORDED
+  CANCELLED
+}
+
+enum TicketPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
 
 enum UserRole {
   SUPER_ADMIN
