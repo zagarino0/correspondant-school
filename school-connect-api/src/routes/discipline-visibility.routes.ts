@@ -1,4 +1,4 @@
-import type { FastifyInstance } from "fastify";
+import type { FastifyInstance, FastifyReply } from "fastify";
 import { z } from "zod";
 
 import { authenticate } from "../middleware/authenticate.js";
@@ -6,7 +6,7 @@ import { publishToUser } from "../realtime/message-events.js";
 
 const disciplineRoleSchema = z.enum(["STUDENT", "PARENT", "TEACHER"]);
 
-function forbidden(reply: any, message: string) {
+function forbidden(reply: FastifyReply, message: string) {
   return reply.status(403).send({
     error: {
       code: "FORBIDDEN",
@@ -43,7 +43,7 @@ export async function disciplineVisibilityRoutes(fastify: FastifyInstance) {
 
         const actions = await fastify.prisma.disciplinaryAction.findMany({
           where: {
-            schoolId: request.user.schoolId ?? undefined,
+            schoolId: request.user.schoolId,
             studentId: student.id,
             approvalStatus: "APPROVED",
           },
@@ -125,11 +125,17 @@ export async function disciplineVisibilityRoutes(fastify: FastifyInstance) {
         });
       }
 
+      if (!request.user.schoolId) {
+        return reply.status(403).send({
+          error: { code: "SCHOOL_REQUIRED", message: "A school assignment is required." },
+        });
+      }
+
       const teacherClasses = await fastify.prisma.teacherClass.findMany({
         where: {
           teacherId: request.user.sub,
           class: {
-            ...(request.user.schoolId ? { schoolId: request.user.schoolId } : {}),
+            schoolId: request.user.schoolId,
           },
         },
         select: { classId: true },
