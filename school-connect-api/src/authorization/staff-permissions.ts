@@ -43,6 +43,7 @@ const staffPermissions: Record<StaffFunction, readonly Permission[]> = {
     "authorization.read",
     "authorization.create",
     "authorization.update",
+    "authorization.decide",
 
     "payment.read",
     "payment.create",
@@ -119,7 +120,7 @@ const staffPermissions: Record<StaffFunction, readonly Permission[]> = {
 
     // Autorisations parentales
     "authorization.read",
-    "authorization.update",
+    "authorization.decide",
 
     // Convocations des parents
     "parent-summons.read",
