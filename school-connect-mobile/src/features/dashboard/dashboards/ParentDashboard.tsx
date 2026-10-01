@@ -21,6 +21,7 @@ import {
 } from "../../../services/grades/grade.service";
 import { getMedicalAccess } from "../../../services/medical/medical.service";
 import { createRealtimeConnection } from "../../../services/realtime/websocket.service";
+import { getMyChildrenDiscipline, type ApprovedDisciplinaryAction } from "../../../services/discipline/discipline.service";
 
 type ParentDashboardProps = {
   firstName: string;
@@ -196,6 +197,9 @@ export function ParentDashboard({ firstName }: ParentDashboardProps) {
   const [childrenLoading, setChildrenLoading] = useState(true);
   const [childrenError, setChildrenError] = useState(false);
   const [medicalAllowed, setMedicalAllowed] = useState<boolean | null>(null);
+  const [discipline, setDiscipline] = useState<ApprovedDisciplinaryAction[]>([]);
+  const [disciplineLoading, setDisciplineLoading] = useState(false);
+  const [disciplineError, setDisciplineError] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -404,6 +408,53 @@ export function ParentDashboard({ firstName }: ParentDashboardProps) {
   }, [selectedChildId]);
 
 
+  useEffect(() => {
+    let mounted = true;
+
+    const loadDiscipline = async () => {
+      if (!selectedChildId) {
+        setDiscipline([]);
+        setDisciplineLoading(false);
+        setDisciplineError(false);
+        return;
+      }
+
+      try {
+        setDisciplineLoading(true);
+        setDisciplineError(false);
+        const response = await getMyChildrenDiscipline();
+
+        if (mounted) {
+          setDiscipline(
+            response.actions.filter((action) => action.studentId === selectedChildId),
+          );
+        }
+      } catch {
+        if (mounted) {
+          setDiscipline([]);
+          setDisciplineError(true);
+        }
+      } finally {
+        if (mounted) setDisciplineLoading(false);
+      }
+    };
+
+    void loadDiscipline();
+
+    const connection = createRealtimeConnection({
+      onEvent: (event) => {
+        if (event.type !== "discipline:updated") return;
+        void loadDiscipline();
+      },
+    });
+    connection.connect();
+
+    return () => {
+      mounted = false;
+      connection.close();
+    };
+  }, [selectedChildId]);
+
   const selectedChild = useMemo(
     () => children.find((child) => child.id === selectedChildId) ?? null,
     [children, selectedChildId],
@@ -554,6 +605,26 @@ export function ParentDashboard({ firstName }: ParentDashboardProps) {
                   : "—"
                 : "—",
           description: resultsDescription,
+        },
+        {
+          id: "discipline",
+          title: "Discipline",
+          value: disciplineLoading
+            ? "…"
+            : disciplineError
+              ? "—"
+              : selectedChild
+                ? String(discipline.length)
+                : "—",
+          description: !selectedChild
+            ? "Sélectionnez un enfant pour consulter son suivi disciplinaire."
+            : disciplineLoading
+              ? "Chargement du suivi disciplinaire."
+              : disciplineError
+                ? "Impossible de charger le suivi disciplinaire."
+                : discipline.length === 0
+                  ? "Aucune mesure disciplinaire validée."
+                  : `Dernière mesure : ${discipline[0].type} · ${discipline[0].status === "COMPLETED" ? "Terminée" : "Active"}.`,
         },
         {
           id: "assignments",
