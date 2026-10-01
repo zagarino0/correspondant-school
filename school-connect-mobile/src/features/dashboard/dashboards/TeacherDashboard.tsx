@@ -213,7 +213,7 @@ export function TeacherDashboard({ firstName }: TeacherDashboardProps) {
     connection.connect();
 
     return () => connection.close();
-  }, [loadActivity, loadDashboard]);
+  }, [loadActivity, loadDashboard, loadDiscipline]);
 
   useFocusEffect(
     useCallback(() => {
@@ -230,7 +230,7 @@ export function TeacherDashboard({ firstName }: TeacherDashboardProps) {
       const interval = setInterval(refreshClock, 30_000);
 
       return () => clearInterval(interval);
-    }, [loadActivity, loadDashboard]),
+    }, [loadActivity, loadDashboard, loadDiscipline]),
   );
 
   const classesCount = classes.length;
