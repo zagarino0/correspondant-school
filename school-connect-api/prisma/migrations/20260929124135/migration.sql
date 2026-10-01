@@ -1,2 +1,3 @@
--- DropIndex
-DROP INDEX "ParentSummons_createdBy_status_responseReadAt_idx";
+-- Historical migration retained for migration-history compatibility.
+-- The index is created by the later response-read migration.
+-- This migration is intentionally a no-op so the full history replays cleanly.
