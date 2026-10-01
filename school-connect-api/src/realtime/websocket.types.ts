@@ -5,7 +5,8 @@ export type RealtimeEventType =
   | "attendance:event"
   | "parent:summons:new"
   | "parent:summons:updated"
-  | "school-life:alert";
+  | "school-life:alert"
+  | "discipline:updated";
 
 export interface RealtimeMessage {
   id: string;
