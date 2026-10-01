@@ -148,7 +148,11 @@ export default function AnnouncementsScreen() {
 
     const connection = createRealtimeConnection({
       onEvent: (event) => {
-        if (event.type === "parent:summons:new" || event.type === "parent:summons:updated") {
+        if (
+          event.type === "parent:summons:new" ||
+          event.type === "parent:summons:updated" ||
+          event.type === "parent:authorization:new"
+        ) {
           void loadAnnouncements();
         }
       },
