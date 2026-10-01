@@ -2,6 +2,8 @@ import { useRouter } from "expo-router";
 import { useAuthStore } from "../../../stores/authStore";
 import { RoleDashboard } from "./RoleDashboard";
 
+const EMPTY_PERMISSIONS: readonly string[] = [];
+
 type SecretaryDashboardProps = {
   firstName: string;
 };
@@ -31,7 +33,9 @@ export function SecretaryDashboard({
   firstName,
 }: SecretaryDashboardProps) {
   const router = useRouter();
-  const permissions = useAuthStore((state) => state.user?.permissions ?? []);
+  const permissions = useAuthStore(
+    (state) => state.user?.permissions ?? EMPTY_PERMISSIONS,
+  );
 
   const can = (permission: string) => permissions.includes(permission);
 
