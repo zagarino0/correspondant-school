@@ -222,3 +222,71 @@ describe("Surveillant RBAC", () => {
     expect(hasStaffPermission(surveillant, "user.create")).toBe(false);
   });
 });
+
+describe("Secretariat RBAC", () => {
+  const secretariat = StaffFunction.SECRETARIAT;
+
+  it("autorise la gestion administrative des élèves sans suppression", () => {
+    expect(hasStaffPermission(secretariat, "student.read")).toBe(true);
+    expect(hasStaffPermission(secretariat, "student.create")).toBe(true);
+    expect(hasStaffPermission(secretariat, "student.update")).toBe(true);
+    expect(hasStaffPermission(secretariat, "student.delete")).toBe(false);
+  });
+
+  it("autorise la consultation de la structure et du personnel", () => {
+    expect(hasStaffPermission(secretariat, "school.read")).toBe(true);
+    expect(hasStaffPermission(secretariat, "user.read")).toBe(true);
+    expect(hasStaffPermission(secretariat, "schedule.read")).toBe(true);
+    expect(hasStaffPermission(secretariat, "attendance.read")).toBe(true);
+  });
+
+  it("refuse les opérations de vie scolaire et pédagogiques", () => {
+    expect(hasStaffPermission(secretariat, "attendance.create")).toBe(false);
+    expect(hasStaffPermission(secretariat, "attendance.update")).toBe(false);
+    expect(hasStaffPermission(secretariat, "attendance.delete")).toBe(false);
+    expect(hasStaffPermission(secretariat, "grade.read")).toBe(false);
+    expect(hasStaffPermission(secretariat, "assignment.create")).toBe(false);
+    expect(hasStaffPermission(secretariat, "disciplinary-action.create")).toBe(false);
+  });
+
+  it("autorise la communication administrative selon son périmètre", () => {
+    expect(hasStaffPermission(secretariat, "message.read")).toBe(true);
+    expect(hasStaffPermission(secretariat, "message.send")).toBe(true);
+    expect(hasStaffPermission(secretariat, "announcement.read")).toBe(true);
+    expect(hasStaffPermission(secretariat, "announcement.create")).toBe(false);
+    expect(hasStaffPermission(secretariat, "announcement.update")).toBe(false);
+    expect(hasStaffPermission(secretariat, "announcement.delete")).toBe(false);
+  });
+
+  it("autorise les documents et rendez-vous sans suppression", () => {
+    expect(hasStaffPermission(secretariat, "document.read")).toBe(true);
+    expect(hasStaffPermission(secretariat, "document.create")).toBe(true);
+    expect(hasStaffPermission(secretariat, "document.delete")).toBe(false);
+    expect(hasStaffPermission(secretariat, "meeting.read")).toBe(true);
+    expect(hasStaffPermission(secretariat, "meeting.create")).toBe(true);
+    expect(hasStaffPermission(secretariat, "meeting.update")).toBe(true);
+    expect(hasStaffPermission(secretariat, "meeting.delete")).toBe(false);
+  });
+
+  it("autorise le suivi des autorisations sans pouvoir de décision", () => {
+    expect(hasStaffPermission(secretariat, "authorization.read")).toBe(true);
+    expect(hasStaffPermission(secretariat, "authorization.create")).toBe(true);
+    expect(hasStaffPermission(secretariat, "authorization.update")).toBe(true);
+    expect(hasStaffPermission(secretariat, "authorization.decide")).toBe(false);
+  });
+
+  it("autorise l'enregistrement des paiements sans modification ni suppression", () => {
+    expect(hasStaffPermission(secretariat, "payment.read")).toBe(true);
+    expect(hasStaffPermission(secretariat, "payment.create")).toBe(true);
+    expect(hasStaffPermission(secretariat, "payment.update")).toBe(false);
+  });
+
+  it("autorise les demandes internes et la gestion administrative des utilisateurs", () => {
+    expect(hasStaffPermission(secretariat, "ticket.read")).toBe(true);
+    expect(hasStaffPermission(secretariat, "ticket.create")).toBe(true);
+    expect(hasStaffPermission(secretariat, "ticket.update")).toBe(true);
+    expect(hasStaffPermission(secretariat, "user.create")).toBe(true);
+    expect(hasStaffPermission(secretariat, "user.update")).toBe(true);
+    expect(hasStaffPermission(secretariat, "user.delete")).toBe(false);
+  });
+});
