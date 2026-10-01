@@ -234,6 +234,40 @@ export const parentRoutes: FastifyPluginAsync = async (fastify) => {
         },
       });
 
+      const surveillants = await fastify.prisma.user.findMany({
+        where: {
+          schoolId: authorization.schoolId,
+          role: "STAFF",
+          status: "ACTIVE",
+          staffProfile: {
+            function: "SURVEILLANT",
+            assignments: {
+              some: {
+                schoolId: authorization.schoolId,
+                active: true,
+              },
+            },
+          },
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      for (const surveillant of surveillants) {
+        publishToUser(surveillant.id, "parent:authorization:new", {
+          id: authorization.id,
+          schoolId: authorization.schoolId,
+          studentId: authorization.studentId,
+          parentId: authorization.parentId,
+          type: authorization.type,
+          status: authorization.status,
+          reason: authorization.reason,
+          requestedAt: authorization.requestedAt,
+          student: authorization.student,
+        });
+      }
+
       return reply.status(201).send({ authorization });
     },
   );
