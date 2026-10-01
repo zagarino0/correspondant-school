@@ -104,6 +104,43 @@ export async function getSchoolLifeProfile(
 }
 
 
+export type SchoolLifeHistoryType =
+  | "ATTENDANCE"
+  | "LATE"
+  | "MOVEMENT"
+  | "EXIT"
+  | "INCIDENT"
+  | "DISCIPLINE"
+  | "OBSERVATION"
+  | "AUTHORIZATION"
+  | "SUMMONS";
+
+export type SchoolLifeHistoryItem = {
+  id: string;
+  type: SchoolLifeHistoryType;
+  occurredAt: string;
+  student: { firstName: string; lastName: string; studentNumber: string };
+  title: string;
+  description: string;
+  status: string | null;
+  sourceId: string;
+  metadata: Record<string, string | null>;
+};
+
+export async function getSchoolLifeHistory(params?: {
+  studentId?: string;
+  from?: string;
+  to?: string;
+  type?: SchoolLifeHistoryType | "ALL";
+  limit?: number;
+}): Promise<SchoolLifeHistoryItem[]> {
+  const response = await apiClient.get<{ items: SchoolLifeHistoryItem[] }>(
+    "/api/v1/surveillant/school-life/history",
+    { params },
+  );
+  return response.data.items;
+}
+
 export type SchoolLifeExitItem = {
   id: string;
   studentId: string;
