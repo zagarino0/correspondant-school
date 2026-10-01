@@ -32,6 +32,10 @@ import { surveillantRoutes } from "../routes/surveillant.routes.js";
 import { surveillantSchoolLifeRoutes } from "../routes/surveillant-school-life.routes.js";
 import { surveillantAuthorizationRoutes } from "../routes/surveillant-authorization.routes.js";
 import { disciplineVisibilityRoutes } from "../routes/discipline-visibility.routes.js";
+import documentRoutes from "../routes/document.routes.js";
+import meetingRoutes from "../routes/meeting.routes.js";
+import paymentRoutes from "../routes/payment.routes.js";
+import ticketRoutes from "../routes/ticket.routes.js";
 import { startSmsWorker } from "../services/sms.service.js";
 
 import jwtPlugin from "../plugins/jwt.js";
@@ -137,6 +141,18 @@ export async function buildApp() {
   });
   await app.register(aiRoutes, {
     prefix: "/api/v1/ai",
+  });
+  await app.register(documentRoutes, {
+    prefix: "/api/v1",
+  });
+  await app.register(meetingRoutes, {
+    prefix: "/api/v1",
+  });
+  await app.register(paymentRoutes, {
+    prefix: "/api/v1",
+  });
+  await app.register(ticketRoutes, {
+    prefix: "/api/v1",
   });
   await app.register(teacherRoutes, {
     prefix: "/api/v1/teachers",
