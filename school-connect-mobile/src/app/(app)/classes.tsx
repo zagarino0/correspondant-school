@@ -12,6 +12,8 @@ import {
   View,
 } from "react-native";
 import { getSchoolAdminDashboard, deleteSchoolClass } from "../../services/school-admin/school-admin.service";
+import { hasPermission } from "../../features/secretariat/access";
+import { useAuthStore } from "../../stores/authStore";
 import type { SchoolAdminDashboardResponse } from "../../services/school-admin/school-admin.types";
 
 type Category = "PRIMAIRE" | "PREMIER_CYCLE" | "SECOND_CYCLE" | "AUTRE";
@@ -32,6 +34,7 @@ function category(level: string | null) {
 }
 
 export default function ClassesScreen() {
+  const user = useAuthStore((state) => state.user);
   const { width } = useWindowDimensions();
   const isMobile = width < 600;
   const isWeb = width >= 1024;
@@ -118,7 +121,7 @@ export default function ClassesScreen() {
           </Text>
         </View>
 
-        <Pressable style={styles.addButton} onPress={() => router.push("/(app)/class-create")}>
+        {hasPermission(user, "school.update") ? <Pressable style={styles.addButton} onPress={() => router.push("/(app)/class-create")}>
           <Text style={styles.addButtonText}>+ Ajouter</Text>
         </Pressable>
       </View>
