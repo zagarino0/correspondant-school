@@ -719,12 +719,24 @@ export default function SurveillantSchoolLifeScreen() {
                 <Text style={styles.itemText}>{item.description}</Text>
                 <Text style={styles.itemMeta}>Statut : {item.status} · Validation : {item.approvalStatus}</Text>
                 <Pressable
-                  style={styles.completeButton}
+                  style={[
+                    styles.completeButton,
+                    item.approvalStatus === "PENDING" && styles.completeButtonDisabled,
+                  ]}
                   onPress={() => openEditDiscipline(item)}
-                  disabled={item.approvalStatus === "APPROVED"}
+                  disabled={item.approvalStatus !== "REJECTED"}
                 >
-                  <Text style={styles.completeButtonText}>
-                    {item.approvalStatus === "APPROVED" ? "Mesure validée" : "Modifier / suivre"}
+                  <Text
+                    style={[
+                      styles.completeButtonText,
+                      item.approvalStatus === "PENDING" && styles.completeButtonDisabledText,
+                    ]}
+                  >
+                    {item.approvalStatus === "PENDING"
+                      ? "En attente de validation"
+                      : item.approvalStatus === "APPROVED"
+                        ? "Mesure validée"
+                        : "Modifier / suivre"}
                   </Text>
                 </Pressable>
               </ItemCard>
@@ -1381,6 +1393,8 @@ const styles = StyleSheet.create({
   primaryButtonText: { color: "#FFFFFF", fontSize: 10, fontWeight: "900" },
   completeButton: { marginTop: 10, alignSelf: "flex-start", paddingHorizontal: 11, paddingVertical: 8, borderRadius: 9, backgroundColor: "#EEF2F7" },
   completeButtonText: { color: "#344976", fontSize: 10, fontWeight: "900" },
+  completeButtonDisabled: { backgroundColor: "#E2E8F0" },
+  completeButtonDisabledText: { color: "#94A3B8" },
   incidentActions: { marginTop: 10, gap: 8 },
   linkedDisciplineBadge: { alignSelf: "flex-start", paddingHorizontal: 10, paddingVertical: 7, borderRadius: 9, backgroundColor: "#ECFDF5" },
   linkedDisciplineText: { color: "#047857", fontSize: 10, fontWeight: "900" },
