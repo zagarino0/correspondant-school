@@ -819,14 +819,20 @@ export async function schoolAdminDashboardRoutes(
       preHandler: [authorize("student.read")],
     },
     async (request, reply) => {
+      const staffFunction = (request.user as typeof request.user & { staffFunction?: string }).staffFunction;
+      const isSecretary =
+        request.user.role === "STAFF" &&
+        staffFunction === "SECRETARIAT";
+
       if (
         request.user.role !== "SCHOOL_ADMIN" &&
-        request.user.role !== "SUPER_ADMIN"
+        request.user.role !== "SUPER_ADMIN" &&
+        !isSecretary
       ) {
         return reply.code(403).send({
           error: {
             code: "FORBIDDEN",
-            message: "School administrator access required.",
+            message: "School administration read access required.",
           },
         });
       }
