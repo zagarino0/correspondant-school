@@ -61,3 +61,24 @@ export async function updateSecretariatTicket(ticketId: string, input: UpdateTic
   const response = await apiClient.patch<{ ticket: SecretariatTicket }>(`/api/v1/tickets/${ticketId}`, input);
   return response.data;
 }
+
+export type SecretariatAttendance = {
+  id: string;
+  date: string;
+  status: "PRESENT" | "ABSENT" | "LATE" | "EXCUSED";
+  arrivalTime: string | null;
+  reason: string | null;
+  note: string | null;
+  recordedBy: string;
+  createdAt: string;
+  updatedAt: string;
+  recorder: { id: string; firstName: string; lastName: string };
+};
+
+export async function getStudentAttendance(studentId: string): Promise<{
+  student: { id: string; studentNumber: string; firstName: string; lastName: string };
+  attendance: SecretariatAttendance[];
+}> {
+  const response = await apiClient.get("/api/v1/attendance/student/" + studentId);
+  return response.data;
+}
