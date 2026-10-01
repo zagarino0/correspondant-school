@@ -107,6 +107,8 @@ export default function SurveillantSchoolLifeScreen() {
   const [disciplineActionAt, setDisciplineActionAt] = useState("");
   const [savingDiscipline, setSavingDiscipline] = useState(false);
   const [editingDiscipline, setEditingDiscipline] = useState<SchoolLifeDisciplinaryItem | null>(null);
+  const [disciplineIncidentId, setDisciplineIncidentId] = useState<string | null>(null);
+  const [disciplineIncidentContext, setDisciplineIncidentContext] = useState<SchoolLifeIncidentItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -201,10 +203,44 @@ export default function SurveillantSchoolLifeScreen() {
     setDisciplineDecisionNote("");
     setDisciplineActionAt("");
     setEditingDiscipline(null);
+    setDisciplineIncidentId(null);
+    setDisciplineIncidentContext(null);
   };
 
   const openCreateDiscipline = () => {
     resetDisciplineForm();
+    setShowDisciplineModal(true);
+  };
+
+  const openCreateDisciplineFromIncident = async (incident: SchoolLifeIncidentItem) => {
+    resetDisciplineForm();
+    setDisciplineIncidentId(incident.id);
+    setDisciplineIncidentContext(incident);
+    setDisciplineDescription(
+      `Incident du ${dateTime(incident.occurredAt)} — ${incident.description}`,
+    );
+    setDisciplineDecisionNote(
+      `Suivi du surveillant : incident ${incident.type}, gravité ${incident.severity}.`,
+    );
+
+    const existingStudent = students.find((student) => student.id === incident.studentId);
+    if (existingStudent) {
+      setSelectedDisciplineStudent(existingStudent);
+    } else {
+      try {
+        const response = await getStudents({
+          status: "ACTIVE",
+          search: incident.student.studentNumber,
+          page: 1,
+          pageSize: 10,
+        });
+        const matchedStudent = response.students.find((student) => student.id === incident.studentId);
+        setSelectedDisciplineStudent(matchedStudent ?? null);
+      } catch {
+        setSelectedDisciplineStudent(null);
+      }
+    }
+
     setShowDisciplineModal(true);
   };
 
@@ -352,7 +388,14 @@ export default function SurveillantSchoolLifeScreen() {
           actionAt: disciplineActionAt || undefined,
         });
       } else {
-        await createSchoolLifeDisciplinaryAction(selectedDisciplineStudent!.id, {
+        const studentId = disciplineIncidentContext?.studentId ?? selectedDisciplineStudent?.id;
+        if (!studentId) {
+          setError("L'élève concerné par la mesure est obligatoire.");
+          return;
+        }
+
+        await createSchoolLifeDisciplinaryAction(studentId, {
+          incidentId: disciplineIncidentId,
           type: disciplineType.trim(),
           description: disciplineDescription.trim(),
           decisionNote: disciplineDecisionNote.trim() || null,
@@ -607,9 +650,23 @@ export default function SurveillantSchoolLifeScreen() {
                   </View>
                   <Text style={styles.itemMeta}>{item.type} · {dateTime(item.occurredAt)}</Text>
                   <Text style={styles.itemText}>{item.description}</Text>
-                  <Pressable style={styles.completeButton} onPress={() => openEditIncident(item)}>
-                    <Text style={styles.completeButtonText}>Modifier / suivre</Text>
-                  </Pressable>
+                  <View style={styles.incidentActions}>
+                    <Pressable style={styles.completeButton} onPress={() => openEditIncident(item)}>
+                      <Text style={styles.completeButtonText}>Modifier / suivre</Text>
+                    </Pressable>
+                    {discipline.some((action) => action.incidentId === item.id) ? (
+                      <View style={styles.linkedDisciplineBadge}>
+                        <Text style={styles.linkedDisciplineText}>Mesure disciplinaire créée</Text>
+                      </View>
+                    ) : (
+                      <Pressable
+                        style={styles.disciplineActionButton}
+                        onPress={() => void openCreateDisciplineFromIncident(item)}
+                      >
+                        <Text style={styles.disciplineActionButtonText}>Créer une mesure disciplinaire</Text>
+                      </Pressable>
+                    )}
+                  </View>
                 </ItemCard>
               ))}
             </Section>
@@ -919,6 +976,19 @@ export default function SurveillantSchoolLifeScreen() {
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+              {disciplineIncidentContext ? (
+                <View style={styles.incidentContextCard}>
+                  <Text style={styles.incidentContextEyebrow}>MESURE LIÉE À L'INCIDENT</Text>
+                  <Text style={styles.incidentContextTitle}>
+                    {disciplineIncidentContext.type} · {disciplineIncidentContext.severity}
+                  </Text>
+                  <Text style={styles.incidentContextText}>
+                    {studentName(disciplineIncidentContext.student)} · {dateTime(disciplineIncidentContext.occurredAt)}
+                  </Text>
+                  <Text style={styles.incidentContextText}>{disciplineIncidentContext.description}</Text>
+                </View>
+              ) : null}
+
               <Text style={styles.formLabel}>ÉLÈVE</Text>
               {editingDiscipline ? (
                 <View style={styles.selectedStudent}>
