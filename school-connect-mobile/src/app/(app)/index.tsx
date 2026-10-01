@@ -50,6 +50,7 @@ export default function AppHomeScreen() {
       <DashboardHeader
         firstName={user?.firstName ?? ""}
         role={user?.role ?? "STUDENT"}
+        staffFunction={user?.staffFunction ?? null}
       />
 
       {renderDashboard()}
