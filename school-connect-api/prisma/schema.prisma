@@ -29,8 +29,6 @@ model School {
   disciplinaryActions DisciplinaryAction[]
   schoolLifeObservations SchoolLifeObservation[]
   parentAuthorizations ParentAuthorization[]
-  meetings         Meeting[]
-  payments         Payment[]
   alerts           Alert[]
   dailyReports     DailyReport[]
   users            User[]
@@ -187,6 +185,8 @@ model Student {
   schoolLifeObservations SchoolLifeObservation[]
   parentAuthorizations ParentAuthorization[]
   alerts           Alert[]
+  meetings         Meeting[]
+  payments         Payment[]
 
   @@unique([schoolId, studentNumber])
   @@index([schoolId])
