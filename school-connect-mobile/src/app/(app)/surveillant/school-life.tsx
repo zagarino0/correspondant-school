@@ -1393,6 +1393,8 @@ const styles = StyleSheet.create({
   primaryButtonText: { color: "#FFFFFF", fontSize: 10, fontWeight: "900" },
   completeButton: { marginTop: 10, alignSelf: "flex-start", paddingHorizontal: 11, paddingVertical: 8, borderRadius: 9, backgroundColor: "#EEF2F7" },
   completeButtonText: { color: "#344976", fontSize: 10, fontWeight: "900" },
+  completeButtonApproved: { backgroundColor: "#DCFCE7" },
+  completeButtonApprovedText: { color: "#15803D" },
   completeButtonDisabled: { backgroundColor: "#E2E8F0" },
   completeButtonDisabledText: { color: "#94A3B8" },
   incidentActions: { marginTop: 10, gap: 8 },
