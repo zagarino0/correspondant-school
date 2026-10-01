@@ -10,7 +10,7 @@ import {
 import { useRouter } from "expo-router";
 import { useAuthStore } from "../../stores/authStore";
 import { createRealtimeConnection } from "../../services/realtime/websocket.service";
-import { getMySummons, updateSummonsStatus, type ParentSummons } from "../../services/parents/parent.service";
+import { getMyAuthorizations, getMySummons, updateSummonsStatus, type ParentAuthorization, type ParentSummons } from "../../services/parents/parent.service";
 import { getSummonsNotifications, markSummonsNotificationRead, type SurveillantSummonsNotification } from "../../services/surveillant/surveillant.service";
 import { getSchoolLifeAuthorizations, type SchoolLifeAuthorizationItem } from "../../services/surveillant/schoolLife.service";
 
@@ -83,6 +83,7 @@ export default function AnnouncementsScreen() {
   const user = useAuthStore((state) => state.user);
   const [announcements, setAnnouncements] = useState<StudentAnnouncement[]>([]);
   const [summons, setSummons] = useState<ParentSummons[]>([]);
+  const [parentAuthorizationNotifications, setParentAuthorizationNotifications] = useState<ParentAuthorization[]>([]);
   const [surveillantNotifications, setSurveillantNotifications] = useState<SurveillantSummonsNotification[]>([]);
   const [authorizationNotifications, setAuthorizationNotifications] = useState<SchoolLifeAuthorizationItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -95,7 +96,7 @@ export default function AnnouncementsScreen() {
       setIsLoading(true);
       setErrorMessage(null);
 
-      const [announcementResult, summonsResult, notificationResult, authorizationResult] =
+      const [announcementResult, summonsResult, notificationResult, authorizationResult, parentAuthorizationResult] =
         await Promise.allSettled([
           getMyAnnouncements(),
           getMySummons(),
@@ -103,6 +104,9 @@ export default function AnnouncementsScreen() {
           user?.role === "STAFF" && user.staffFunction === "SURVEILLANT"
             ? getSchoolLifeAuthorizations()
             : Promise.resolve([]),
+          user?.role === "PARENT"
+            ? getMyAuthorizations()
+            : Promise.resolve({ authorizations: [] as ParentAuthorization[] }),
         ]);
 
       if (!isMounted) return;
@@ -123,6 +127,16 @@ export default function AnnouncementsScreen() {
         setSurveillantNotifications(notificationResult.value.items);
       } else {
         setSurveillantNotifications([]);
+      }
+
+      if (parentAuthorizationResult.status === "fulfilled") {
+        setParentAuthorizationNotifications(
+          parentAuthorizationResult.value.authorizations.filter(
+            (item) => item.status === "APPROVED" || item.status === "REJECTED",
+          ),
+        );
+      } else {
+        setParentAuthorizationNotifications([]);
       }
 
       if (authorizationResult.status === "fulfilled") {
@@ -151,7 +165,8 @@ export default function AnnouncementsScreen() {
         if (
           event.type === "parent:summons:new" ||
           event.type === "parent:summons:updated" ||
-          event.type === "parent:authorization:new"
+          event.type === "parent:authorization:new" ||
+          event.type === "parent:authorization:updated"
         ) {
           void loadAnnouncements();
         }
@@ -235,7 +250,7 @@ export default function AnnouncementsScreen() {
         <View style={styles.stateContainer}>
           <Text style={styles.errorText}>{errorMessage}</Text>
         </View>
-      ) : announcements.length === 0 && summons.length === 0 && surveillantNotifications.length === 0 && authorizationNotifications.length === 0 ? (
+      ) : announcements.length === 0 && summons.length === 0 && surveillantNotifications.length === 0 && authorizationNotifications.length === 0 && parentAuthorizationNotifications.length === 0 ? (
         <View style={styles.stateContainer}>
           <Text style={styles.stateTitle}>Aucune annonce</Text>
           <Text style={styles.stateText}>
@@ -248,6 +263,36 @@ export default function AnnouncementsScreen() {
           contentContainerStyle={styles.contentContainer}
           showsVerticalScrollIndicator={false}
         >
+          {parentAuthorizationNotifications.map((notification) => (
+            <Pressable
+              key={notification.id}
+              onPress={() => router.push("/(app)/authorizations")}
+              style={[styles.card, styles.authorizationResponseCard]}
+              accessibilityRole="button"
+              accessibilityLabel="Ouvrir la réponse à l'autorisation parentale"
+            >
+              <View style={styles.cardHeader}>
+                <View style={styles.cardTitleContainer}>
+                  <Text style={styles.title}>Réponse du surveillant</Text>
+                  <Text style={styles.date}>{formatDate(notification.decidedAt ?? notification.requestedAt)}</Text>
+                </View>
+                <Text style={notification.status === "APPROVED" ? styles.approvedStatus : styles.rejectedStatus}>
+                  {notification.status === "APPROVED" ? "Approuvée" : "Refusée"}
+                </Text>
+              </View>
+              <Text style={styles.summonsStudent}>
+                {notification.student.firstName} {notification.student.lastName}
+              </Text>
+              <Text style={styles.summonsReason}>{notification.type}</Text>
+              <Text style={styles.content}>
+                {notification.status === "APPROVED"
+                  ? "Le surveillant a approuvé votre demande d'autorisation."
+                  : "Le surveillant a refusé votre demande d'autorisation."}
+              </Text>
+              <Text style={styles.actionHint}>Appuyez pour ouvrir directement Vie scolaire → Autorisations.</Text>
+            </Pressable>
+          ))}
+
           {authorizationNotifications.map((notification) => (
             <Pressable
               key={notification.id}
@@ -504,6 +549,20 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "600",
     color: "#374151",
+  },
+  authorizationResponseCard: {
+    borderLeftWidth: 4,
+    borderLeftColor: "#344976",
+  },
+  approvedStatus: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#166534",
+  },
+  rejectedStatus: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#B91C1C",
   },
   authorizationNotificationCard: {
     borderLeftWidth: 4,
