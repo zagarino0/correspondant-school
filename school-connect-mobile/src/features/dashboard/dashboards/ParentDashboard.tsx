@@ -686,6 +686,15 @@ export function ParentDashboard({ firstName }: ParentDashboardProps) {
               : undefined,
         },
         {
+          id: "authorizations",
+          title: "Autorisations",
+          value: "Gérer",
+          description: selectedChild
+            ? `Demandes d'autorisation pour ${selectedChild.firstName}.`
+            : "Créer et suivre vos demandes d'autorisation.",
+          onPress: () => router.push("/(app)/authorizations"),
+        },
+        {
           id: "schedule",
           title: "Emploi du temps",
           value: selectedChild?.enrollment?.class.name ?? "—",
