@@ -153,9 +153,16 @@ const staffPermissions: Record<StaffFunction, readonly Permission[]> = {
   ],
 
   SECRETARIAT: [
+    // Dossiers scolaires administratifs
     "student.read",
     "student.create",
     "student.update",
+
+    // Consultation de la structure de l'établissement
+    "school.read",
+
+    // Annuaire du personnel
+    "user.read",
 
     "attendance.read",
 
@@ -186,6 +193,8 @@ const staffPermissions: Record<StaffFunction, readonly Permission[]> = {
 
     "school.read",
 
+    // Gestion limitée des comptes/utilisateurs administratifs.
+    // Les routes doivent continuer à appliquer le périmètre métier.
     "user.read",
     "user.create",
     "user.update",
