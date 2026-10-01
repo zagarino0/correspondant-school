@@ -38,6 +38,7 @@ export async function canAccessUser(
     select: {
       id: true,
       schoolId: true,
+      role: true,
     },
   });
 
@@ -50,15 +51,16 @@ export async function canAccessUser(
     return targetUser.schoolId === requesterSchoolId;
   }
 
-  // Pour les autres rôles, un utilisateur ne peut
-  // accéder qu'à son propre compte via cet endpoint.
-  if (
-    requesterRole === "TEACHER" ||
-    requesterRole === "STAFF"
-  ) {
+  // Les membres du personnel disposant de user.read peuvent
+  // consulter l'annuaire des comptes de personnel de leur école.
+  // Le middleware authorize() garantit que seuls les rôles/fonctions
+  // disposant réellement de user.read atteignent ce point.
+  if (requesterRole === "TEACHER" || requesterRole === "STAFF") {
     return (
-      targetUser.id === requesterId &&
-      targetUser.schoolId === requesterSchoolId
+      targetUser.schoolId === requesterSchoolId &&
+      (targetUser.role === "SCHOOL_ADMIN" ||
+        targetUser.role === "TEACHER" ||
+        targetUser.role === "STAFF")
     );
   }
 
