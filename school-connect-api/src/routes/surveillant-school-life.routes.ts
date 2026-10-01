@@ -159,7 +159,28 @@ export async function surveillantSchoolLifeRoutes(fastify: FastifyInstance) {
       const limit = Math.min(Math.max(Number(query.limit) || 100, 1), 200);
       const range = { ...(from ? { gte: from } : {}), ...(to ? { lte: to } : {}) };
       const hasRange = Object.keys(range).length > 0;
-      const [exits, movements, incidents, disciplinaryActions, observations, authorizations, summons] = await Promise.all([
+      const [lates, exits, movements, incidents, disciplinaryActions, observations, authorizations, summons] = await Promise.all([
+        fastify.prisma.attendance.findMany({
+          where: {
+            status: "LATE",
+            ...(query.studentId ? { studentId: query.studentId } : {}),
+            student: { schoolId },
+            ...(hasRange ? { date: range } : {}),
+          },
+          orderBy: { date: "desc" },
+          take: limit,
+          select: {
+            id: true,
+            studentId: true,
+            date: true,
+            status: true,
+            arrivalTime: true,
+            reason: true,
+            note: true,
+            scheduleId: true,
+            student: { select: { firstName: true, lastName: true, studentNumber: true } },
+          },
+        }),
         fastify.prisma.studentExit.findMany({ where: { schoolId, ...(query.studentId ? { studentId: query.studentId } : {}), ...(hasRange ? { exitAt: range } : {}) }, orderBy: { exitAt: "desc" }, take: limit, select: { id: true, studentId: true, type: true, status: true, authorizedPersonName: true, reason: true, exitAt: true, returnAt: true, student: { select: { firstName: true, lastName: true, studentNumber: true } } } }),
         fastify.prisma.studentMovement.findMany({ where: { schoolId, ...(query.studentId ? { studentId: query.studentId } : {}), ...(hasRange ? { occurredAt: range } : {}) }, orderBy: { occurredAt: "desc" }, take: limit, select: { id: true, studentId: true, type: true, reason: true, occurredAt: true, student: { select: { firstName: true, lastName: true, studentNumber: true } } } }),
         fastify.prisma.incident.findMany({ where: { schoolId, ...(query.studentId ? { studentId: query.studentId } : {}), ...(hasRange ? { occurredAt: range } : {}) }, orderBy: { occurredAt: "desc" }, take: limit, select: { id: true, studentId: true, type: true, severity: true, status: true, description: true, occurredAt: true, location: true, resolutionNote: true, resolvedAt: true, student: { select: { firstName: true, lastName: true, studentNumber: true } } } }),
@@ -171,6 +192,7 @@ export async function surveillantSchoolLifeRoutes(fastify: FastifyInstance) {
       const requestedType = query.type?.toUpperCase();
       const matchesType = (type: string) => !requestedType || requestedType === "ALL" || requestedType === type;
       const items = [
+        ...lates.map((item) => ({ id: item.id, type: "LATE", occurredAt: item.arrivalTime || item.date, student: item.student, title: "Retard", description: item.reason || item.note || "Retard enregistré.", status: item.status, sourceId: item.id, metadata: { arrivalTime: item.arrivalTime, reason: item.reason, note: item.note, scheduleId: item.scheduleId } })),
         ...exits.map((item) => ({ id: item.id, type: "EXIT", occurredAt: item.exitAt, student: item.student, title: item.type === "PERMANENT" ? "Sortie définitive" : "Sortie", description: item.reason, status: item.status, sourceId: item.id, metadata: { exitType: item.type, authorizedPersonName: item.authorizedPersonName, returnAt: item.returnAt } })),
         ...movements.map((item) => ({ id: item.id, type: "MOVEMENT", occurredAt: item.occurredAt, student: item.student, title: item.type === "ENTRY" ? "Entrée" : "Mouvement — sortie", description: item.reason || "Aucun motif renseigné.", status: item.type, sourceId: item.id, metadata: { movementType: item.type } })),
         ...incidents.map((item) => ({ id: item.id, type: "INCIDENT", occurredAt: item.occurredAt, student: item.student, title: `Incident — ${item.type}`, description: item.description, status: item.status, sourceId: item.id, metadata: { severity: item.severity, location: item.location, resolutionNote: item.resolutionNote, resolvedAt: item.resolvedAt } })),
