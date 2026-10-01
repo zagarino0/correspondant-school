@@ -74,6 +74,7 @@ export function SecretaryDashboard({
           description:
             "Consulter les présences, absences et retards enregistrés.",
           permission: "attendance.read",
+          onPress: () => router.push("/(app)/secretariat-attendance"),
         },
         {
           id: "schedule",
@@ -81,6 +82,7 @@ export function SecretaryDashboard({
           description:
             "Consulter les emplois du temps nécessaires au suivi administratif.",
           permission: "schedule.read",
+          onPress: () => router.push("/(app)/schedule"),
         },
       ],
     },
@@ -116,6 +118,7 @@ export function SecretaryDashboard({
           description:
             "Consulter et suivre les demandes d'autorisation sans prendre la décision.",
           permission: "authorization.read",
+          onPress: () => router.push("/(app)/secretariat-authorizations"),
         },
         {
           id: "documents",
@@ -123,6 +126,7 @@ export function SecretaryDashboard({
           description:
             "Consulter et préparer les documents administratifs.",
           permission: "document.read",
+          onPress: () => router.push("/(app)/secretariat-documents"),
         },
         {
           id: "meetings",
@@ -130,6 +134,7 @@ export function SecretaryDashboard({
           description:
             "Consulter et gérer les rendez-vous administratifs.",
           permission: "meeting.read",
+          onPress: () => router.push("/(app)/secretariat-meetings"),
         },
         {
           id: "payments",
@@ -137,6 +142,7 @@ export function SecretaryDashboard({
           description:
             "Consulter et enregistrer les paiements autorisés au Secrétariat.",
           permission: "payment.read",
+          onPress: () => router.push("/(app)/secretariat-payments"),
         },
         {
           id: "tickets",
@@ -144,6 +150,7 @@ export function SecretaryDashboard({
           description:
             "Créer, consulter et suivre les demandes administratives internes.",
           permission: "ticket.read",
+          onPress: () => router.push("/(app)/secretariat-tickets"),
         },
       ],
     },
