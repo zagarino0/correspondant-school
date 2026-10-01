@@ -29,6 +29,7 @@ import type {
 } from "../teacher-classes.types";
 import type { TeacherSchedule } from "../../schedule/schedule.types";
 import { createRealtimeConnection } from "../../../services/realtime/websocket.service";
+import { TeacherIncidentCard } from "../components/TeacherIncidentCard";
 
 function getLocalDateKey(): string {
   const date = new Date();
@@ -474,6 +475,8 @@ export function TeacherDashboard({ firstName }: TeacherDashboardProps) {
         <DashboardSection key={section.id} {...section} />
       ))}
 
+      <TeacherIncidentCard classes={classes} onCreated={() => void loadDashboard()} />
+
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Activité pédagogique</Text>
         <View style={styles.activityCard}>
@@ -680,16 +683,52 @@ export function TeacherDashboard({ firstName }: TeacherDashboardProps) {
                                 <Text style={styles.studentNumberText}>
                                   {student.student.studentNumber}
                                 </Text>
-                                {student.attendance?.events?.[0] ? (
-                                  <Text style={{ marginTop: 3, fontSize: 10, color: "#344976", fontWeight: "700" }}>
-                                    {student.attendance.events[0].type === "LATE_AUTHORIZED"
-                                      ? "Retard · entrée autorisée"
-                                      : student.attendance.events[0].type === "LATE_NOT_AUTHORIZED"
-                                        ? "Retard · entrée non autorisée"
-                                        : student.attendance.events[0].type === "ABSENCE_JUSTIFIED"
+                                {student.attendance ? (
+                                  <View style={styles.attendanceDetails}>
+                                    {student.attendance.status === "LATE" ? (
+                                      <>
+                                        <Text style={styles.attendanceStatusText}>
+                                          Retard
+                                          {student.attendance.arrivalTime
+                                            ? ` · arrivée ${new Date(student.attendance.arrivalTime).toLocaleTimeString([], {
+                                                hour: "2-digit",
+                                                minute: "2-digit",
+                                              })}`
+                                            : ""}
+                                        </Text>
+                                        {student.attendance.reason ? (
+                                          <Text style={styles.attendanceDetailText}>
+                                            Motif : {student.attendance.reason}
+                                          </Text>
+                                        ) : null}
+                                        {student.attendance.note ? (
+                                          <Text style={styles.attendanceDetailText}>
+                                            Note : {student.attendance.note}
+                                          </Text>
+                                        ) : null}
+                                        {student.attendance.events?.[0] ? (
+                                          <Text style={styles.attendanceDetailText}>
+                                            {student.attendance.events[0].type === "LATE_AUTHORIZED"
+                                              ? "Entrée autorisée"
+                                              : student.attendance.events[0].type === "LATE_NOT_AUTHORIZED"
+                                                ? "Entrée non autorisée"
+                                                : ""}
+                                            {student.attendance.events[0].note
+                                              ? ` · ${student.attendance.events[0].note}`
+                                              : ""}
+                                          </Text>
+                                        ) : null}
+                                      </>
+                                    ) : student.attendance.events?.[0] ? (
+                                      <Text style={styles.attendanceDetailText}>
+                                        {student.attendance.events[0].type === "ABSENCE_JUSTIFIED"
                                           ? "Absence · justifiée"
-                                          : "Absence · non justifiée"}
-                                  </Text>
+                                          : student.attendance.events[0].type === "ABSENCE_UNJUSTIFIED"
+                                            ? "Absence · non justifiée"
+                                            : ""}
+                                      </Text>
+                                    ) : null}
+                                  </View>
                                 ) : null}
                               </View>
 
@@ -801,6 +840,9 @@ const styles = StyleSheet.create({
   studentNumberColumn: { width: 76, paddingRight: 6 },
   attendanceColumn: { width: 132, alignItems: "flex-end" },
   studentNameText: { fontSize: 13, fontWeight: "600", color: "#111827" },
+  attendanceDetails: { marginTop: 4, gap: 2 },
+  attendanceStatusText: { fontSize: 10, fontWeight: "900", color: "#B45309" },
+  attendanceDetailText: { fontSize: 10, lineHeight: 14, color: "#64748B" },
   studentNumberText: { fontSize: 12, color: "#6B7280" },
   attendanceButtons: { flexDirection: "row", gap: 5 },
   attendanceButton: { width: 34, height: 32, borderRadius: 8, alignItems: "center", justifyContent: "center", borderWidth: 1, backgroundColor: "#FFFFFF" },
