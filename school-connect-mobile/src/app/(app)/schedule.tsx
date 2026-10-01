@@ -127,7 +127,7 @@ export default function ScheduleScreen() {
       }
     });
     return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
-  }, [isSurveillant, schedules]);
+  }, [isSchoolStaffSchedule, schedules]);
 
   const filteredClasses = useMemo(() => {
     const query = classSearch.trim().toLowerCase();
@@ -140,9 +140,9 @@ export default function ScheduleScreen() {
   const selectedClass = classes.find((item) => item.id === selectedClassId) ?? null;
 
   const visibleSchedules = useMemo(() => {
-    if (!isSurveillant || !selectedClassId) return schedules;
+    if (!isSchoolStaffSchedule || !selectedClassId) return schedules;
     return schedules.filter((schedule) => "class" in schedule && schedule.class.id === selectedClassId);
-  }, [isSurveillant, schedules, selectedClassId]);
+  }, [isSchoolStaffSchedule, schedules, selectedClassId]);
 
   const timeSlots = useMemo(
     () => getUniqueTimeSlots(visibleSchedules),
@@ -172,14 +172,14 @@ export default function ScheduleScreen() {
           <Text style={styles.subtitle}>
             {role === "TEACHER"
               ? "Vos cours, classes et horaires de la semaine"
-              : role === "STAFF" && staffFunction === "SURVEILLANT"
+              : role === "STAFF" && (staffFunction === "SURVEILLANT" || staffFunction === "SECRETARIAT")
                 ? "Emploi du temps de toutes les classes de l’établissement"
                 : "Votre planning de la semaine"}
           </Text>
         </View>
       </View>
 
-      {isSurveillant && classes.length > 0 && !isLoading ? (
+      {isSchoolStaffSchedule && classes.length > 0 && !isLoading ? (
         <View style={styles.classSelector}>
           <View style={styles.selectorHeader}>
             <View style={styles.selectorCopy}>
