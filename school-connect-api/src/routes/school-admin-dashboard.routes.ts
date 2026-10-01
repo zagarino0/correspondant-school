@@ -816,7 +816,7 @@ export async function schoolAdminDashboardRoutes(
     "/dashboard",
     {
       onRequest: [authenticate],
-      preHandler: [authorize("student.read")],
+      preHandler: [authorize("school.read")],
     },
     async (request, reply) => {
       const staffFunction = (request.user as typeof request.user & { staffFunction?: string }).staffFunction;
