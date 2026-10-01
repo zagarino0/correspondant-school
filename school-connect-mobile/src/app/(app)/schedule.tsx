@@ -85,7 +85,7 @@ export default function ScheduleScreen() {
           if (isMounted) {
             setSchedules(response.schedules);
           }
-        } else if (role === "STAFF" && staffFunction === "SURVEILLANT") {
+        } else if (role === "STAFF" && (staffFunction === "SURVEILLANT" || staffFunction === "SECRETARIAT")) {
           const response = await getSchoolSchedule();
           if (isMounted) {
             setSchedules(response.schedules);
@@ -116,10 +116,10 @@ export default function ScheduleScreen() {
     };
   }, [role, staffFunction]);
 
-  const isSurveillant = role === "STAFF" && staffFunction === "SURVEILLANT";
+  const isSchoolStaffSchedule = role === "STAFF" && (staffFunction === "SURVEILLANT" || staffFunction === "SECRETARIAT");
 
   const classes = useMemo(() => {
-    if (!isSurveillant) return [];
+    if (!isSchoolStaffSchedule) return [];
     const map = new Map<string, { id: string; name: string; level: string | null }>();
     schedules.forEach((schedule) => {
       if ("class" in schedule) {
