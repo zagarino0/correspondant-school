@@ -159,7 +159,7 @@ export async function disciplineVisibilityRoutes(fastify: FastifyInstance) {
       const [incidents, actions] = await Promise.all([
         fastify.prisma.incident.findMany({
           where: {
-            schoolId: request.user.schoolId ?? undefined,
+            schoolId: request.user.schoolId,
             ...studentFilter,
           },
           orderBy: { occurredAt: "desc" },
@@ -234,10 +234,36 @@ export async function disciplineVisibilityRoutes(fastify: FastifyInstance) {
         }
       }
 
+      if (!request.user.schoolId) {
+        return reply.status(403).send({
+          error: { code: "SCHOOL_REQUIRED", message: "A school assignment is required." },
+        });
+      }
+
+      if (request.user.role === "TEACHER") {
+        const access = await fastify.prisma.studentEnrollment.findFirst({
+          where: {
+            studentId,
+            status: "ACTIVE",
+            student: { schoolId: request.user.schoolId },
+            academicYear: { status: "ACTIVE", schoolId: request.user.schoolId },
+            class: {
+              schoolId: request.user.schoolId,
+              teacherAssignments: { some: { teacherId: request.user.sub } },
+            },
+          },
+          select: { id: true },
+        });
+
+        if (!access) {
+          return forbidden(reply, "This student is not assigned to one of your active classes.");
+        }
+      }
+
       const student = await fastify.prisma.student.findFirst({
         where: {
           id: studentId,
-          ...(request.user.schoolId ? { schoolId: request.user.schoolId } : {}),
+          schoolId: request.user.schoolId,
         },
         select: {
           id: true,
