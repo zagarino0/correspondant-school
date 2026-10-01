@@ -5,6 +5,7 @@ export type RealtimeEventType =
   | "attendance:event"
   | "parent:summons:new"
   | "parent:summons:updated"
+  | "parent:authorization:updated"
   | "school-life:alert"
   | "discipline:updated";
 
