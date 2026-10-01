@@ -7,7 +7,7 @@ const ticketRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.get("/tickets", { onRequest: [authenticate, authorize("ticket.read")] }, async (request, reply) => {
     const schoolId = request.user.schoolId;
     if (!schoolId && request.user.role !== "SUPER_ADMIN") return reply.status(403).send({ error: { code: "SCHOOL_CONTEXT_REQUIRED", message: "A school context is required." } });
-    const tickets = await fastify.prisma.ticket.findMany({ where: schoolId ? { schoolId } : undefined, orderBy: { createdAt: "desc" }, take: 100, select: { id: true, schoolId: true, subject: true, description: true, priority: true, status: true, createdBy: true, assignedTo: true, createdAt: true, updatedAt: true } });
+    const tickets = await fastify.prisma.ticket.findMany({ where: schoolId ? { schoolId } : {}, orderBy: { createdAt: "desc" }, take: 100, select: { id: true, schoolId: true, subject: true, description: true, priority: true, status: true, createdBy: true, assignedTo: true, createdAt: true, updatedAt: true } });
     return reply.send({ tickets });
   });
 
@@ -28,7 +28,7 @@ const ticketRoutes: FastifyPluginAsync = async (fastify) => {
     const parsed = z.object({ priority: z.enum(["LOW","NORMAL","HIGH","URGENT"]).optional(), status: z.enum(["OPEN","IN_PROGRESS","RESOLVED","CLOSED"]).optional(), assignedTo: z.string().min(1).nullable().optional() }).safeParse(request.body);
     if (!parsed.success) return reply.status(400).send({ error: { code: "VALIDATION_ERROR", message: "Invalid ticket data.", details: parsed.error.flatten().fieldErrors } });
     if (parsed.data.assignedTo && !await fastify.prisma.user.findFirst({ where: { id: parsed.data.assignedTo, schoolId, status: "ACTIVE" }, select: { id: true } })) return reply.status(404).send({ error: { code: "USER_NOT_FOUND", message: "Assignee not found in this school." } });
-    const ticket = await fastify.prisma.ticket.update({ where: { id: ticketId }, data: parsed.data });
+    const ticket = await fastify.prisma.ticket.update({ where: { id: ticketId }, data: { ...(parsed.data.priority !== undefined ? { priority: parsed.data.priority } : {}), ...(parsed.data.status !== undefined ? { status: parsed.data.status } : {}), ...(parsed.data.assignedTo !== undefined ? { assignedTo: parsed.data.assignedTo } : {}) } });
     return reply.send({ ticket });
   });
 };
