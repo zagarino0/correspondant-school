@@ -72,6 +72,14 @@ export function DashboardHeader({ firstName, role, staffFunction }: DashboardHea
           ? (surveillantResult.value?.unreadCount ?? 0)
           : 0,
       );
+
+      setPendingAuthorizations(
+        role === "STAFF" &&
+        staffFunction === "SURVEILLANT" &&
+        authorizationResult.status === "fulfilled"
+          ? authorizationResult.value.filter((item) => item.status === "PENDING").length
+          : 0,
+      );
     }
 
     void loadBadges();
@@ -128,9 +136,7 @@ export function DashboardHeader({ firstName, role, staffFunction }: DashboardHea
         <View style={styles.actions}>
           <Pressable
             onPress={() =>
-              role === "STAFF" && staffFunction === "SURVEILLANT"
-                ? router.push("/(app)/announcements")
-                : router.push("/(app)/announcements")
+              router.push("/(app)/announcements")
             }
             style={styles.iconButton}
             accessibilityRole="button"
