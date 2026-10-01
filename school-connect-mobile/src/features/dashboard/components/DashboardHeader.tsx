@@ -4,7 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
 import { getMyAnnouncements } from "../../../features/announcements/announcement.service";
-import { getMySummons } from "../../../services/parents/parent.service";
+import { getMyAuthorizations, getMySummons } from "../../../services/parents/parent.service";
 import { createRealtimeConnection } from "../../../services/realtime/websocket.service";
 import { getSummonsNotifications } from "../../../services/surveillant/surveillant.service";
 import { getSchoolLifeAuthorizations } from "../../../services/surveillant/schoolLife.service";
@@ -32,12 +32,13 @@ export function DashboardHeader({ firstName, role, staffFunction }: DashboardHea
   const [pendingSummons, setPendingSummons] = useState(0);
   const [surveillantNotifications, setSurveillantNotifications] = useState(0);
   const [pendingAuthorizations, setPendingAuthorizations] = useState(0);
+  const [authorizationResponses, setAuthorizationResponses] = useState(0);
 
   useEffect(() => {
     let mounted = true;
 
     async function loadBadges() {
-      const [announcementResult, summonsResult, surveillantResult, authorizationResult] =
+      const [announcementResult, summonsResult, surveillantResult, authorizationResult, parentAuthorizationResult] =
         await Promise.allSettled([
           getMyAnnouncements(),
           role === "PARENT" ? getMySummons() : Promise.resolve(null),
@@ -47,6 +48,7 @@ export function DashboardHeader({ firstName, role, staffFunction }: DashboardHea
           role === "STAFF" && staffFunction === "SURVEILLANT"
             ? getSchoolLifeAuthorizations()
             : Promise.resolve(null),
+          role === "PARENT" ? getMyAuthorizations() : Promise.resolve(null),
         ]);
 
       if (!mounted) return;
@@ -70,6 +72,14 @@ export function DashboardHeader({ firstName, role, staffFunction }: DashboardHea
       setSurveillantNotifications(
         role === "STAFF" && surveillantResult.status === "fulfilled"
           ? (surveillantResult.value?.unreadCount ?? 0)
+          : 0,
+      );
+
+      setAuthorizationResponses(
+        role === "PARENT" && parentAuthorizationResult.status === "fulfilled"
+          ? (parentAuthorizationResult.value?.authorizations.filter(
+              (authorization) => authorization.status === "APPROVED" || authorization.status === "REJECTED",
+            ).length ?? 0)
           : 0,
       );
 
@@ -98,7 +108,8 @@ export function DashboardHeader({ firstName, role, staffFunction }: DashboardHea
         if (
           event.type === "parent:summons:new" ||
           event.type === "parent:summons:updated" ||
-          event.type === "parent:authorization:new"
+          event.type === "parent:authorization:new" ||
+          event.type === "parent:authorization:updated"
         ) {
           void loadBadges();
         }
@@ -143,12 +154,12 @@ export function DashboardHeader({ firstName, role, staffFunction }: DashboardHea
             accessibilityLabel="Annonces"
           >
             <Ionicons name="notifications-outline" size={23} color="#344976" />
-            {unreadAnnouncements + pendingSummons + surveillantNotifications + pendingAuthorizations > 0 ? (
+            {unreadAnnouncements + pendingSummons + surveillantNotifications + pendingAuthorizations + authorizationResponses > 0 ? (
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>
-                  {unreadAnnouncements + pendingSummons + surveillantNotifications + pendingAuthorizations > 99
+                  {unreadAnnouncements + pendingSummons + surveillantNotifications + pendingAuthorizations + authorizationResponses > 99
                     ? "99+"
-                    : unreadAnnouncements + pendingSummons + surveillantNotifications}
+                    : unreadAnnouncements + pendingSummons + surveillantNotifications + pendingAuthorizations + authorizationResponses}
                 </Text>
               </View>
             ) : null}
