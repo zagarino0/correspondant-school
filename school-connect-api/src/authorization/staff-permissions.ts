@@ -119,6 +119,7 @@ const staffPermissions: Record<StaffFunction, readonly Permission[]> = {
 
     // Autorisations parentales
     "authorization.read",
+    "authorization.update",
 
     // Convocations des parents
     "parent-summons.read",
