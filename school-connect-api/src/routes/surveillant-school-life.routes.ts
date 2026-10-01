@@ -141,6 +141,50 @@ export async function surveillantSchoolLifeRoutes(fastify: FastifyInstance) {
     },
   );
 
+
+  fastify.get(
+    "/history",
+    {
+      onRequest: [authenticate],
+      preHandler: [authorize("student.read")],
+    },
+    async (request, reply) => {
+      const query = request.query as { studentId?: string; from?: string; to?: string; type?: string; limit?: string };
+      const schoolId = request.user.schoolId;
+      if (!schoolId) return reply.status(403).send({ error: { code: "SCHOOL_REQUIRED", message: "A school assignment is required." } });
+      const from = query.from ? parseDate(query.from) : null;
+      const to = query.to ? parseDate(query.to) : null;
+      if (query.from && !from) return reply.status(400).send({ error: { code: "INVALID_FROM_DATE", message: "The from date is invalid." } });
+      if (query.to && !to) return reply.status(400).send({ error: { code: "INVALID_TO_DATE", message: "The to date is invalid." } });
+      const limit = Math.min(Math.max(Number(query.limit) || 100, 1), 200);
+      const range = { ...(from ? { gte: from } : {}), ...(to ? { lte: to } : {}) };
+      const hasRange = Object.keys(range).length > 0;
+      const [attendances, exits, movements, incidents, disciplinaryActions, observations, authorizations, summons] = await Promise.all([
+        fastify.prisma.attendance.findMany({ where: { schoolId, ...(query.studentId ? { studentId: query.studentId } : {}), ...(hasRange ? { date: range } : {}) }, orderBy: { date: "desc" }, take: limit, select: { id: true, studentId: true, date: true, status: true, arrivalTime: true, reason: true, note: true, student: { select: { firstName: true, lastName: true, studentNumber: true } } } }),
+        fastify.prisma.studentExit.findMany({ where: { schoolId, ...(query.studentId ? { studentId: query.studentId } : {}), ...(hasRange ? { exitAt: range } : {}) }, orderBy: { exitAt: "desc" }, take: limit, select: { id: true, studentId: true, type: true, status: true, authorizedPersonName: true, reason: true, exitAt: true, returnAt: true, student: { select: { firstName: true, lastName: true, studentNumber: true } } } }),
+        fastify.prisma.studentMovement.findMany({ where: { schoolId, ...(query.studentId ? { studentId: query.studentId } : {}), ...(hasRange ? { occurredAt: range } : {}) }, orderBy: { occurredAt: "desc" }, take: limit, select: { id: true, studentId: true, type: true, reason: true, occurredAt: true, student: { select: { firstName: true, lastName: true, studentNumber: true } } } }),
+        fastify.prisma.incident.findMany({ where: { schoolId, ...(query.studentId ? { studentId: query.studentId } : {}), ...(hasRange ? { occurredAt: range } : {}) }, orderBy: { occurredAt: "desc" }, take: limit, select: { id: true, studentId: true, type: true, severity: true, status: true, description: true, occurredAt: true, location: true, resolutionNote: true, resolvedAt: true, student: { select: { firstName: true, lastName: true, studentNumber: true } } } }),
+        fastify.prisma.disciplinaryAction.findMany({ where: { schoolId, ...(query.studentId ? { studentId: query.studentId } : {}), ...(hasRange ? { actionAt: range } : {}) }, orderBy: { actionAt: "desc" }, take: limit, select: { id: true, studentId: true, incidentId: true, type: true, status: true, approvalStatus: true, description: true, decisionNote: true, actionAt: true, dueAt: true, completedAt: true, approvedAt: true, student: { select: { firstName: true, lastName: true, studentNumber: true } } } }),
+        fastify.prisma.schoolLifeObservation.findMany({ where: { schoolId, ...(query.studentId ? { studentId: query.studentId } : {}), ...(hasRange ? { observedAt: range } : {}) }, orderBy: { observedAt: "desc" }, take: limit, select: { id: true, studentId: true, content: true, observedAt: true, student: { select: { firstName: true, lastName: true, studentNumber: true } } } }),
+        fastify.prisma.parentAuthorization.findMany({ where: { schoolId, ...(query.studentId ? { studentId: query.studentId } : {}), ...(hasRange ? { requestedAt: range } : {}) }, orderBy: { requestedAt: "desc" }, take: limit, select: { id: true, studentId: true, type: true, status: true, reason: true, requestedAt: true, decidedAt: true, student: { select: { firstName: true, lastName: true, studentNumber: true } } } }),
+        fastify.prisma.parentSummons.findMany({ where: { schoolId, ...(query.studentId ? { studentId: query.studentId } : {}), ...(hasRange ? { createdAt: range } : {}) }, orderBy: { createdAt: "desc" }, take: limit, select: { id: true, studentId: true, reason: true, message: true, status: true, scheduledAt: true, createdAt: true, student: { select: { firstName: true, lastName: true, studentNumber: true } } } }),
+      ]);
+      const requestedType = query.type?.toUpperCase();
+      const matchesType = (type: string) => !requestedType || requestedType === "ALL" || requestedType === type;
+      const items = [
+        ...attendances.map((item) => ({ id: item.id, type: item.status === "LATE" || item.status === "RETARD" ? "LATE" : "ATTENDANCE", occurredAt: item.date, student: item.student, title: item.status === "LATE" || item.status === "RETARD" ? "Retard" : "Présence", description: item.reason || item.note || `Statut : ${item.status}`, status: item.status, sourceId: item.id, metadata: { arrivalTime: item.arrivalTime } })),
+        ...exits.map((item) => ({ id: item.id, type: "EXIT", occurredAt: item.exitAt, student: item.student, title: item.type === "PERMANENT" ? "Sortie définitive" : "Sortie", description: item.reason, status: item.status, sourceId: item.id, metadata: { exitType: item.type, authorizedPersonName: item.authorizedPersonName, returnAt: item.returnAt } })),
+        ...movements.map((item) => ({ id: item.id, type: "MOVEMENT", occurredAt: item.occurredAt, student: item.student, title: item.type === "ENTRY" ? "Entrée" : "Mouvement — sortie", description: item.reason || "Aucun motif renseigné.", status: item.type, sourceId: item.id, metadata: { movementType: item.type } })),
+        ...incidents.map((item) => ({ id: item.id, type: "INCIDENT", occurredAt: item.occurredAt, student: item.student, title: `Incident — ${item.type}`, description: item.description, status: item.status, sourceId: item.id, metadata: { severity: item.severity, location: item.location, resolutionNote: item.resolutionNote, resolvedAt: item.resolvedAt } })),
+        ...disciplinaryActions.map((item) => ({ id: item.id, type: "DISCIPLINE", occurredAt: item.actionAt, student: item.student, title: `Décision disciplinaire — ${item.type}`, description: item.description, status: item.approvalStatus, sourceId: item.id, metadata: { incidentId: item.incidentId, actionStatus: item.status, decisionNote: item.decisionNote, dueAt: item.dueAt, completedAt: item.completedAt, approvedAt: item.approvedAt } })),
+        ...observations.map((item) => ({ id: item.id, type: "OBSERVATION", occurredAt: item.observedAt, student: item.student, title: "Observation", description: item.content, status: null, sourceId: item.id, metadata: {} })),
+        ...authorizations.map((item) => ({ id: item.id, type: "AUTHORIZATION", occurredAt: item.decidedAt || item.requestedAt, student: item.student, title: `Autorisation parentale — ${item.type}`, description: item.reason || "Demande d'autorisation parentale.", status: item.status, sourceId: item.id, metadata: { requestedAt: item.requestedAt, decidedAt: item.decidedAt } })),
+        ...summons.map((item) => ({ id: item.id, type: "SUMMONS", occurredAt: item.createdAt, student: item.student, title: "Convocation parentale", description: item.reason || item.message, status: item.status, sourceId: item.id, metadata: { scheduledAt: item.scheduledAt, message: item.message } })),
+      ].filter((item) => matchesType(item.type)).sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime()).slice(0, limit);
+      return reply.send({ items });
+    },
+  );
+
   fastify.get(
     "/exits",
     {
