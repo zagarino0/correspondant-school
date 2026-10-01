@@ -6,6 +6,7 @@ import { useRouter } from "expo-router";
 import { DashboardHeader } from "../../features/dashboard/components/DashboardHeader";
 import { ParentDashboard } from "../../features/dashboard/dashboards/ParentDashboard";
 import { SchoolAdminDashboard } from "../../features/dashboard/dashboards/SchoolAdminDashboard";
+import { SecretaryDashboard } from "../../features/dashboard/dashboards/SecretaryDashboard";
 import { StaffDashboard } from "../../features/dashboard/dashboards/StaffDashboard";
 import { SurveillantDashboard } from "../../features/dashboard/dashboards/SurveillantDashboard";
 import { StudentDashboard } from "../../features/dashboard/dashboards/StudentDashboard";
@@ -36,9 +37,14 @@ export default function AppHomeScreen() {
       case "STUDENT": return <StudentDashboard firstName={user.firstName} />;
       case "PARENT": return <ParentDashboard firstName={user.firstName} />;
       case "TEACHER": return <TeacherDashboard firstName={user.firstName} />;
-      case "STAFF": return user.staffFunction === "SURVEILLANT"
-        ? <SurveillantDashboard firstName={user.firstName} />
-        : <StaffDashboard firstName={user.firstName} staffFunction={user.staffFunction} />;
+      case "STAFF":
+        if (user.staffFunction === "SURVEILLANT") {
+          return <SurveillantDashboard firstName={user.firstName} />;
+        }
+        if (user.staffFunction === "SECRETARIAT") {
+          return <SecretaryDashboard firstName={user.firstName} />;
+        }
+        return <StaffDashboard firstName={user.firstName} staffFunction={user.staffFunction} />;
       case "SCHOOL_ADMIN": return <SchoolAdminDashboard firstName={user.firstName} />;
       case "SUPER_ADMIN": return <SuperAdminDashboard firstName={user.firstName} />;
       default: return null;
