@@ -10,7 +10,7 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { getStudents } from "../../../services/students/student.service";
 import type { StudentListItem } from "../../../services/students/student.types";
 
@@ -69,7 +69,10 @@ function studentName(item: {
 
 export default function SurveillantSchoolLifeScreen() {
   const router = useRouter();
-  const [tab, setTab] = useState<Tab>("overview");
+  const { tab: requestedTab } = useLocalSearchParams<{ tab?: string }>();
+  const initialTab: Tab =
+    requestedTab === "authorizations" ? "authorizations" : "overview";
+  const [tab, setTab] = useState<Tab>(initialTab);
   const [exits, setExits] = useState<SchoolLifeExitItem[]>([]);
   const [movements, setMovements] = useState<SchoolLifeMovementItem[]>([]);
   const [incidents, setIncidents] = useState<SchoolLifeIncidentItem[]>([]);
