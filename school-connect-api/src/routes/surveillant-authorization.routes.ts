@@ -12,55 +12,6 @@ const authorizationDecisionSchema = z.object({
 export async function surveillantAuthorizationRoutes(
   fastify: FastifyInstance,
 ) {
-  fastify.get(
-    "/authorizations",
-    {
-      onRequest: [authenticate],
-      preHandler: [authorize("authorization.read")],
-    },
-    async (request, reply) => {
-      const schoolId = request.user.schoolId;
-
-      if (!schoolId) {
-        return reply.status(403).send({
-          error: {
-            code: "SCHOOL_REQUIRED",
-            message: "Une affectation à un établissement est requise.",
-          },
-        });
-      }
-
-      const items = await fastify.prisma.parentAuthorization.findMany({
-        where: {
-          schoolId,
-        },
-        orderBy: {
-          requestedAt: "desc",
-        },
-        take: 100,
-        select: {
-          id: true,
-          studentId: true,
-          parentId: true,
-          type: true,
-          status: true,
-          reason: true,
-          requestedAt: true,
-          decidedAt: true,
-          student: {
-            select: {
-              firstName: true,
-              lastName: true,
-              studentNumber: true,
-            },
-          },
-        },
-      });
-
-      return reply.send({ items });
-    },
-  );
-
   fastify.patch(
     "/authorizations/:authorizationId",
     {
