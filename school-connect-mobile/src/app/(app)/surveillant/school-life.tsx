@@ -16,6 +16,7 @@ import type { StudentListItem } from "../../../services/students/student.types";
 
 import {
   getSchoolLifeAuthorizations,
+  decideSchoolLifeAuthorization,
   getSchoolLifeDisciplinaryActions,
   getSchoolLifeExits,
   createSchoolLifeExit,
@@ -74,6 +75,7 @@ export default function SurveillantSchoolLifeScreen() {
   const [incidents, setIncidents] = useState<SchoolLifeIncidentItem[]>([]);
   const [discipline, setDiscipline] = useState<SchoolLifeDisciplinaryItem[]>([]);
   const [authorizations, setAuthorizations] = useState<SchoolLifeAuthorizationItem[]>([]);
+  const [decidingAuthorizationId, setDecidingAuthorizationId] = useState<string | null>(null);
   const [showExitModal, setShowExitModal] = useState(false);
   const [showMovementModal, setShowMovementModal] = useState(false);
   const [showIncidentModal, setShowIncidentModal] = useState(false);
@@ -207,6 +209,26 @@ export default function SurveillantSchoolLifeScreen() {
     setEditingDiscipline(null);
     setDisciplineIncidentId(null);
     setDisciplineIncidentContext(null);
+  };
+
+  const decideAuthorization = async (
+    item: SchoolLifeAuthorizationItem,
+    status: "APPROVED" | "REJECTED",
+  ) => {
+    setDecidingAuthorizationId(item.id);
+    setError(null);
+    try {
+      const updated = await decideSchoolLifeAuthorization(item.id, status);
+      setAuthorizations((current) =>
+        current.map((authorization) =>
+          authorization.id === updated.id ? updated : authorization,
+        ),
+      );
+    } catch {
+      setError("Impossible de traiter cette autorisation.");
+    } finally {
+      setDecidingAuthorizationId(null);
+    }
   };
 
   const openCreateDiscipline = () => {
@@ -748,16 +770,55 @@ export default function SurveillantSchoolLifeScreen() {
 
         {tab === "authorizations" ? (
           <Section title="AUTORISATIONS PARENTALES">
-            {authorizations.length === 0 ? <Empty text="Aucune autorisation enregistrée." /> : authorizations.slice(0, 50).map((item) => (
-              <ItemCard key={item.id}>
-                <View style={styles.itemHeader}>
-                  <Text style={styles.itemTitle}>{studentName(item.student)}</Text>
-                  <Badge text={item.status} />
-                </View>
-                <Text style={styles.itemMeta}>{item.type} · demandée {dateTime(item.requestedAt)}</Text>
-                <Text style={styles.itemText}>{item.reason || "Aucun motif renseigné."}</Text>
-              </ItemCard>
-            ))}</Section>
+            {authorizations.length === 0 ? (
+              <Empty text="Aucune demande d'autorisation enregistrée." />
+            ) : (
+              authorizations.slice(0, 50).map((item) => {
+                const deciding = decidingAuthorizationId === item.id;
+
+                return (
+                  <ItemCard key={item.id}>
+                    <View style={styles.itemHeader}>
+                      <Text style={styles.itemTitle}>{studentName(item.student)}</Text>
+                      <Badge text={item.status} />
+                    </View>
+                    <Text style={styles.itemMeta}>
+                      {item.type} · demandée {dateTime(item.requestedAt)}
+                    </Text>
+                    <Text style={styles.itemText}>
+                      {item.reason || "Aucun motif renseigné."}
+                    </Text>
+
+                    {item.status === "PENDING" ? (
+                      <View style={styles.authorizationActions}>
+                        <Pressable
+                          style={[styles.authorizationApproveButton, deciding && styles.buttonDisabled]}
+                          onPress={() => void decideAuthorization(item, "APPROVED")}
+                          disabled={deciding}
+                        >
+                          <Text style={styles.authorizationApproveText}>
+                            {deciding ? "Traitement…" : "Approuver"}
+                          </Text>
+                        </Pressable>
+                        <Pressable
+                          style={[styles.authorizationRejectButton, deciding && styles.buttonDisabled]}
+                          onPress={() => void decideAuthorization(item, "REJECTED")}
+                          disabled={deciding}
+                        >
+                          <Text style={styles.authorizationRejectText}>Refuser</Text>
+                        </Pressable>
+                      </View>
+                    ) : (
+                      <Text style={styles.authorizationDecision}>
+                        {item.status === "APPROVED" ? "Autorisation validée" : "Autorisation refusée"}
+                        {item.decidedAt ? ` · ${dateTime(item.decidedAt)}` : ""}
+                      </Text>
+                    )}
+                  </ItemCard>
+                );
+              })
+            )}
+          </Section>
         ) : null}
       </ScrollView>
             <Modal
@@ -1393,6 +1454,12 @@ const styles = StyleSheet.create({
   exitToolbarText: { marginTop: 3, fontSize: 10, lineHeight: 15, color: "#64748B" },
   primaryButton: { paddingHorizontal: 12, paddingVertical: 10, borderRadius: 10, backgroundColor: "#344976" },
   primaryButtonText: { color: "#FFFFFF", fontSize: 10, fontWeight: "900" },
+  authorizationActions: { flexDirection: "row", gap: 8, marginTop: 11 },
+  authorizationApproveButton: { flex: 1, paddingVertical: 10, alignItems: "center", borderRadius: 9, backgroundColor: "#DCFCE7" },
+  authorizationApproveText: { color: "#15803D", fontSize: 10, fontWeight: "900" },
+  authorizationRejectButton: { flex: 1, paddingVertical: 10, alignItems: "center", borderRadius: 9, backgroundColor: "#FEE2E2" },
+  authorizationRejectText: { color: "#B91C1C", fontSize: 10, fontWeight: "900" },
+  authorizationDecision: { marginTop: 9, fontSize: 10, fontWeight: "800", color: "#64748B" },
   completeButton: { marginTop: 10, alignSelf: "flex-start", paddingHorizontal: 11, paddingVertical: 8, borderRadius: 9, backgroundColor: "#EEF2F7" },
   completeButtonText: { color: "#344976", fontSize: 10, fontWeight: "900" },
   completeButtonApproved: { backgroundColor: "#DCFCE7" },
