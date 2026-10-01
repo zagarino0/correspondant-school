@@ -527,6 +527,15 @@ export default function SurveillantSchoolLifeScreen() {
     () => incidents.filter((item) => item.severity === "HIGH" || item.severity === "CRITICAL").length,
     [incidents],
   );
+  const todayMovements = useMemo(
+    () =>
+      history.filter(
+        (item) =>
+          item.type === "MOVEMENT" &&
+          item.occurredAt.slice(0, 10) === today(),
+      ).length,
+    [history],
+  );
 
   if (loading) {
     return (
@@ -588,7 +597,7 @@ export default function SurveillantSchoolLifeScreen() {
           <>
             <View style={styles.statGrid}>
               <Stat label="Sorties ouvertes" value={openExits} />
-              <Stat label="Mouvements aujourd'hui" value={movements.length} />
+              <Stat label="Mouvements aujourd'hui" value={todayMovements} />
               <Stat label="Incidents" value={incidents.length} />
               <Stat label="Incidents sérieux" value={seriousIncidents} />
               <Stat label="Discipline active" value={activeDiscipline} />
@@ -598,7 +607,7 @@ export default function SurveillantSchoolLifeScreen() {
             <Section title="ACCÈS OPÉRATIONNELS">
               <ActionRow title="Présences / Retards" description="Contrôler automatiquement les élèves attendus selon le créneau de l'emploi du temps." onPress={() => router.push("/(app)/surveillant/attendance")} />
               <ActionRow title="Sorties élèves" description="Suivre les élèves actuellement sortis et les retours." onPress={() => setTab("exits")} />
-              <ActionRow title="Mouvements" description="Consulter les entrées et sorties enregistrées aujourd'hui." onPress={() => setTab("movements")} />
+              <ActionRow title="Historique vie scolaire" description="Consulter les présences, mouvements, sorties, incidents et décisions dans un journal chronologique." onPress={() => setTab("history")} />
               <ActionRow title="Incidents" description="Consulter les incidents et leur niveau de gravité." onPress={() => setTab("incidents")} />
               <ActionRow title="Discipline" description="Suivre les mesures disciplinaires en cours." onPress={() => setTab("discipline")} />
               <ActionRow title="Autorisations parentales" description="Voir les demandes qui nécessitent un traitement." onPress={() => setTab("authorizations")} />
