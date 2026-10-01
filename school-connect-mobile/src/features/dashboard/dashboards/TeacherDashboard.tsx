@@ -30,6 +30,7 @@ import type {
 import type { TeacherSchedule } from "../../schedule/schedule.types";
 import { createRealtimeConnection } from "../../../services/realtime/websocket.service";
 import { TeacherIncidentCard } from "../components/TeacherIncidentCard";
+import { getMyTeacherDiscipline, type TeacherDisciplineResponse } from "../../../services/discipline/discipline.service";
 
 function getLocalDateKey(): string {
   const date = new Date();
@@ -94,11 +95,28 @@ export function TeacherDashboard({ firstName }: TeacherDashboardProps) {
   const [savingObservation, setSavingObservation] = useState<string | null>(null);
   const [editingObservation, setEditingObservation] = useState<string | null>(null);
   const [observationConfirmation, setObservationConfirmation] = useState<string | null>(null);
+  const [disciplineData, setDisciplineData] = useState<TeacherDisciplineResponse>({ incidents: [], actions: [] });
+  const [disciplineLoading, setDisciplineLoading] = useState(true);
+  const [disciplineError, setDisciplineError] = useState(false);
   const [nowMinutes, setNowMinutes] = useState(() => {
     const date = new Date();
     return date.getHours() * 60 + date.getMinutes();
   });
   const previousActiveSlotId = useRef<string | null>(null);
+
+  const loadDiscipline = useCallback(async () => {
+    try {
+      setDisciplineLoading(true);
+      setDisciplineError(false);
+      const response = await getMyTeacherDiscipline();
+      setDisciplineData(response);
+    } catch {
+      setDisciplineError(true);
+      setDisciplineData({ incidents: [], actions: [] });
+    } finally {
+      setDisciplineLoading(false);
+    }
+  }, []);
 
   const loadDashboard = useCallback(async () => {
     try {
@@ -185,6 +203,10 @@ export function TeacherDashboard({ firstName }: TeacherDashboardProps) {
           void loadDashboard();
           void loadActivity();
         }
+
+        if (event.type === "discipline:updated") {
+          void loadDiscipline();
+        }
       },
     });
 
@@ -197,6 +219,7 @@ export function TeacherDashboard({ firstName }: TeacherDashboardProps) {
     useCallback(() => {
       void loadDashboard();
       void loadActivity();
+      void loadDiscipline();
 
       const refreshClock = () => {
         const date = new Date();
@@ -474,6 +497,42 @@ export function TeacherDashboard({ firstName }: TeacherDashboardProps) {
       {sections.map((section) => (
         <DashboardSection key={section.id} {...section} />
       ))}
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Vie scolaire</Text>
+        <View style={styles.overviewCard}>
+          <View style={styles.cardHeader}>
+            <View style={styles.flex}>
+              <Text style={styles.cardTitle}>Discipline</Text>
+              <Text style={styles.cardDescription}>
+                Incidents de vos élèves et mesures disciplinaires validées par l'administration.
+              </Text>
+            </View>
+            <View style={styles.countBadge}>
+              <Text style={styles.countBadgeText}>
+                {disciplineLoading ? "…" : disciplineError ? "—" : disciplineData.actions.length}
+              </Text>
+            </View>
+          </View>
+
+          {disciplineLoading ? (
+            <ActivityIndicator />
+          ) : disciplineError ? (
+            <Text style={styles.muted}>Impossible de charger le suivi disciplinaire.</Text>
+          ) : (
+            <>
+              <Text style={styles.muted}>
+                {disciplineData.incidents.length} incident(s) · {disciplineData.actions.length} mesure(s) validée(s)
+              </Text>
+              {disciplineData.actions[0] ? (
+                <Text style={styles.cardDescription}>
+                  Dernière mesure : {disciplineData.actions[0].student.firstName} {disciplineData.actions[0].student.lastName} · {disciplineData.actions[0].type}
+                </Text>
+              ) : null}
+            </>
+          )}
+        </View>
+      </View>
 
       <TeacherIncidentCard classes={classes} onCreated={() => void loadDashboard()} />
 
