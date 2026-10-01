@@ -11,6 +11,7 @@ import { authenticate } from "../middleware/authenticate.js";
 import { authorize } from "../middleware/authorize.js";
 import { authorizeStudentResource } from "../middleware/authorize-student-resource.js";
 import { env } from "../config/env.js";
+import { getUserPermissions } from "../authorization/user-permissions.js";
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -91,6 +92,14 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
       },
     });
 
+    const staffFunction =
+      user.role === "STAFF"
+        ? (await fastify.prisma.staffProfile.findUnique({
+            where: { userId: user.id },
+            select: { function: true },
+          }))?.function ?? null
+        : null;
+
     return reply.send({
       user: {
         id: user.id,
@@ -99,12 +108,8 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
         lastName: user.lastName,
         role: user.role,
         schoolId: user.schoolId,
-        staffFunction: user.role === "STAFF"
-          ? (await fastify.prisma.staffProfile.findUnique({
-              where: { userId: user.id },
-              select: { function: true },
-            }))?.function ?? null
-          : null,
+        staffFunction,
+        permissions: getUserPermissions(user.role, staffFunction),
       },
       accessToken,
       refreshToken,
@@ -268,10 +273,13 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
         });
       }
 
+      const staffFunction = user.staffProfile?.function ?? null;
+
       return reply.send({
         user: {
           ...user,
-          staffFunction: user.staffProfile?.function ?? null,
+          staffFunction,
+          permissions: getUserPermissions(user.role, staffFunction),
         },
       });
     }
