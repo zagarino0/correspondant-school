@@ -159,35 +159,36 @@ export default function ClassesScreen() {
                     </View>
                   </View>
 
-                  <View style={styles.actions}>
-                    <Pressable
-                      style={({ pressed }) => [styles.editButton, pressed && styles.pressed]}
-                      onPress={() =>
-                        router.push({
-                          pathname: "/(app)/class-edit",
-                          params: { classId: item.id, name: item.name, level: item.level ?? "" },
-                        })
-                      }
-                    >
-                      <Text style={styles.editText}>Modifier</Text>
-                    </Pressable>
-
-                    <Pressable
-                      disabled={deleting}
-                      style={({ pressed }) => [
-                        styles.deleteButton,
-                        pressed && styles.pressed,
-                        deleting && styles.disabled,
-                      ]}
-                      onPress={() => confirmDelete(item.id, item.name)}
-                    >
-                      {deleting ? (
-                        <ActivityIndicator size="small" color="#B91C1C" />
-                      ) : (
-                        <Text style={styles.deleteText}>Supprimer</Text>
-                      )}
-                    </Pressable>
-                  </View>
+                  {hasPermission(user, "school.update") ? (
+                    <View style={styles.actions}>
+                      <Pressable
+                        style={({ pressed }) => [styles.editButton, pressed && styles.pressed]}
+                        onPress={() =>
+                          router.push({
+                            pathname: "/(app)/class-edit",
+                            params: { classId: item.id, name: item.name, level: item.level ?? "" },
+                          })
+                        }
+                      >
+                        <Text style={styles.editText}>Modifier</Text>
+                      </Pressable>
+                      <Pressable
+                        disabled={deleting}
+                        style={({ pressed }) => [
+                          styles.deleteButton,
+                          pressed && styles.pressed,
+                          deleting && styles.disabled,
+                        ]}
+                        onPress={() => confirmDelete(item.id, item.name)}
+                      >
+                        {deleting ? (
+                          <ActivityIndicator size="small" color="#B91C1C" />
+                        ) : (
+                          <Text style={styles.deleteText}>Supprimer</Text>
+                        )}
+                      </Pressable>
+                    </View>
+                  ) : null}
                 </View>
               );
             })}
