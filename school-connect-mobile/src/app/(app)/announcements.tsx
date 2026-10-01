@@ -203,8 +203,6 @@ export default function AnnouncementsScreen() {
     }
 
     handleOpenNotification();
-      return;
-    }
 
     setAnnouncements((currentAnnouncements) =>
       currentAnnouncements.map((item) =>
