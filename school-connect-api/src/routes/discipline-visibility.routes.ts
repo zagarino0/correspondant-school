@@ -27,10 +27,16 @@ export async function disciplineVisibilityRoutes(fastify: FastifyInstance) {
       }
 
       if (role === "STUDENT") {
+        if (!request.user.schoolId) {
+          return reply.status(403).send({
+            error: { code: "SCHOOL_REQUIRED", message: "A school assignment is required." },
+          });
+        }
+
         const student = await fastify.prisma.student.findFirst({
           where: {
             userId: request.user.sub,
-            ...(request.user.schoolId ? { schoolId: request.user.schoolId } : {}),
+            schoolId: request.user.schoolId,
           },
           select: { id: true, firstName: true, lastName: true, studentNumber: true },
         });
