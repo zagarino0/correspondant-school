@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useAuthStore } from "../../stores/authStore";
+import { useNotificationCenterStore } from "../../stores/notificationCenterStore";
 import { createRealtimeConnection } from "../../services/realtime/websocket.service";
 import { getMyAuthorizations, getMySummons, updateSummonsStatus, type ParentAuthorization, type ParentSummons } from "../../services/parents/parent.service";
 import { getSummonsNotifications, markSummonsNotificationRead, type SurveillantSummonsNotification } from "../../services/surveillant/surveillant.service";
@@ -81,6 +82,7 @@ function AnnouncementCard({
 export default function AnnouncementsScreen() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
+  const markAllNotificationsAsRead = useNotificationCenterStore((state) => state.markAllAsRead);
   const [announcements, setAnnouncements] = useState<StudentAnnouncement[]>([]);
   const [summons, setSummons] = useState<ParentSummons[]>([]);
   const [parentAuthorizationNotifications, setParentAuthorizationNotifications] = useState<ParentAuthorization[]>([]);
@@ -186,12 +188,21 @@ export default function AnnouncementsScreen() {
     };
   }, [user?.role, user?.staffFunction]);
 
+  function handleOpenNotification() {
+    markAllNotificationsAsRead();
+  }
+
   async function handleOpenAnnouncement(announcementId: string) {
     const announcement = announcements.find(
       (item) => item.id === announcementId,
     );
 
     if (!announcement || announcement.isRead) {
+      handleOpenNotification();
+      return;
+    }
+
+    handleOpenNotification();
       return;
     }
 
@@ -266,7 +277,10 @@ export default function AnnouncementsScreen() {
           {parentAuthorizationNotifications.map((notification) => (
             <Pressable
               key={notification.id}
-              onPress={() => router.push("/(app)/authorizations")}
+              onPress={() => {
+                handleOpenNotification();
+                router.push("/(app)/authorizations");
+              }}
               style={[styles.card, styles.authorizationResponseCard]}
               accessibilityRole="button"
               accessibilityLabel="Ouvrir la réponse à l'autorisation parentale"
@@ -296,7 +310,10 @@ export default function AnnouncementsScreen() {
           {authorizationNotifications.map((notification) => (
             <Pressable
               key={notification.id}
-              onPress={() => router.push("/(app)/surveillant/school-life?tab=authorizations")}
+              onPress={() => {
+                handleOpenNotification();
+                router.push("/(app)/surveillant/school-life?tab=authorizations");
+              }}
               style={[styles.card, styles.authorizationNotificationCard]}
               accessibilityRole="button"
               accessibilityLabel="Ouvrir la demande d'autorisation parentale"
@@ -325,6 +342,7 @@ export default function AnnouncementsScreen() {
             <Pressable
               key={notification.id}
               onPress={async () => {
+                handleOpenNotification();
                 if (!notification.responseReadAt) {
                   try {
                     await markSummonsNotificationRead(notification.id);
@@ -411,6 +429,7 @@ export default function AnnouncementsScreen() {
                   <Pressable
                     style={[styles.summonsButton, styles.declineButton]}
                     onPress={async () => {
+                      handleOpenNotification();
                       try {
                         await updateSummonsStatus(summon.id, "DECLINED");
                         setSummons((current) => current.map((item) =>
