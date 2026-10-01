@@ -104,7 +104,6 @@ export default function SurveillantSchoolLifeScreen() {
   const [disciplineType, setDisciplineType] = useState("");
   const [disciplineDescription, setDisciplineDescription] = useState("");
   const [disciplineDecisionNote, setDisciplineDecisionNote] = useState("");
-  const [disciplineActionAt, setDisciplineActionAt] = useState("");
   const [disciplineDueAt, setDisciplineDueAt] = useState("");
   const [disciplineStudentSearch, setDisciplineStudentSearch] = useState("");
   const [savingDiscipline, setSavingDiscipline] = useState(false);
@@ -203,7 +202,6 @@ export default function SurveillantSchoolLifeScreen() {
     setDisciplineType("");
     setDisciplineDescription("");
     setDisciplineDecisionNote("");
-    setDisciplineActionAt("");
     setDisciplineDueAt("");
     setDisciplineStudentSearch("");
     setEditingDiscipline(null);
@@ -254,7 +252,6 @@ export default function SurveillantSchoolLifeScreen() {
     setDisciplineType(item.type);
     setDisciplineDescription(item.description);
     setDisciplineDecisionNote(item.decisionNote ?? "");
-    setDisciplineActionAt(item.actionAt);
     setDisciplineDueAt(item.dueAt ?? "");
     setDisciplineStudentSearch("");
     setShowDisciplineModal(true);
@@ -410,7 +407,7 @@ export default function SurveillantSchoolLifeScreen() {
           type: disciplineType.trim(),
           description: disciplineDescription.trim(),
           decisionNote: disciplineDecisionNote.trim() || null,
-          actionAt: disciplineActionAt || undefined,
+          actionAt: new Date().toISOString(),
           dueAt: disciplineDueAt || null,
         });
       } else {
@@ -425,7 +422,7 @@ export default function SurveillantSchoolLifeScreen() {
           type: disciplineType.trim(),
           description: disciplineDescription.trim(),
           decisionNote: disciplineDecisionNote.trim() || null,
-          actionAt: disciplineActionAt || new Date().toISOString(),
+          actionAt: new Date().toISOString(),
           dueAt: disciplineDueAt || null,
         });
       }
@@ -1092,16 +1089,6 @@ export default function SurveillantSchoolLifeScreen() {
                 placeholderTextColor="#94A3B8"
                 multiline
                 style={[styles.input, styles.textarea]}
-              />
-
-              <Text style={styles.formLabel}>DATE DE MESURE</Text>
-              <TextInput
-                value={disciplineActionAt}
-                onChangeText={setDisciplineActionAt}
-                placeholder="ISO 8601 — vide = maintenant"
-                placeholderTextColor="#94A3B8"
-                style={styles.input}
-                autoCapitalize="none"
               />
 
               <Text style={styles.formLabel}>ÉCHÉANCE (OPTIONNELLE)</Text>
