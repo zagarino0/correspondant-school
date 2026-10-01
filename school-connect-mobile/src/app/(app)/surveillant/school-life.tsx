@@ -722,6 +722,7 @@ export default function SurveillantSchoolLifeScreen() {
                   style={[
                     styles.completeButton,
                     item.approvalStatus === "PENDING" && styles.completeButtonDisabled,
+                    item.approvalStatus === "APPROVED" && styles.completeButtonApproved,
                   ]}
                   onPress={() => openEditDiscipline(item)}
                   disabled={item.approvalStatus !== "REJECTED"}
@@ -730,6 +731,7 @@ export default function SurveillantSchoolLifeScreen() {
                     style={[
                       styles.completeButtonText,
                       item.approvalStatus === "PENDING" && styles.completeButtonDisabledText,
+                      item.approvalStatus === "APPROVED" && styles.completeButtonApprovedText,
                     ]}
                   >
                     {item.approvalStatus === "PENDING"
