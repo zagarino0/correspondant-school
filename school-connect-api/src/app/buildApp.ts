@@ -36,6 +36,7 @@ import documentRoutes from "../routes/document.routes.js";
 import meetingRoutes from "../routes/meeting.routes.js";
 import paymentRoutes from "../routes/payment.routes.js";
 import ticketRoutes from "../routes/ticket.routes.js";
+import secretariatAuthorizationRoutes from "../routes/secretariat-authorization.routes.js";
 import { startSmsWorker } from "../services/sms.service.js";
 
 import jwtPlugin from "../plugins/jwt.js";
@@ -152,6 +153,9 @@ export async function buildApp() {
     prefix: "/api/v1",
   });
   await app.register(ticketRoutes, {
+    prefix: "/api/v1",
+  });
+  await app.register(secretariatAuthorizationRoutes, {
     prefix: "/api/v1",
   });
   await app.register(teacherRoutes, {
