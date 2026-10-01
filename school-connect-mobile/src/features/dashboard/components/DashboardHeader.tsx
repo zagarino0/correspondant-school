@@ -99,7 +99,7 @@ export function DashboardHeader({ firstName, role, staffFunction }: DashboardHea
         role === "STAFF" &&
         staffFunction === "SURVEILLANT" &&
         authorizationResult.status === "fulfilled"
-          ? authorizationResult.value.filter(
+          ? (authorizationResult.value ?? []).filter(
               (item) =>
                 item.status === "PENDING" &&
                 new Date(item.requestedAt).getTime() > lastViewedAt,
