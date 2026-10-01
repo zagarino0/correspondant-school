@@ -10,6 +10,7 @@ import { getSummonsNotifications } from "../../../services/surveillant/surveilla
 import { getSchoolLifeAuthorizations } from "../../../services/surveillant/schoolLife.service";
 import type { StaffFunction } from "../../../types/auth";
 import type { UserRole } from "../../../types/auth";
+import { useNotificationCenterStore } from "../../../stores/notificationCenterStore";
 
 type DashboardHeaderProps = {
   firstName: string;
@@ -33,6 +34,7 @@ export function DashboardHeader({ firstName, role, staffFunction }: DashboardHea
   const [surveillantNotifications, setSurveillantNotifications] = useState(0);
   const [pendingAuthorizations, setPendingAuthorizations] = useState(0);
   const [authorizationResponses, setAuthorizationResponses] = useState(0);
+  const lastViewedAt = useNotificationCenterStore((state) => state.lastViewedAt);
 
   useEffect(() => {
     let mounted = true;
@@ -56,7 +58,9 @@ export function DashboardHeader({ firstName, role, staffFunction }: DashboardHea
       setUnreadAnnouncements(
         announcementResult.status === "fulfilled"
           ? announcementResult.value.announcements.filter(
-              (announcement) => !announcement.isRead,
+              (announcement) =>
+                !announcement.isRead &&
+                new Date(announcement.createdAt).getTime() > lastViewedAt,
             ).length
           : 0,
       );
@@ -64,21 +68,29 @@ export function DashboardHeader({ firstName, role, staffFunction }: DashboardHea
       setPendingSummons(
         role === "PARENT" && summonsResult.status === "fulfilled"
           ? (summonsResult.value?.summons.filter(
-              (summon) => summon.status === "PENDING",
+              (summon) =>
+                summon.status === "PENDING" &&
+                new Date(summon.createdAt).getTime() > lastViewedAt,
             ).length ?? 0)
           : 0,
       );
 
       setSurveillantNotifications(
         role === "STAFF" && surveillantResult.status === "fulfilled"
-          ? (surveillantResult.value?.unreadCount ?? 0)
+          ? surveillantResult.value?.items.filter(
+              (item) =>
+                !item.responseReadAt &&
+                new Date(item.updatedAt || item.createdAt).getTime() > lastViewedAt,
+            ).length ?? 0
           : 0,
       );
 
       setAuthorizationResponses(
         role === "PARENT" && parentAuthorizationResult.status === "fulfilled"
           ? (parentAuthorizationResult.value?.authorizations.filter(
-              (authorization) => authorization.status === "APPROVED" || authorization.status === "REJECTED",
+              (authorization) =>
+                (authorization.status === "APPROVED" || authorization.status === "REJECTED") &&
+                new Date(authorization.decidedAt ?? authorization.requestedAt).getTime() > lastViewedAt,
             ).length ?? 0)
           : 0,
       );
@@ -87,7 +99,11 @@ export function DashboardHeader({ firstName, role, staffFunction }: DashboardHea
         role === "STAFF" &&
         staffFunction === "SURVEILLANT" &&
         authorizationResult.status === "fulfilled"
-          ? authorizationResult.value.filter((item) => item.status === "PENDING").length
+          ? authorizationResult.value.filter(
+              (item) =>
+                item.status === "PENDING" &&
+                new Date(item.requestedAt).getTime() > lastViewedAt,
+            ).length
           : 0,
       );
     }
@@ -127,7 +143,7 @@ export function DashboardHeader({ firstName, role, staffFunction }: DashboardHea
       connection.close();
       clearInterval(pollingTimer);
     };
-  }, [role, staffFunction]);
+  }, [role, staffFunction, lastViewedAt]);
 
   return (
     <View style={styles.container}>
