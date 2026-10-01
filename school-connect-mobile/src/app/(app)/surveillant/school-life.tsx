@@ -1272,7 +1272,7 @@ function ItemCard({ children }: { children: ReactNode }) {
 function Badge({ text }: { text: string }) {
   const isRejected = text === "REJECTED";
   const isApproved = text === "APPROVED";
-  const isPending = text === "PENDING";
+  const isPending = text === "PENDING" || text === "À VALIDER";
   const isLow = text === "LOW";
   const isMedium = text === "MEDIUM";
   const isHigh = text === "HIGH";
