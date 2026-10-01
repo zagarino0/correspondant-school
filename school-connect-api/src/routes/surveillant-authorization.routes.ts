@@ -16,7 +16,7 @@ export async function surveillantAuthorizationRoutes(
     "/authorizations/:authorizationId",
     {
       onRequest: [authenticate],
-      preHandler: [authorize("authorization.update")],
+      preHandler: [authorize("authorization.decide")],
     },
     async (request, reply) => {
       const { authorizationId } = request.params as {
