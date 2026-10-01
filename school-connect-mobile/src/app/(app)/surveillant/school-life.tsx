@@ -706,7 +706,7 @@ export default function SurveillantSchoolLifeScreen() {
             />
 
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabs}>
-              {(["ALL", "MOVEMENT", "EXIT", "INCIDENT", "DISCIPLINE", "OBSERVATION", "AUTHORIZATION", "SUMMONS"] as const).map((type) => (
+              {(["ALL", "LATE", "MOVEMENT", "EXIT", "INCIDENT", "DISCIPLINE", "OBSERVATION", "AUTHORIZATION", "SUMMONS"] as const).map((type) => (
                 <Pressable
                   key={type}
                   style={[styles.tab, historyType === type && styles.tabActive]}
@@ -715,6 +715,7 @@ export default function SurveillantSchoolLifeScreen() {
                   <Text style={[styles.tabText, historyType === type && styles.tabTextActive]}>
                     {{
                       ALL: "Tous",
+                      LATE: "Retards",
                       MOVEMENT: "Mouvements",
                       EXIT: "Sorties",
                       INCIDENT: "Incidents",
