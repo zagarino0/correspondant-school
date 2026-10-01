@@ -105,6 +105,8 @@ export default function SurveillantSchoolLifeScreen() {
   const [disciplineDescription, setDisciplineDescription] = useState("");
   const [disciplineDecisionNote, setDisciplineDecisionNote] = useState("");
   const [disciplineActionAt, setDisciplineActionAt] = useState("");
+  const [disciplineDueAt, setDisciplineDueAt] = useState("");
+  const [disciplineStudentSearch, setDisciplineStudentSearch] = useState("");
   const [savingDiscipline, setSavingDiscipline] = useState(false);
   const [editingDiscipline, setEditingDiscipline] = useState<SchoolLifeDisciplinaryItem | null>(null);
   const [disciplineIncidentId, setDisciplineIncidentId] = useState<string | null>(null);
@@ -202,6 +204,8 @@ export default function SurveillantSchoolLifeScreen() {
     setDisciplineDescription("");
     setDisciplineDecisionNote("");
     setDisciplineActionAt("");
+    setDisciplineDueAt("");
+    setDisciplineStudentSearch("");
     setEditingDiscipline(null);
     setDisciplineIncidentId(null);
     setDisciplineIncidentContext(null);
@@ -251,6 +255,8 @@ export default function SurveillantSchoolLifeScreen() {
     setDisciplineDescription(item.description);
     setDisciplineDecisionNote(item.decisionNote ?? "");
     setDisciplineActionAt(item.actionAt);
+    setDisciplineDueAt(item.dueAt ?? "");
+    setDisciplineStudentSearch("");
     setShowDisciplineModal(true);
   };
 
@@ -301,6 +307,25 @@ export default function SurveillantSchoolLifeScreen() {
 
     return () => clearTimeout(timer);
   }, [showMovementModal, movementStudentSearch]);
+
+  useEffect(() => {
+    if (!showDisciplineModal || editingDiscipline) return;
+
+    const timer = setTimeout(() => {
+      setLoadingStudents(true);
+      void getStudents({
+        status: "ACTIVE",
+        search: disciplineStudentSearch.trim() || undefined,
+        page: 1,
+        pageSize: 30,
+      })
+        .then((response) => setStudents(response.students))
+        .catch(() => setError("Impossible de rechercher les élèves."))
+        .finally(() => setLoadingStudents(false));
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [showDisciplineModal, disciplineStudentSearch, editingDiscipline]);
 
   useEffect(() => {
     if (!showIncidentModal || editingIncident) return;
@@ -386,6 +411,7 @@ export default function SurveillantSchoolLifeScreen() {
           description: disciplineDescription.trim(),
           decisionNote: disciplineDecisionNote.trim() || null,
           actionAt: disciplineActionAt || undefined,
+          dueAt: disciplineDueAt || null,
         });
       } else {
         const studentId = disciplineIncidentContext?.studentId ?? selectedDisciplineStudent?.id;
@@ -400,6 +426,7 @@ export default function SurveillantSchoolLifeScreen() {
           description: disciplineDescription.trim(),
           decisionNote: disciplineDecisionNote.trim() || null,
           actionAt: disciplineActionAt || new Date().toISOString(),
+          dueAt: disciplineDueAt || null,
         });
       }
       setShowDisciplineModal(false);
@@ -1008,15 +1035,34 @@ export default function SurveillantSchoolLifeScreen() {
                   </Pressable>
                 </View>
               ) : (
-                <View style={styles.studentPicker}>
-                  {students.slice(0, 12).map((student) => (
-                    <Pressable key={student.id} style={styles.studentOption} onPress={() => setSelectedDisciplineStudent(student)}>
-                      <Text style={styles.studentOptionName}>{studentName(student)}</Text>
-                      <Text style={styles.studentOptionMeta}>{student.studentNumber} · {student.enrollments[0]?.class.name ?? "Sans classe"}</Text>
-                    </Pressable>
-                  ))}
-                  {students.length === 0 ? <Text style={styles.emptyPicker}>Aucun élève trouvé.</Text> : null}
-                </View>
+                <>
+                  <TextInput
+                    value={disciplineStudentSearch}
+                    onChangeText={setDisciplineStudentSearch}
+                    placeholder="Rechercher un élève ou matricule…"
+                    placeholderTextColor="#94A3B8"
+                    style={styles.input}
+                  />
+                  {loadingStudents ? (
+                    <ActivityIndicator style={styles.studentsLoader} />
+                  ) : (
+                    <View style={styles.studentPicker}>
+                      {students.map((student) => (
+                        <Pressable
+                          key={student.id}
+                          style={styles.studentOption}
+                          onPress={() => setSelectedDisciplineStudent(student)}
+                        >
+                          <Text style={styles.studentOptionName}>{studentName(student)}</Text>
+                          <Text style={styles.studentOptionMeta}>
+                            {student.studentNumber} · {student.enrollments[0]?.class.name ?? "Sans classe"}
+                          </Text>
+                        </Pressable>
+                      ))}
+                      {students.length === 0 ? <Text style={styles.emptyPicker}>Aucun élève trouvé.</Text> : null}
+                    </View>
+                  )}
+                </>
               )}
 
               <Text style={styles.formLabel}>TYPE DE MESURE</Text>
@@ -1047,6 +1093,32 @@ export default function SurveillantSchoolLifeScreen() {
                 multiline
                 style={[styles.input, styles.textarea]}
               />
+
+              <Text style={styles.formLabel}>DATE DE MESURE</Text>
+              <TextInput
+                value={disciplineActionAt}
+                onChangeText={setDisciplineActionAt}
+                placeholder="ISO 8601 — vide = maintenant"
+                placeholderTextColor="#94A3B8"
+                style={styles.input}
+                autoCapitalize="none"
+              />
+
+              <Text style={styles.formLabel}>ÉCHÉANCE (OPTIONNELLE)</Text>
+              <TextInput
+                value={disciplineDueAt}
+                onChangeText={setDisciplineDueAt}
+                placeholder="ISO 8601 — ex. 2026-10-15T16:00:00.000Z"
+                placeholderTextColor="#94A3B8"
+                style={styles.input}
+                autoCapitalize="none"
+              />
+
+              <View style={styles.formHint}>
+                <Text style={styles.formHintText}>
+                  La mesure est créée en attente de validation du School Admin. Elle ne sera visible par le parent et l'élève qu'après validation.
+                </Text>
+              </View>
 
               <Pressable
                 style={[styles.submitButton, savingDiscipline && styles.buttonDisabled]}
@@ -1306,6 +1378,8 @@ const styles = StyleSheet.create({
   studentOptionMeta: { marginTop: 2, fontSize: 9, color: "#64748B" },
   emptyPicker: { padding: 12, fontSize: 10, color: "#64748B" },
   studentsLoader: { marginTop: 12 },
+  formHint: { marginTop: 12, padding: 10, borderRadius: 10, backgroundColor: "#F1F5F9" },
+  formHintText: { fontSize: 9, lineHeight: 14, color: "#64748B" },
   typeRow: { flexDirection: "row", gap: 8 },
   typeButton: { flex: 1, paddingVertical: 10, alignItems: "center", borderRadius: 10, borderWidth: 1, borderColor: "#CBD5E1", backgroundColor: "#FFFFFF" },
   typeButtonActive: { borderColor: "#344976", backgroundColor: "#344976" },
