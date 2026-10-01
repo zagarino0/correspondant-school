@@ -76,6 +76,24 @@ export type RealtimeEvent =
       };
     }
   | {
+      type: "parent:authorization:updated";
+      payload: {
+        id: string;
+        studentId: string;
+        type: string;
+        status: "APPROVED" | "REJECTED";
+        reason: string;
+        requestedAt: string;
+        decidedAt: string;
+        student: {
+          id: string;
+          firstName: string;
+          lastName: string;
+          studentNumber: string;
+        };
+      };
+    }
+  | {
       type: "parent:summons:updated";
       payload: {
         id: string;
