@@ -27,20 +27,20 @@ import {
   getSchoolLifeIncidents,
   createSchoolLifeDisciplinaryAction,
   updateSchoolLifeDisciplinaryAction,
-  getSchoolLifeMovements,
+  getSchoolLifeHistory,
   type SchoolLifeAuthorizationItem,
   type SchoolLifeDisciplinaryItem,
   type SchoolLifeExitItem,
   type SchoolLifeIncidentItem,
-  type SchoolLifeMovementItem,
+  type SchoolLifeHistoryItem,
 } from "../../../services/surveillant/schoolLife.service";
 
-type Tab = "overview" | "exits" | "movements" | "incidents" | "discipline" | "authorizations";
+type Tab = "overview" | "exits" | "incidents" | "discipline" | "authorizations" | "history";
 
 const TABS: Array<{ key: Tab; label: string }> = [
   { key: "overview", label: "Vue d'ensemble" },
   { key: "exits", label: "Sorties" },
-  { key: "movements", label: "Mouvements" },
+  { key: "history", label: "Historique" },
   { key: "incidents", label: "Incidents" },
   { key: "discipline", label: "Discipline" },
   { key: "authorizations", label: "Autorisations" },
@@ -71,10 +71,11 @@ export default function SurveillantSchoolLifeScreen() {
   const router = useRouter();
   const { tab: requestedTab } = useLocalSearchParams<{ tab?: string }>();
   const initialTab: Tab =
-    requestedTab === "authorizations" ? "authorizations" : "overview";
+    requestedTab === "authorizations" ? "authorizations" : requestedTab === "history" ? "history" : "overview";
   const [tab, setTab] = useState<Tab>(initialTab);
   const [exits, setExits] = useState<SchoolLifeExitItem[]>([]);
-  const [movements, setMovements] = useState<SchoolLifeMovementItem[]>([]);
+  const [history, setHistory] = useState<SchoolLifeHistoryItem[]>([]);
+  const [historyType, setHistoryType] = useState<"ALL" | SchoolLifeHistoryItem["type"]>("ALL");
   const [incidents, setIncidents] = useState<SchoolLifeIncidentItem[]>([]);
   const [discipline, setDiscipline] = useState<SchoolLifeDisciplinaryItem[]>([]);
   const [authorizations, setAuthorizations] = useState<SchoolLifeAuthorizationItem[]>([]);
@@ -121,17 +122,17 @@ export default function SurveillantSchoolLifeScreen() {
 
   const load = useCallback(async () => {
     setError(null);
-    const [nextExits, nextMovements, nextIncidents, nextDiscipline, nextAuthorizations] =
+    const [nextExits, nextHistory, nextIncidents, nextDiscipline, nextAuthorizations] =
       await Promise.all([
         getSchoolLifeExits({ date: today() }),
-        getSchoolLifeMovements({ date: today() }),
+        getSchoolLifeHistory({ type: "ALL", limit: 100 }),
         getSchoolLifeIncidents(),
         getSchoolLifeDisciplinaryActions(),
         getSchoolLifeAuthorizations(),
       ]);
 
     setExits(nextExits);
-    setMovements(nextMovements);
+    setHistory(nextHistory);
     setIncidents(nextIncidents);
     setDiscipline(nextDiscipline);
     setAuthorizations(nextAuthorizations);
@@ -651,29 +652,66 @@ export default function SurveillantSchoolLifeScreen() {
           </>
         ) : null}
 
-        {tab === "movements" ? (
+        {tab === "history" ? (
           <>
             <View style={styles.exitToolbar}>
               <View style={styles.exitToolbarCopy}>
-                <Text style={styles.exitToolbarTitle}>Registre des mouvements</Text>
-                <Text style={styles.exitToolbarText}>Enregistrer les entrées et sorties d'élèves de l'établissement.</Text>
+                <Text style={styles.exitToolbarTitle}>Historique vie scolaire</Text>
+                <Text style={styles.exitToolbarText}>
+                  Journal chronologique des événements et décisions de la vie scolaire.
+                </Text>
               </View>
               <Pressable style={styles.primaryButton} onPress={openCreateMovement}>
-                <Text style={styles.primaryButtonText}>+ Nouveau mouvement</Text>
+                <Text style={styles.primaryButtonText}>+ Enregistrer un mouvement</Text>
               </Pressable>
             </View>
 
-            <Section title="MOUVEMENTS DU JOUR">
-              {movements.length === 0 ? <Empty text="Aucun mouvement enregistré aujourd'hui." /> : movements.map((item) => (
-                <ItemCard key={item.id}>
-                  <View style={styles.itemHeader}>
-                    <Text style={styles.itemTitle}>{studentName(item.student)}</Text>
-                    <Badge text={item.type === "ENTRY" ? "ENTRÉE" : "SORTIE"} />
-                  </View>
-                  <Text style={styles.itemMeta}>{item.student.studentNumber} · {dateTime(item.occurredAt)}</Text>
-                  <Text style={styles.itemText}>{item.reason || "Aucun motif renseigné."}</Text>
-                </ItemCard>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabs}>
+              {(["ALL", "ATTENDANCE", "LATE", "MOVEMENT", "EXIT", "INCIDENT", "DISCIPLINE", "OBSERVATION", "AUTHORIZATION", "SUMMONS"] as const).map((type) => (
+                <Pressable
+                  key={type}
+                  style={[styles.tab, historyType === type && styles.tabActive]}
+                  onPress={() => setHistoryType(type)}
+                >
+                  <Text style={[styles.tabText, historyType === type && styles.tabTextActive]}>
+                    {{
+                      ALL: "Tous",
+                      ATTENDANCE: "Présences",
+                      LATE: "Retards",
+                      MOVEMENT: "Mouvements",
+                      EXIT: "Sorties",
+                      INCIDENT: "Incidents",
+                      DISCIPLINE: "Discipline",
+                      OBSERVATION: "Observations",
+                      AUTHORIZATION: "Autorisations",
+                      SUMMONS: "Convocations",
+                    }[type]}
+                  </Text>
+                </Pressable>
               ))}
+            </ScrollView>
+
+            <Section title="JOURNAL CHRONOLOGIQUE">
+              {history.filter((item) => historyType === "ALL" || item.type === historyType).length === 0 ? (
+                <Empty text="Aucun événement correspondant aux filtres." />
+              ) : (
+                history
+                  .filter((item) => historyType === "ALL" || item.type === historyType)
+                  .map((item) => (
+                    <ItemCard key={`${item.type}-${item.id}`}>
+                      <View style={styles.itemHeader}>
+                        <Text style={styles.itemTitle}>{studentName(item.student)}</Text>
+                        <Badge text={item.type} />
+                      </View>
+                      <Text style={styles.itemMeta}>
+                        {item.student.studentNumber} · {dateTime(item.occurredAt)}
+                      </Text>
+                      <Text style={styles.itemText}>{item.title}</Text>
+                      <Text style={styles.itemMeta}>{item.description}</Text>
+                      {item.status ? <Text style={styles.itemMeta}>Statut : {item.status}</Text> : null}
+                    </ItemCard>
+                  ))
+              )}
             </Section>
           </>
         ) : null}
