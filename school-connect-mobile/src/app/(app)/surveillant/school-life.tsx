@@ -1272,6 +1272,7 @@ function ItemCard({ children }: { children: ReactNode }) {
 function Badge({ text }: { text: string }) {
   const isRejected = text === "REJECTED";
   const isApproved = text === "APPROVED";
+  const isPending = text === "PENDING";
 
   return (
     <View
@@ -1279,6 +1280,7 @@ function Badge({ text }: { text: string }) {
         styles.badge,
         isRejected && styles.badgeRejected,
         isApproved && styles.badgeApproved,
+        isPending && styles.badgePending,
       ]}
     >
       <Text
@@ -1286,6 +1288,7 @@ function Badge({ text }: { text: string }) {
           styles.badgeText,
           isRejected && styles.badgeRejectedText,
           isApproved && styles.badgeApprovedText,
+          isPending && styles.badgePendingText,
         ]}
       >
         {text.replaceAll("_", " ")}
@@ -1347,6 +1350,8 @@ const styles = StyleSheet.create({
   badgeRejectedText: { color: "#B91C1C" },
   badgeApproved: { backgroundColor: "#DCFCE7" },
   badgeApprovedText: { color: "#15803D" },
+  badgePending: { backgroundColor: "#FEF3C7" },
+  badgePendingText: { color: "#B45309" },
   empty: { padding: 18, fontSize: 11, color: "#64748B" },
   exitToolbar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12, marginTop: 2, marginBottom: 14, padding: 14, borderRadius: 15, borderWidth: 1, borderColor: "#D9DEE5", backgroundColor: "#FFFFFF" },
   exitToolbarCopy: { flex: 1 },
