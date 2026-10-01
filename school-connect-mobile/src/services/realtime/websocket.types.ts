@@ -71,6 +71,25 @@ export type RealtimeEvent =
       };
     }
   | {
+      type: "discipline:updated";
+      payload: {
+        action: {
+          id: string;
+          studentId: string;
+          incidentId: string | null;
+          type: string;
+          status: "ACTIVE" | "COMPLETED" | "CANCELLED";
+          approvalStatus: "APPROVED";
+          description: string;
+          decisionNote: string | null;
+          actionAt: string;
+          dueAt: string | null;
+          completedAt: string | null;
+          approvedAt: string | null;
+        };
+      };
+    }
+  | {
       type: "error";
       payload: {
         code: string;
