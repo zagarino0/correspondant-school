@@ -10,6 +10,7 @@ import { getMyAttendance, type ParentAttendanceRecord } from "../../../services/
 import { createRealtimeConnection } from "../../../services/realtime/websocket.service";
 import type { StudentSchedule } from "../../schedule/schedule.types";
 import { normalizeApiError } from "../../../services/api/errors";
+import { getMyStudentDiscipline, type ApprovedDisciplinaryAction } from "../../../services/discipline/discipline.service";
 
 type StudentDashboardProps = {
   firstName: string;
@@ -36,6 +37,9 @@ export function StudentDashboard({
   const [nextScheduleError, setNextScheduleError] = useState(false);
   const [attendance, setAttendance] = useState<ParentAttendanceRecord | null>(null);
   const [attendanceLoading, setAttendanceLoading] = useState(true);
+  const [discipline, setDiscipline] = useState<ApprovedDisciplinaryAction[]>([]);
+  const [disciplineLoading, setDisciplineLoading] = useState(true);
+  const [disciplineError, setDisciplineError] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -134,6 +138,42 @@ export function StudentDashboard({
     };
   }, []);
 
+  useEffect(() => {
+    let mounted = true;
+
+    const loadDiscipline = async () => {
+      try {
+        setDisciplineLoading(true);
+        setDisciplineError(false);
+        const response = await getMyStudentDiscipline();
+        if (mounted) setDiscipline(response.actions);
+      } catch {
+        if (mounted) {
+          setDiscipline([]);
+          setDisciplineError(true);
+        }
+      } finally {
+        if (mounted) setDisciplineLoading(false);
+      }
+    };
+
+    void loadDiscipline();
+
+    const connection = createRealtimeConnection({
+      onEvent: (event) => {
+        if (event.type === "discipline:updated") {
+          void loadDiscipline();
+        }
+      },
+    });
+    connection.connect();
+
+    return () => {
+      mounted = false;
+      connection.close();
+    };
+  }, []);
+
   const nextScheduleValue = nextScheduleLoading
     ? "…"
     : nextScheduleError
@@ -197,6 +237,28 @@ export function StudentDashboard({
                   ? "Absence justifiée."
                   : "Absence non justifiée."
             : "État synchronisé avec votre établissement.",
+        },
+      ],
+    },
+    {
+      id: "student-discipline",
+      title: "Discipline",
+      cards: [
+        {
+          id: "discipline-status",
+          title: "Mes mesures disciplinaires",
+          value: disciplineLoading
+            ? "…"
+            : disciplineError
+              ? "—"
+              : String(discipline.length),
+          description: disciplineLoading
+            ? "Chargement de votre suivi disciplinaire."
+            : disciplineError
+              ? "Impossible de charger votre suivi disciplinaire."
+              : discipline.length === 0
+                ? "Aucune mesure disciplinaire validée."
+                : `Dernière mesure : ${discipline[0].type} · ${discipline[0].status === "COMPLETED" ? "Terminée" : "Active"}.`,
         },
       ],
     },
