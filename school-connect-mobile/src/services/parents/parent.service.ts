@@ -163,3 +163,45 @@ export async function updateSummonsStatus(
 ): Promise<void> {
   await apiClient.patch(`/api/v1/parents/me/summons/${summonsId}`, { status });
 }
+
+export type ParentAuthorizationStatus = "PENDING" | "APPROVED" | "REJECTED";
+
+export type ParentAuthorization = {
+  id: string;
+  schoolId: string;
+  studentId: string;
+  parentId: string;
+  type: string;
+  status: ParentAuthorizationStatus;
+  reason: string | null;
+  requestedAt: string;
+  decidedAt: string | null;
+  student: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    studentNumber: string;
+  };
+};
+
+export async function getMyAuthorizations(): Promise<{
+  authorizations: ParentAuthorization[];
+}> {
+  const response = await apiClient.get<{
+    authorizations: ParentAuthorization[];
+  }>("/api/v1/parents/me/authorizations");
+
+  return response.data;
+}
+
+export async function createAuthorization(input: {
+  studentId: string;
+  type: string;
+  reason: string;
+}): Promise<{ authorization: ParentAuthorization }> {
+  const response = await apiClient.post<{
+    authorization: ParentAuthorization;
+  }>("/api/v1/parents/me/authorizations", input);
+
+  return response.data;
+}

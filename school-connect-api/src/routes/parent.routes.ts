@@ -114,6 +114,131 @@ export const parentRoutes: FastifyPluginAsync = async (fastify) => {
   );
 
   fastify.get(
+    "/parents/me/authorizations",
+    { onRequest: [authenticate] },
+    async (request, reply) => {
+      if (request.user.role !== "PARENT") {
+        return reply.status(403).send({
+          error: { code: "FORBIDDEN", message: "Parent access required." },
+        });
+      }
+
+      const authorizations = await fastify.prisma.parentAuthorization.findMany({
+        where: { parentId: request.user.sub },
+        orderBy: { requestedAt: "desc" },
+        take: 100,
+        select: {
+          id: true,
+          schoolId: true,
+          studentId: true,
+          parentId: true,
+          type: true,
+          status: true,
+          reason: true,
+          requestedAt: true,
+          decidedAt: true,
+          student: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              studentNumber: true,
+            },
+          },
+        },
+      });
+
+      return reply.send({ authorizations });
+    },
+  );
+
+  fastify.post(
+    "/parents/me/authorizations",
+    { onRequest: [authenticate] },
+    async (request, reply) => {
+      if (request.user.role !== "PARENT") {
+        return reply.status(403).send({
+          error: { code: "FORBIDDEN", message: "Parent access required." },
+        });
+      }
+
+      const parsed = z.object({
+        studentId: z.string().min(1),
+        type: z.string().trim().min(2).max(100),
+        reason: z.string().trim().min(1).max(1000),
+      }).safeParse(request.body);
+
+      if (!parsed.success) {
+        return reply.status(400).send({
+          error: {
+            code: "VALIDATION_ERROR",
+            message: "studentId, type et reason sont requis.",
+          },
+        });
+      }
+
+      const parentStudent = await fastify.prisma.parentStudent.findFirst({
+        where: {
+          parentId: request.user.sub,
+          studentId: parsed.data.studentId,
+          student: { status: "ACTIVE" },
+        },
+        select: {
+          student: {
+            select: {
+              id: true,
+              schoolId: true,
+              firstName: true,
+              lastName: true,
+              studentNumber: true,
+            },
+          },
+        },
+      });
+
+      if (!parentStudent) {
+        return reply.status(404).send({
+          error: {
+            code: "CHILD_NOT_FOUND",
+            message: "Cet élève n'est pas associé à ce compte parent.",
+          },
+        });
+      }
+
+      const authorization = await fastify.prisma.parentAuthorization.create({
+        data: {
+          schoolId: parentStudent.student.schoolId,
+          studentId: parentStudent.student.id,
+          parentId: request.user.sub,
+          type: parsed.data.type,
+          reason: parsed.data.reason,
+        },
+        select: {
+          id: true,
+          schoolId: true,
+          studentId: true,
+          parentId: true,
+          type: true,
+          status: true,
+          reason: true,
+          requestedAt: true,
+          decidedAt: true,
+          student: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              studentNumber: true,
+            },
+          },
+        },
+      });
+
+      return reply.status(201).send({ authorization });
+    },
+  );
+
+  fastify.get(
     "/parents/me/children",
     {
       onRequest: [authenticate],
