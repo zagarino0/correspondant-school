@@ -30,6 +30,7 @@ import medicalHistoryRoutes from "../routes/medical-history.routes.js";
 import medicalReportRoutes from "../routes/medical-report.routes.js";
 import { surveillantRoutes } from "../routes/surveillant.routes.js";
 import { surveillantSchoolLifeRoutes } from "../routes/surveillant-school-life.routes.js";
+import { surveillantAuthorizationRoutes } from "../routes/surveillant-authorization.routes.js";
 import { disciplineVisibilityRoutes } from "../routes/discipline-visibility.routes.js";
 import { startSmsWorker } from "../services/sms.service.js";
 
@@ -105,6 +106,9 @@ export async function buildApp() {
     prefix: "/api/v1/surveillant",
   });
   await app.register(surveillantSchoolLifeRoutes, {
+    prefix: "/api/v1/surveillant/school-life",
+  });
+  await app.register(surveillantAuthorizationRoutes, {
     prefix: "/api/v1/surveillant/school-life",
   });
   await app.register(disciplineVisibilityRoutes, {
