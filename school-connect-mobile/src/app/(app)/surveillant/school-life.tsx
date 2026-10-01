@@ -76,6 +76,7 @@ export default function SurveillantSchoolLifeScreen() {
   const [exits, setExits] = useState<SchoolLifeExitItem[]>([]);
   const [history, setHistory] = useState<SchoolLifeHistoryItem[]>([]);
   const [historyType, setHistoryType] = useState<"ALL" | SchoolLifeHistoryItem["type"]>("ALL");
+  const [historySearch, setHistorySearch] = useState("");
   const [incidents, setIncidents] = useState<SchoolLifeIncidentItem[]>([]);
   const [discipline, setDiscipline] = useState<SchoolLifeDisciplinaryItem[]>([]);
   const [authorizations, setAuthorizations] = useState<SchoolLifeAuthorizationItem[]>([]);
@@ -537,6 +538,27 @@ export default function SurveillantSchoolLifeScreen() {
     [history],
   );
 
+  const filteredHistory = useMemo(() => {
+    const query = historySearch.trim().toLowerCase();
+    return history.filter((item) => {
+      const matchesType = historyType === "ALL" || item.type === historyType;
+      if (!matchesType) return false;
+      if (!query) return true;
+
+      return [
+        studentName(item.student),
+        item.student.studentNumber,
+        item.type,
+        item.title,
+        item.description,
+        item.status ?? "",
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes(query);
+    });
+  }, [history, historySearch, historyType]);
+
   if (loading) {
     return (
       <View style={styles.center}>
@@ -675,8 +697,16 @@ export default function SurveillantSchoolLifeScreen() {
               </Pressable>
             </View>
 
+            <TextInput
+              value={historySearch}
+              onChangeText={setHistorySearch}
+              placeholder="Rechercher un élève, matricule ou événement…"
+              placeholderTextColor="#94A3B8"
+              style={[styles.input, styles.historySearchInput]}
+            />
+
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabs}>
-              {(["ALL", "ATTENDANCE", "LATE", "MOVEMENT", "EXIT", "INCIDENT", "DISCIPLINE", "OBSERVATION", "AUTHORIZATION", "SUMMONS"] as const).map((type) => (
+              {(["ALL", "MOVEMENT", "EXIT", "INCIDENT", "DISCIPLINE", "OBSERVATION", "AUTHORIZATION", "SUMMONS"] as const).map((type) => (
                 <Pressable
                   key={type}
                   style={[styles.tab, historyType === type && styles.tabActive]}
@@ -685,8 +715,6 @@ export default function SurveillantSchoolLifeScreen() {
                   <Text style={[styles.tabText, historyType === type && styles.tabTextActive]}>
                     {{
                       ALL: "Tous",
-                      ATTENDANCE: "Présences",
-                      LATE: "Retards",
                       MOVEMENT: "Mouvements",
                       EXIT: "Sorties",
                       INCIDENT: "Incidents",
@@ -701,12 +729,10 @@ export default function SurveillantSchoolLifeScreen() {
             </ScrollView>
 
             <Section title="JOURNAL CHRONOLOGIQUE">
-              {history.filter((item) => historyType === "ALL" || item.type === historyType).length === 0 ? (
-                <Empty text="Aucun événement correspondant aux filtres." />
+              {filteredHistory.length === 0 ? (
+                <Empty text="Aucun événement correspondant à la recherche ou aux filtres." />
               ) : (
-                history
-                  .filter((item) => historyType === "ALL" || item.type === historyType)
-                  .map((item) => (
+                filteredHistory.map((item) => (
                     <ItemCard key={`${item.type}-${item.id}`}>
                       <View style={styles.itemHeader}>
                         <Text style={styles.itemTitle}>{studentName(item.student)}</Text>
@@ -1481,6 +1507,7 @@ const styles = StyleSheet.create({
   itemTitle: { flex: 1, fontSize: 13, fontWeight: "900", color: "#344976" },
   itemMeta: { marginTop: 4, fontSize: 10, color: "#64748B" },
   itemText: { marginTop: 7, fontSize: 11, lineHeight: 16, color: "#334155" },
+  historySearchInput: { marginBottom: 10 },
   badge: { paddingHorizontal: 8, paddingVertical: 5, borderRadius: 8, backgroundColor: "#EEF2F7" },
   badgeText: { fontSize: 8, fontWeight: "900", color: "#344976" },
   badgeRejected: { backgroundColor: "#FEE2E2" },
