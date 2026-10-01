@@ -82,3 +82,40 @@ export async function getStudentAttendance(studentId: string): Promise<{
   const response = await apiClient.get("/api/v1/attendance/student/" + studentId);
   return response.data;
 }
+
+export type SecretariatAuthorization = {
+  id: string;
+  schoolId: string;
+  studentId: string;
+  parentId: string;
+  type: string;
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  reason: string | null;
+  requestedAt: string;
+  decidedAt: string | null;
+  student: { id: string; firstName: string; lastName: string; studentNumber: string };
+  parent: { id: string; firstName: string; lastName: string; email: string; phone: string | null };
+};
+
+export async function getSecretariatAuthorizations(): Promise<{ authorizations: SecretariatAuthorization[] }> {
+  const response = await apiClient.get("/api/v1/secretariat/authorizations");
+  return response.data;
+}
+
+export async function createSecretariatAuthorization(input: {
+  studentId: string;
+  parentId: string;
+  type: string;
+  reason?: string;
+}) {
+  const response = await apiClient.post("/api/v1/secretariat/authorizations", input);
+  return response.data as { authorization: SecretariatAuthorization };
+}
+
+export async function updateSecretariatAuthorization(
+  authorizationId: string,
+  input: { type?: string; reason?: string | null },
+) {
+  const response = await apiClient.patch("/api/v1/secretariat/authorizations/" + authorizationId, input);
+  return response.data as { authorization: SecretariatAuthorization };
+}
