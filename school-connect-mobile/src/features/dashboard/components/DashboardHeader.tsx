@@ -7,11 +7,14 @@ import { getMyAnnouncements } from "../../../features/announcements/announcement
 import { getMySummons } from "../../../services/parents/parent.service";
 import { createRealtimeConnection } from "../../../services/realtime/websocket.service";
 import { getSummonsNotifications } from "../../../services/surveillant/surveillant.service";
+import { getSchoolLifeAuthorizations } from "../../../services/surveillant/schoolLife.service";
+import type { StaffFunction } from "../../../types/auth";
 import type { UserRole } from "../../../types/auth";
 
 type DashboardHeaderProps = {
   firstName: string;
   role: UserRole;
+  staffFunction?: StaffFunction | null;
 };
 
 const roleLabels: Record<UserRole, string> = {
@@ -23,21 +26,27 @@ const roleLabels: Record<UserRole, string> = {
   STAFF: "Personnel",
 };
 
-export function DashboardHeader({ firstName, role }: DashboardHeaderProps) {
+export function DashboardHeader({ firstName, role, staffFunction }: DashboardHeaderProps) {
   const router = useRouter();
   const [unreadAnnouncements, setUnreadAnnouncements] = useState(0);
   const [pendingSummons, setPendingSummons] = useState(0);
   const [surveillantNotifications, setSurveillantNotifications] = useState(0);
+  const [pendingAuthorizations, setPendingAuthorizations] = useState(0);
 
   useEffect(() => {
     let mounted = true;
 
     async function loadBadges() {
-      const [announcementResult, summonsResult, surveillantResult] =
+      const [announcementResult, summonsResult, surveillantResult, authorizationResult] =
         await Promise.allSettled([
           getMyAnnouncements(),
           role === "PARENT" ? getMySummons() : Promise.resolve(null),
-          role === "STAFF" ? getSummonsNotifications() : Promise.resolve(null),
+          role === "STAFF" && staffFunction === "SURVEILLANT"
+            ? getSummonsNotifications()
+            : Promise.resolve(null),
+          role === "STAFF" && staffFunction === "SURVEILLANT"
+            ? getSchoolLifeAuthorizations()
+            : Promise.resolve(null),
         ]);
 
       if (!mounted) return;
@@ -67,7 +76,10 @@ export function DashboardHeader({ firstName, role }: DashboardHeaderProps) {
 
     void loadBadges();
 
-    if (role !== "PARENT" && role !== "STAFF") {
+    if (
+      role !== "PARENT" &&
+      !(role === "STAFF" && staffFunction === "SURVEILLANT")
+    ) {
       return () => {
         mounted = false;
       };
@@ -77,7 +89,8 @@ export function DashboardHeader({ firstName, role }: DashboardHeaderProps) {
       onEvent: (event) => {
         if (
           event.type === "parent:summons:new" ||
-          event.type === "parent:summons:updated"
+          event.type === "parent:summons:updated" ||
+          event.type === "parent:authorization:new"
         ) {
           void loadBadges();
         }
@@ -95,7 +108,7 @@ export function DashboardHeader({ firstName, role }: DashboardHeaderProps) {
       connection.close();
       clearInterval(pollingTimer);
     };
-  }, [role]);
+  }, [role, staffFunction]);
 
   return (
     <View style={styles.container}>
@@ -114,16 +127,20 @@ export function DashboardHeader({ firstName, role }: DashboardHeaderProps) {
 
         <View style={styles.actions}>
           <Pressable
-            onPress={() => router.push("/(app)/announcements")}
+            onPress={() =>
+              role === "STAFF" && staffFunction === "SURVEILLANT"
+                ? router.push("/(app)/announcements")
+                : router.push("/(app)/announcements")
+            }
             style={styles.iconButton}
             accessibilityRole="button"
             accessibilityLabel="Annonces"
           >
             <Ionicons name="notifications-outline" size={23} color="#344976" />
-            {unreadAnnouncements + pendingSummons + surveillantNotifications > 0 ? (
+            {unreadAnnouncements + pendingSummons + surveillantNotifications + pendingAuthorizations > 0 ? (
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>
-                  {unreadAnnouncements + pendingSummons + surveillantNotifications > 99
+                  {unreadAnnouncements + pendingSummons + surveillantNotifications + pendingAuthorizations > 99
                     ? "99+"
                     : unreadAnnouncements + pendingSummons + surveillantNotifications}
                 </Text>
