@@ -8,9 +8,11 @@ import {
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { useAuthStore } from "../../stores/authStore";
 import { createRealtimeConnection } from "../../services/realtime/websocket.service";
 import { getMySummons, updateSummonsStatus, type ParentSummons } from "../../services/parents/parent.service";
 import { getSummonsNotifications, markSummonsNotificationRead, type SurveillantSummonsNotification } from "../../services/surveillant/surveillant.service";
+import { getSchoolLifeAuthorizations, type SchoolLifeAuthorizationItem } from "../../services/surveillant/schoolLife.service";
 
 import type { StudentAnnouncement } from "../../features/announcements/announcement.types";
 import {
@@ -78,9 +80,11 @@ function AnnouncementCard({
 
 export default function AnnouncementsScreen() {
   const router = useRouter();
+  const user = useAuthStore((state) => state.user);
   const [announcements, setAnnouncements] = useState<StudentAnnouncement[]>([]);
   const [summons, setSummons] = useState<ParentSummons[]>([]);
   const [surveillantNotifications, setSurveillantNotifications] = useState<SurveillantSummonsNotification[]>([]);
+  const [authorizationNotifications, setAuthorizationNotifications] = useState<SchoolLifeAuthorizationItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -91,11 +95,14 @@ export default function AnnouncementsScreen() {
       setIsLoading(true);
       setErrorMessage(null);
 
-      const [announcementResult, summonsResult, notificationResult] =
+      const [announcementResult, summonsResult, notificationResult, authorizationResult] =
         await Promise.allSettled([
           getMyAnnouncements(),
           getMySummons(),
           getSummonsNotifications(),
+          user?.role === "STAFF" && user.staffFunction === "SURVEILLANT"
+            ? getSchoolLifeAuthorizations()
+            : Promise.resolve([]),
         ]);
 
       if (!isMounted) return;
@@ -116,6 +123,14 @@ export default function AnnouncementsScreen() {
         setSurveillantNotifications(notificationResult.value.items);
       } else {
         setSurveillantNotifications([]);
+      }
+
+      if (authorizationResult.status === "fulfilled") {
+        setAuthorizationNotifications(
+          authorizationResult.value.filter((item) => item.status === "PENDING"),
+        );
+      } else {
+        setAuthorizationNotifications([]);
       }
 
       if (
@@ -150,7 +165,7 @@ export default function AnnouncementsScreen() {
       connection.close();
       clearInterval(pollingTimer);
     };
-  }, []);
+  }, [user?.role, user?.staffFunction]);
 
   async function handleOpenAnnouncement(announcementId: string) {
     const announcement = announcements.find(
@@ -216,7 +231,7 @@ export default function AnnouncementsScreen() {
         <View style={styles.stateContainer}>
           <Text style={styles.errorText}>{errorMessage}</Text>
         </View>
-      ) : announcements.length === 0 && summons.length === 0 && surveillantNotifications.length === 0 ? (
+      ) : announcements.length === 0 && summons.length === 0 && surveillantNotifications.length === 0 && authorizationNotifications.length === 0 ? (
         <View style={styles.stateContainer}>
           <Text style={styles.stateTitle}>Aucune annonce</Text>
           <Text style={styles.stateText}>
@@ -229,6 +244,34 @@ export default function AnnouncementsScreen() {
           contentContainerStyle={styles.contentContainer}
           showsVerticalScrollIndicator={false}
         >
+          {authorizationNotifications.map((notification) => (
+            <Pressable
+              key={notification.id}
+              onPress={() => router.push("/(app)/surveillant/school-life?tab=authorizations")}
+              style={[styles.card, styles.authorizationNotificationCard]}
+              accessibilityRole="button"
+              accessibilityLabel="Ouvrir la demande d'autorisation parentale"
+            >
+              <View style={styles.cardHeader}>
+                <View style={styles.cardTitleContainer}>
+                  <Text style={styles.title}>Autorisation parentale</Text>
+                  <Text style={styles.date}>
+                    {formatDate(notification.requestedAt)}
+                  </Text>
+                </View>
+                <Text style={styles.unreadLabel}>À traiter</Text>
+              </View>
+              <Text style={styles.summonsStudent}>
+                {notification.student.firstName} {notification.student.lastName}
+              </Text>
+              <Text style={styles.summonsReason}>{notification.type}</Text>
+              <Text style={styles.content}>{notification.reason}</Text>
+              <Text style={styles.actionHint}>
+                Appuyez pour ouvrir l'autorisation et répondre.
+              </Text>
+            </Pressable>
+          ))}
+
           {surveillantNotifications.map((notification) => (
             <Pressable
               key={notification.id}
@@ -457,6 +500,16 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "600",
     color: "#374151",
+  },
+  authorizationNotificationCard: {
+    borderLeftWidth: 4,
+    borderLeftColor: "#344976",
+  },
+  actionHint: {
+    marginTop: 10,
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#344976",
   },
   responseCard: {
     borderLeftWidth: 4,
