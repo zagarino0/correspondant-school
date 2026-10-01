@@ -79,6 +79,7 @@ export const permissions = [
   "authorization.read",
   "authorization.create",
   "authorization.update",
+  "authorization.decide",
 
   "payment.read",
   "payment.create",
