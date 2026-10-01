@@ -1229,6 +1229,7 @@ export async function surveillantSchoolLifeRoutes(fastify: FastifyInstance) {
           classId: true,
           schoolId: true,
           dayOfWeek: true,
+          teacherId: true,
         },
       });
 
@@ -1300,6 +1301,13 @@ export async function surveillantSchoolLifeRoutes(fastify: FastifyInstance) {
           note: parsed.data.note ?? null,
           recordedBy: request.user.sub,
         },
+      });
+
+      publishToUser(schedule.teacherId, "attendance:event", {
+        studentId: parsed.data.studentId,
+        scheduleId: parsed.data.scheduleId,
+        attendanceId: updated.id,
+        status: "LATE",
       });
 
       return reply.send({
@@ -1397,6 +1405,21 @@ export async function surveillantSchoolLifeRoutes(fastify: FastifyInstance) {
           status: "LATE",
         },
       });
+
+      const schedule = attendance.scheduleId
+        ? await fastify.prisma.schedule.findUnique({
+            where: { id: attendance.scheduleId },
+            select: { teacherId: true },
+          })
+        : null;
+
+      if (schedule) {
+        publishToUser(schedule.teacherId, "attendance:event", {
+          attendanceId: updated.id,
+          scheduleId: attendance.scheduleId,
+          status: "LATE",
+        });
+      }
 
       return reply.send({
         item: updated,
