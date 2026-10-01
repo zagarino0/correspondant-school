@@ -1273,6 +1273,10 @@ function Badge({ text }: { text: string }) {
   const isRejected = text === "REJECTED";
   const isApproved = text === "APPROVED";
   const isPending = text === "PENDING";
+  const isLow = text === "LOW";
+  const isMedium = text === "MEDIUM";
+  const isHigh = text === "HIGH";
+  const isCritical = text === "CRITICAL";
 
   return (
     <View
@@ -1281,6 +1285,10 @@ function Badge({ text }: { text: string }) {
         isRejected && styles.badgeRejected,
         isApproved && styles.badgeApproved,
         isPending && styles.badgePending,
+        isLow && styles.badgeSeverityLow,
+        isMedium && styles.badgeSeverityMedium,
+        isHigh && styles.badgeSeverityHigh,
+        isCritical && styles.badgeSeverityCritical,
       ]}
     >
       <Text
@@ -1289,6 +1297,10 @@ function Badge({ text }: { text: string }) {
           isRejected && styles.badgeRejectedText,
           isApproved && styles.badgeApprovedText,
           isPending && styles.badgePendingText,
+          isLow && styles.badgeSeverityLowText,
+          isMedium && styles.badgeSeverityMediumText,
+          isHigh && styles.badgeSeverityHighText,
+          isCritical && styles.badgeSeverityCriticalText,
         ]}
       >
         {text.replaceAll("_", " ")}
@@ -1352,6 +1364,14 @@ const styles = StyleSheet.create({
   badgeApprovedText: { color: "#15803D" },
   badgePending: { backgroundColor: "#FEF3C7" },
   badgePendingText: { color: "#B45309" },
+  badgeSeverityLow: { backgroundColor: "#DCFCE7" },
+  badgeSeverityLowText: { color: "#15803D" },
+  badgeSeverityMedium: { backgroundColor: "#FEF3C7" },
+  badgeSeverityMediumText: { color: "#B45309" },
+  badgeSeverityHigh: { backgroundColor: "#FFEDD5" },
+  badgeSeverityHighText: { color: "#C2410C" },
+  badgeSeverityCritical: { backgroundColor: "#FEE2E2" },
+  badgeSeverityCriticalText: { color: "#B91C1C" },
   empty: { padding: 18, fontSize: 11, color: "#64748B" },
   exitToolbar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12, marginTop: 2, marginBottom: 14, padding: 14, borderRadius: 15, borderWidth: 1, borderColor: "#D9DEE5", backgroundColor: "#FFFFFF" },
   exitToolbarCopy: { flex: 1 },
