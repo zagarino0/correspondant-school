@@ -5,6 +5,7 @@ import { authenticate } from "../middleware/authenticate.js";
 import { authorize } from "../middleware/authorize.js";
 import { authorizeStudentResource } from "../middleware/authorize-student-resource.js";
 import { publishToUser } from "../realtime/message-events.js";
+import { publishDisciplineApproval } from "./discipline-visibility.routes.js";
 
 const exitTypeSchema = z.enum(["TEMPORARY", "PERMANENT"]);
 const exitStatusSchema = z.enum(["OPEN", "COMPLETED", "CANCELLED"]);
@@ -620,6 +621,15 @@ export async function surveillantSchoolLifeRoutes(fastify: FastifyInstance) {
             : {}),
         },
       });
+
+      if (
+        approvalChanged &&
+        request.user.role === "SCHOOL_ADMIN" &&
+        parsed.data.approvalStatus === "APPROVED"
+      ) {
+        await publishDisciplineApproval(fastify.prisma, item.id);
+      }
+
       return reply.send({ item });
     },
   );
