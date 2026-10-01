@@ -71,7 +71,7 @@ export type RealtimeEvent =
           id: string;
           firstName: string;
           lastName: string;
-          studentNumber: string | null;
+          studentNumber: string;
         };
       };
     }
