@@ -72,9 +72,12 @@ export type CreateMeetingInput = {
   notes?: string;
 };
 
-export type UpdateMeetingInput = Partial<CreateMeetingInput> & {
+export type UpdateMeetingInput = {
   studentId?: string | null;
+  title?: string;
+  type?: string;
   description?: string | null;
+  scheduledAt?: string;
   notes?: string | null;
   status?: SecretariatMeeting["status"];
 };
