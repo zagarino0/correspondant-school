@@ -1271,10 +1271,23 @@ function ItemCard({ children }: { children: ReactNode }) {
 
 function Badge({ text }: { text: string }) {
   const isRejected = text === "REJECTED";
+  const isApproved = text === "APPROVED";
 
   return (
-    <View style={[styles.badge, isRejected && styles.badgeRejected]}>
-      <Text style={[styles.badgeText, isRejected && styles.badgeRejectedText]}>
+    <View
+      style={[
+        styles.badge,
+        isRejected && styles.badgeRejected,
+        isApproved && styles.badgeApproved,
+      ]}
+    >
+      <Text
+        style={[
+          styles.badgeText,
+          isRejected && styles.badgeRejectedText,
+          isApproved && styles.badgeApprovedText,
+        ]}
+      >
         {text.replaceAll("_", " ")}
       </Text>
     </View>
@@ -1332,6 +1345,8 @@ const styles = StyleSheet.create({
   badgeText: { fontSize: 8, fontWeight: "900", color: "#344976" },
   badgeRejected: { backgroundColor: "#FEE2E2" },
   badgeRejectedText: { color: "#B91C1C" },
+  badgeApproved: { backgroundColor: "#DCFCE7" },
+  badgeApprovedText: { color: "#15803D" },
   empty: { padding: 18, fontSize: 11, color: "#64748B" },
   exitToolbar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12, marginTop: 2, marginBottom: 14, padding: 14, borderRadius: 15, borderWidth: 1, borderColor: "#D9DEE5", backgroundColor: "#FFFFFF" },
   exitToolbarCopy: { flex: 1 },
