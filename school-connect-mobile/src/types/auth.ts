@@ -21,6 +21,7 @@ export type AuthUser = {
   role: UserRole;
   schoolId?: string | null;
   staffFunction?: StaffFunction | null;
+  permissions?: string[];
 };
 
 export type AuthSession = {
