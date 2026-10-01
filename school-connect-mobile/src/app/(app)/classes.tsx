@@ -123,7 +123,7 @@ export default function ClassesScreen() {
 
         {hasPermission(user, "school.update") ? <Pressable style={styles.addButton} onPress={() => router.push("/(app)/class-create")}>
           <Text style={styles.addButtonText}>+ Ajouter</Text>
-        </Pressable>
+        </Pressable> : null}
       </View>
 
       {groups.map((group) => (
