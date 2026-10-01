@@ -158,44 +158,41 @@ const staffPermissions: Record<StaffFunction, readonly Permission[]> = {
     "student.create",
     "student.update",
 
-    // Consultation de la structure de l'établissement
+    // Structure de l'établissement et annuaire du personnel
     "school.read",
-
-    // Annuaire du personnel
     "user.read",
 
+    // Consultation des présences et de l'emploi du temps
     "attendance.read",
-
     "schedule.read",
 
+    // Communication administrative
     "message.read",
     "message.send",
-
     "announcement.read",
 
+    // Documents et rendez-vous
     "document.read",
     "document.create",
-
     "meeting.read",
     "meeting.create",
     "meeting.update",
 
+    // Suivi des demandes : jamais de décision d'autorisation
     "authorization.read",
     "authorization.create",
     "authorization.update",
 
+    // Encaissement / enregistrement des paiements
     "payment.read",
     "payment.create",
 
+    // Demandes internes
     "ticket.read",
     "ticket.create",
     "ticket.update",
 
-    "school.read",
-
-    // Gestion limitée des comptes/utilisateurs administratifs.
-    // Les routes doivent continuer à appliquer le périmètre métier.
-    "user.read",
+    // Comptes utilisateurs administratifs : périmètre à contrôler par les routes
     "user.create",
     "user.update",
   ],
