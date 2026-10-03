@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { ScrollView, StyleSheet, Text } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
 import { DashboardSection } from "../components/DashboardSection";
@@ -277,14 +278,8 @@ export function StudentDashboard({
   ];
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.contentContainer}
-    >
-      <Text style={styles.title}>Espace étudiant</Text>
-      <Text style={styles.subtitle}>
-        Bonjour {firstName}, voici votre espace scolaire.
-      </Text>
+    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
+      <View style={styles.hero}><View style={styles.heroIcon}><Ionicons name="school" size={22} color="#FFFFFF" /></View><View style={styles.heroText}><Text style={styles.eyebrow}>MON ESPACE</Text><Text style={styles.title}>Bonjour {firstName}</Text><Text style={styles.subtitle}>Voici l’essentiel de votre journée scolaire.</Text></View></View>
 
       {sections.map((section) => (
         <DashboardSection key={section.id} {...section} />
@@ -294,22 +289,12 @@ export function StudentDashboard({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  contentContainer: {
-    paddingHorizontal: 16,
-    paddingTop: 18,
-    paddingBottom: 32,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: "#111827",
-  },
-  subtitle: {
-    marginTop: 8,
-    fontSize: 15,
-    color: "#6B7280",
-  },
+  container: { flex: 1 },
+  contentContainer: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 110 },
+  hero: { flexDirection: "row", alignItems: "center", gap: 13, padding: 18, borderRadius: 22, backgroundColor: "#101828", shadowColor: "#101828", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.14, shadowRadius: 18, elevation: 4 },
+  heroIcon: { width: 46, height: 46, borderRadius: 15, alignItems: "center", justifyContent: "center", backgroundColor: "#4F46E5" },
+  heroText: { flex: 1 },
+  eyebrow: { fontSize: 10, fontWeight: "800", letterSpacing: 1.5, color: "#C7D2FE" },
+  title: { marginTop: 3, fontSize: 23, lineHeight: 28, fontWeight: "800", color: "#FFFFFF" },
+  subtitle: { marginTop: 4, fontSize: 13, lineHeight: 19, color: "#D0D5DD" },
 });

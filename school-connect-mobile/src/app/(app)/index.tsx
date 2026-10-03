@@ -32,18 +32,13 @@ export default function AppHomeScreen() {
 
   const renderDashboard = () => {
     if (!user) return null;
-
     switch (user.role) {
       case "STUDENT": return <StudentDashboard firstName={user.firstName} />;
       case "PARENT": return <ParentDashboard firstName={user.firstName} />;
       case "TEACHER": return <TeacherDashboard firstName={user.firstName} />;
       case "STAFF":
-        if (user.staffFunction === "SURVEILLANT") {
-          return <SurveillantDashboard firstName={user.firstName} />;
-        }
-        if (user.staffFunction === "SECRETARIAT") {
-          return <SecretaryDashboard firstName={user.firstName} />;
-        }
+        if (user.staffFunction === "SURVEILLANT") return <SurveillantDashboard firstName={user.firstName} />;
+        if (user.staffFunction === "SECRETARIAT") return <SecretaryDashboard firstName={user.firstName} />;
         return <StaffDashboard firstName={user.firstName} staffFunction={user.staffFunction} />;
       case "SCHOOL_ADMIN": return <SchoolAdminDashboard firstName={user.firstName} />;
       case "SUPER_ADMIN": return <SuperAdminDashboard firstName={user.firstName} />;
@@ -53,41 +48,26 @@ export default function AppHomeScreen() {
 
   return (
     <View style={styles.container}>
-      <DashboardHeader
-        firstName={user?.firstName ?? ""}
-        role={user?.role ?? "STUDENT"}
-        staffFunction={user?.staffFunction ?? null}
-      />
-
+      <DashboardHeader firstName={user?.firstName ?? ""} role={user?.role ?? "STUDENT"} staffFunction={user?.staffFunction ?? null} />
       {renderDashboard()}
 
       <View style={styles.bottomNavigation}>
         <Pressable style={[styles.navItem, styles.navItemActive]} accessibilityRole="button" accessibilityLabel="Accueil">
-          <Ionicons name="home-outline" size={21} color="#344976" />
+          <Ionicons name="home" size={20} color="#4F46E5" />
           <Text style={[styles.navLabel, styles.navLabelActive]}>Accueil</Text>
         </Pressable>
 
-        <Pressable
-          style={styles.navItem}
-          onPress={() => router.push("/(app)/messages")}
-          accessibilityRole="button"
-          accessibilityLabel="Messages"
-        >
+        <Pressable style={styles.navItem} onPress={() => router.push("/(app)/messages")} accessibilityRole="button" accessibilityLabel="Messages">
           <View style={styles.navIconWrap}>
-            <Ionicons name="mail-outline" size={21} color="#475569" />
+            <Ionicons name="chatbubble-ellipses-outline" size={20} color="#667085" />
             {unreadMessages > 0 ? <View style={styles.messageBadge}><Text style={styles.messageBadgeText}>{unreadMessages > 99 ? "99+" : unreadMessages}</Text></View> : null}
           </View>
           <Text style={styles.navLabel}>Messages</Text>
         </Pressable>
 
-        <Pressable
-          style={styles.navItem}
-          onPress={() => router.push("/(app)/assistant")}
-          accessibilityRole="button"
-          accessibilityLabel="Assistant"
-        >
-          <Ionicons name="sparkles-outline" size={21} color="#475569" />
-          <Text style={styles.navLabel}>Assistant</Text>
+        <Pressable style={styles.navItem} onPress={() => router.push("/(app)/assistant")} accessibilityRole="button" accessibilityLabel="Assistant">
+          <Ionicons name="sparkles-outline" size={20} color="#667085" />
+          <Text style={styles.navLabel}>Assistant IA</Text>
         </Pressable>
       </View>
     </View>
@@ -95,41 +75,36 @@ export default function AppHomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F5F7FA",
-  },
+  container: { flex: 1, backgroundColor: "#F6F7FB" },
   bottomNavigation: {
     position: "absolute",
     left: 14,
     right: 14,
     bottom: 14,
-    height: 64,
+    height: 68,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-around",
     paddingHorizontal: 8,
-    borderRadius: 22,
+    borderRadius: 24,
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: "#E2E8F0",
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    elevation: 8,
+    borderColor: "#E4E7EC",
+    shadowColor: "#101828",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.10,
+    shadowRadius: 18,
+    elevation: 7,
   },
   navItem: {
     flex: 1,
-    height: 54,
+    height: 56,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 16,
-    gap: 2,
+    borderRadius: 17,
+    gap: 3,
   },
-  navItemActive: {
-    backgroundColor: "#EEF2F7",
-  },
+  navItemActive: { backgroundColor: "#EEF2FF" },
   navIconWrap: { position: "relative" },
   messageBadge: {
     position: "absolute",
@@ -141,24 +116,11 @@ const styles = StyleSheet.create({
     borderRadius: 9,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#DC2626",
+    backgroundColor: "#D92D20",
     borderWidth: 2,
     borderColor: "#FFFFFF",
   },
   messageBadgeText: { color: "#FFFFFF", fontSize: 8, fontWeight: "900" },
-  navIcon: {
-    fontSize: 21,
-    color: "#475569",
-  },
-  navIconActive: {
-    color: "#344976",
-  },
-  navLabel: {
-    fontSize: 10,
-    fontWeight: "700",
-    color: "#64748B",
-  },
-  navLabelActive: {
-    color: "#344976",
-  },
+  navLabel: { fontSize: 10, fontWeight: "700", color: "#667085" },
+  navLabelActive: { color: "#4F46E5" },
 });

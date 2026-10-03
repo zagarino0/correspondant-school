@@ -5,10 +5,7 @@ import { DashboardCard } from "./DashboardCard";
 
 type DashboardSectionProps = DashboardSectionData;
 
-export function DashboardSection({
-  title,
-  cards,
-}: DashboardSectionProps) {
+export function DashboardSection({ title, cards }: DashboardSectionProps) {
   const { width } = useWindowDimensions();
   const isPhone = width < 600;
   const fullWidthCards = cards.filter((card) => card.fullWidth);
@@ -18,7 +15,10 @@ export function DashboardSection({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{title}</Text>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.title}>{title}</Text>
+        <View style={styles.dot} />
+      </View>
 
       {cards.some((card) => card.fullWidth) ? (
         <>
@@ -29,7 +29,6 @@ export function DashboardSection({
               </View>
             ))}
           </View>
-
           {secondRowCards.length > 0 ? (
             <View style={[styles.row, isPhone ? styles.phoneColumn : null]}>
               {secondRowCards.map((card) => (
@@ -39,7 +38,6 @@ export function DashboardSection({
               ))}
             </View>
           ) : null}
-
           {fullWidthCards.map((card) => (
             <View key={card.id} style={styles.fullWidth}>
               <DashboardCard {...card} />
@@ -60,20 +58,18 @@ export function DashboardSection({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    marginTop: 24,
+  container: { marginTop: 24 },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 11,
   },
-  title: {
-    marginBottom: 12,
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#111827",
-  },
+  title: { fontSize: 16, fontWeight: "800", color: "#101828" },
+  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "#4F46E5" },
   row: { flexDirection: "row", gap: 12, marginBottom: 12 },
   phoneColumn: { flexDirection: "column" },
   halfCardWrapper: { flex: 1, minWidth: 0 },
   phoneCardWrapper: { width: "100%", flex: 0 },
-  fullWidth: {
-    width: "100%",
-  },
+  fullWidth: { width: "100%" },
 });
