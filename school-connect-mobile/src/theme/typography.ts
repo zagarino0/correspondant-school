@@ -1,31 +1,27 @@
 export const typography = {
   title: {
-    fontSize: 30,
-    lineHeight: 36,
-    fontWeight: "700" as const
+    fontSize: 28,
+    lineHeight: 34,
+    fontWeight: "800" as const,
   },
-
   heading: {
-    fontSize: 22,
-    lineHeight: 28,
-    fontWeight: "700" as const
+    fontSize: 20,
+    lineHeight: 26,
+    fontWeight: "800" as const,
   },
-
   body: {
-    fontSize: 16,
-    lineHeight: 24,
-    fontWeight: "400" as const
+    fontSize: 15,
+    lineHeight: 22,
+    fontWeight: "400" as const,
   },
-
   bodySmall: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontWeight: "400" as const
+    fontSize: 13,
+    lineHeight: 19,
+    fontWeight: "400" as const,
   },
-
   caption: {
-    fontSize: 12,
+    fontSize: 11,
     lineHeight: 16,
-    fontWeight: "500" as const
-  }
+    fontWeight: "600" as const,
+  },
 } as const;
