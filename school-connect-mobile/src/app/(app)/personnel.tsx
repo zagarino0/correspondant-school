@@ -5,7 +5,7 @@ import { deleteSchoolPersonnel, getSchoolAdminDashboard } from "../../services/s
 import type { SchoolAdminDashboardResponse } from "../../services/school-admin/school-admin.types";
 import { hasPermission } from "../../features/secretariat/access";
 import { useAuthStore } from "../../stores/authStore";
-import { colors } from "../../../theme";
+import { colors } from "../../theme";
 
 const labels: Record<string,string> = { ADMINISTRATION:"Administration", SURVEILLANT:"Surveillance", SECRETARIAT:"Secrétariat", COMPTABILITE:"Comptabilité", INFIRMIER:"Infirmerie" };
 
