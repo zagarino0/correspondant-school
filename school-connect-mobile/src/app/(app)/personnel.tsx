@@ -5,6 +5,7 @@ import { deleteSchoolPersonnel, getSchoolAdminDashboard } from "../../services/s
 import type { SchoolAdminDashboardResponse } from "../../services/school-admin/school-admin.types";
 import { hasPermission } from "../../features/secretariat/access";
 import { useAuthStore } from "../../stores/authStore";
+import { colors } from "../../../theme";
 
 const labels: Record<string,string> = { ADMINISTRATION:"Administration", SURVEILLANT:"Surveillance", SECRETARIAT:"Secrétariat", COMPTABILITE:"Comptabilité", INFIRMIER:"Infirmerie" };
 
@@ -31,7 +32,7 @@ export default function PersonnelScreen(){
     ]);
   };
 
-  if(loading)return <View style={styles.center}><ActivityIndicator size="large" color="#344976"/></View>;
+  if(loading)return <View style={styles.center}><ActivityIndicator size="large" color="colors.primary"/></View>;
 
   return <ScrollView style={styles.screen} contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={()=>{setRefreshing(true);void load();}}/>}>
     <View style={styles.header}>
@@ -57,12 +58,12 @@ export default function PersonnelScreen(){
 }
 
 const styles=StyleSheet.create({
-  screen:{flex:1,backgroundColor:"#F8FAFC"},content:{padding:16,paddingBottom:32},center:{flex:1,alignItems:"center",justifyContent:"center"},
-  header:{flexDirection:"row",alignItems:"center",justifyContent:"space-between",marginBottom:18,gap:12,flexWrap:"wrap"},headerText:{flex:1},title:{fontSize:24,fontWeight:"800",color:"#344976"},subtitle:{marginTop:4,fontSize:13,color:"#6B7280"},
-  actions:{flexDirection:"row",gap:8},secondaryButton:{paddingHorizontal:13,paddingVertical:10,borderRadius:12,borderWidth:1,borderColor:"#344976",backgroundColor:"#FFF"},secondaryText:{color:"#344976",fontWeight:"800"},
-  addButton:{paddingHorizontal:14,paddingVertical:10,borderRadius:12,backgroundColor:"#344976"},addButtonText:{color:"#FFF",fontWeight:"800"},
-  group:{marginBottom:16,borderRadius:16,borderWidth:1,borderColor:"#D9DEE5",backgroundColor:"#FFF",overflow:"hidden"},groupHeader:{padding:14,backgroundColor:"#EEF2F7",flexDirection:"row",justifyContent:"space-between",alignItems:"center"},groupTitle:{fontSize:17,fontWeight:"800",color:"#344976"},
-  groupCount:{minWidth:28,textAlign:"center",paddingVertical:5,borderRadius:14,backgroundColor:"#344976",color:"#FFF",fontWeight:"800"},row:{flexDirection:"row",alignItems:"center",padding:14,borderTopWidth:1,borderTopColor:"#E5E7EB",gap:10},main:{flex:1,minWidth:150},name:{fontSize:15,fontWeight:"800",color:"#111827"},email:{marginTop:3,fontSize:12,color:"#6B7280"},status:{fontSize:12,fontWeight:"700",color:"#344976"},
-  rowActions:{flexDirection:"row",alignItems:"center",gap:6},editButton:{paddingHorizontal:9,paddingVertical:8,borderRadius:9,backgroundColor:"#EEF2F7"},editText:{fontSize:11,fontWeight:"800",color:"#344976"},deleteButton:{paddingHorizontal:9,paddingVertical:8,borderRadius:9,backgroundColor:"#FEF2F2"},deleteText:{fontSize:11,fontWeight:"800",color:"#B91C1C"},
-  empty:{padding:24,textAlign:"center",color:"#6B7280"}
+  screen:{flex:1,backgroundColor:"colors.background"},content:{padding:16,paddingBottom:32},center:{flex:1,alignItems:"center",justifyContent:"center"},
+  header:{flexDirection:"row",alignItems:"center",justifyContent:"space-between",marginBottom:18,gap:12,flexWrap:"wrap"},headerText:{flex:1},title:{fontSize:24,fontWeight:"800",color:"colors.primary"},subtitle:{marginTop:4,fontSize:13,color:"colors.textSecondary"},
+  actions:{flexDirection:"row",gap:8},secondaryButton:{paddingHorizontal:13,paddingVertical:10,borderRadius:12,borderWidth:1,borderColor:"colors.primary",backgroundColor:"colors.surface"},secondaryText:{color:"colors.primary",fontWeight:"800"},
+  addButton:{paddingHorizontal:14,paddingVertical:10,borderRadius:12,backgroundColor:"colors.primary"},addButtonText:{color:"colors.surface",fontWeight:"800"},
+  group:{marginBottom:16,borderRadius:16,borderWidth:1,borderColor:"colors.border",backgroundColor:"colors.surface",overflow:"hidden"},groupHeader:{padding:14,backgroundColor:"colors.surfaceMuted",flexDirection:"row",justifyContent:"space-between",alignItems:"center"},groupTitle:{fontSize:17,fontWeight:"800",color:"colors.primary"},
+  groupCount:{minWidth:28,textAlign:"center",paddingVertical:5,borderRadius:14,backgroundColor:"colors.primary",color:"colors.surface",fontWeight:"800"},row:{flexDirection:"row",alignItems:"center",padding:14,borderTopWidth:1,borderTopColor:"colors.border",gap:10},main:{flex:1,minWidth:150},name:{fontSize:15,fontWeight:"800",color:"colors.text"},email:{marginTop:3,fontSize:12,color:"colors.textSecondary"},status:{fontSize:12,fontWeight:"700",color:"colors.primary"},
+  rowActions:{flexDirection:"row",alignItems:"center",gap:6},editButton:{paddingHorizontal:9,paddingVertical:8,borderRadius:9,backgroundColor:"colors.surfaceMuted"},editText:{fontSize:11,fontWeight:"800",color:"colors.primary"},deleteButton:{paddingHorizontal:9,paddingVertical:8,borderRadius:9,backgroundColor:"#FEF2F2"},deleteText:{fontSize:11,fontWeight:"800",color:"colors.danger"},
+  empty:{padding:24,textAlign:"center",color:"colors.textSecondary"}
 });
