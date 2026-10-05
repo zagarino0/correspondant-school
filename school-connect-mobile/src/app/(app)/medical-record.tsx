@@ -351,7 +351,7 @@ const styles = StyleSheet.create({
   infoRow: {
     paddingVertical: 11,
     borderTopWidth: 1,
-    borderTopColor: "#F0F0F0",
+    borderTopColor: "colors.surfaceMuted",
   },
   infoLabel: {
     fontSize: 12,
@@ -383,7 +383,7 @@ const styles = StyleSheet.create({
   errorText: {
     padding: 14,
     borderRadius: 12,
-    backgroundColor: "#FEF2F2",
+    backgroundColor: "colors.dangerSoft",
     color: "colors.danger",
     fontSize: 14,
   },
