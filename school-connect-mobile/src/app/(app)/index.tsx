@@ -60,14 +60,14 @@ export default function AppHomeScreen() {
 
         <Pressable style={styles.navItem} onPress={() => router.push("/(app)/messages")} accessibilityRole="button" accessibilityLabel="Messages">
           <View style={styles.navIconWrap}>
-            <Ionicons name="chatbubble-ellipses-outline" size={20} color="#667085" />
+            <Ionicons name="chatbubble-ellipses-outline" size={20} color="colors.textSecondary" />
             {unreadMessages > 0 ? <View style={styles.messageBadge}><Text style={styles.messageBadgeText}>{unreadMessages > 99 ? "99+" : unreadMessages}</Text></View> : null}
           </View>
           <Text style={styles.navLabel}>Messages</Text>
         </Pressable>
 
         <Pressable style={styles.navItem} onPress={() => router.push("/(app)/assistant")} accessibilityRole="button" accessibilityLabel="Assistant">
-          <Ionicons name="sparkles-outline" size={20} color="#667085" />
+          <Ionicons name="sparkles-outline" size={20} color="colors.textSecondary" />
           <Text style={styles.navLabel}>Assistant IA</Text>
         </Pressable>
       </View>
@@ -76,7 +76,7 @@ export default function AppHomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F6F7FB" },
+  container: { flex: 1, backgroundColor: "colors.background" },
   bottomNavigation: {
     position: "absolute",
     left: 14,
@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     backgroundColor: "colors.surface",
     borderWidth: 1,
-    borderColor: "#E4E7EC",
+    borderColor: "colors.border",
     shadowColor: "colors.text",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.10,
@@ -117,11 +117,11 @@ const styles = StyleSheet.create({
     borderRadius: 9,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#D92D20",
+    backgroundColor: "colors.danger",
     borderWidth: 2,
     borderColor: "colors.surface",
   },
   messageBadgeText: { color: "colors.surface", fontSize: 8, fontWeight: "900" },
-  navLabel: { fontSize: 10, fontWeight: "700", color: "#667085" },
+  navLabel: { fontSize: 10, fontWeight: "700", color: "colors.textSecondary" },
   navLabelActive: { color: "colors.primary" },
 });
