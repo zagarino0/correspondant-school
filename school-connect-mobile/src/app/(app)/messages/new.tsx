@@ -230,7 +230,7 @@ export default function NewMessageScreen() {
               value={content}
               onChangeText={setContent}
               placeholder="Écrire votre message..."
-              placeholderTextColor="colors.textMuted"
+              placeholderTextColor={colors.textMuted}
               multiline
               maxLength={5000}
               editable={!isSending}
@@ -251,7 +251,7 @@ export default function NewMessageScreen() {
               accessibilityLabel="Envoyer le message"
             >
               {isSending ? (
-                <ActivityIndicator color="colors.surface" size="small" />
+                <ActivityIndicator color={colors.surface} size="small" />
               ) : (
                 <Text style={styles.sendButtonText}>Envoyer</Text>
               )}
@@ -266,19 +266,19 @@ export default function NewMessageScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "colors.background",
+    backgroundColor: colors.background,
   },
 
   header: {
     paddingHorizontal: 20,
     paddingTop: 24,
     paddingBottom: 20,
-    backgroundColor: "colors.surface",
+    backgroundColor: colors.surface,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     borderBottomWidth: 1,
-    borderBottomColor: "colors.border",
+    borderBottomColor: colors.border,
   },
 
   backButton: {
@@ -287,13 +287,13 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "colors.surfaceMuted",
+    backgroundColor: colors.surfaceMuted,
   },
 
   backIcon: {
     fontSize: 32,
     lineHeight: 34,
-    color: "colors.text",
+    color: colors.text,
   },
 
   headerTitle: {
@@ -302,7 +302,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 20,
     fontWeight: "700",
-    color: "colors.text",
+    color: colors.text,
   },
 
   headerSpacer: {
@@ -322,7 +322,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     fontSize: 16,
     fontWeight: "800",
-    color: "colors.text",
+    color: colors.text,
   },
 
   recipientList: {
@@ -335,13 +335,13 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "colors.border",
-    backgroundColor: "colors.surface",
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
   },
 
   recipientCardSelected: {
-    borderColor: "colors.text",
-    backgroundColor: "colors.surfaceMuted",
+    borderColor: colors.primary,
+    backgroundColor: colors.surfaceMuted,
   },
 
   avatar: {
@@ -350,13 +350,13 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "colors.border",
+    backgroundColor: colors.border,
   },
 
   avatarText: {
     fontSize: 17,
     fontWeight: "700",
-    color: "colors.textSecondary",
+    color: colors.textSecondary,
   },
 
   recipientContent: {
@@ -367,13 +367,13 @@ const styles = StyleSheet.create({
   recipientName: {
     fontSize: 15,
     fontWeight: "700",
-    color: "colors.text",
+    color: colors.text,
   },
 
   recipientRole: {
     marginTop: 3,
     fontSize: 13,
-    color: "colors.textSecondary",
+    color: colors.textSecondary,
   },
 
   radio: {
@@ -381,27 +381,27 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: 11,
     borderWidth: 2,
-    borderColor: "colors.border",
+    borderColor: colors.border,
     alignItems: "center",
     justifyContent: "center",
   },
 
   radioSelected: {
-    borderColor: "colors.text",
+    borderColor: colors.primary,
   },
 
   radioDot: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: "colors.text",
+    backgroundColor: colors.primary,
   },
 
   selectedText: {
     marginTop: -4,
     marginBottom: 10,
     fontSize: 13,
-    color: "colors.textSecondary",
+    color: colors.textSecondary,
   },
 
   input: {
@@ -410,19 +410,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
     borderWidth: 1,
-    borderColor: "colors.border",
+    borderColor: colors.border,
     borderRadius: 14,
-    backgroundColor: "colors.surface",
+    backgroundColor: colors.surface,
     fontSize: 15,
     lineHeight: 21,
-    color: "colors.text",
+    color: colors.text,
     textAlignVertical: "top",
   },
 
   footer: {
     paddingHorizontal: 20,
     paddingVertical: 12,
-    backgroundColor: "colors.surface",
+    backgroundColor: colors.surface,
     borderTopWidth: 1,
     borderTopColor: "colors.border",
   },
@@ -432,7 +432,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "colors.text",
+    backgroundColor: colors.primary,
   },
 
   sendButtonDisabled: {
@@ -442,14 +442,14 @@ const styles = StyleSheet.create({
   sendButtonText: {
     fontSize: 15,
     fontWeight: "800",
-    color: "colors.surface",
+    color: colors.primaryForeground,
   },
 
   errorText: {
     marginBottom: 12,
     fontSize: 14,
     lineHeight: 20,
-    color: "colors.danger",
+    color: colors.danger,
   },
 
   stateContainer: {
@@ -464,19 +464,19 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 14,
     lineHeight: 20,
-    color: "colors.textSecondary",
+    color: colors.textSecondary,
   },
 
   emptyContainer: {
     marginBottom: 24,
     padding: 18,
     borderRadius: 14,
-    backgroundColor: "colors.surface",
+    backgroundColor: colors.surface,
   },
 
   emptyTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "colors.text",
+    color: colors.text,
   },
 });
