@@ -652,7 +652,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
     fontSize: 10,
     fontWeight: "700",
-    color: "#475569",
+    color: "colors.textSecondary",
   },
   editButton: {
     paddingHorizontal: 7,
