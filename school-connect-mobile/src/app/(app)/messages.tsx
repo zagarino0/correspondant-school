@@ -7,6 +7,7 @@ import {
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { colors } from "../../theme";
 
 import type { Conversation } from "../../features/messages/message.types";
 import { getMyConversations } from "../../services/messages/message.service";
@@ -163,19 +164,19 @@ export default function MessagesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F5F7FA",
+    backgroundColor: "colors.background",
   },
 
   header: {
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 14,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "colors.surface",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
+    borderBottomColor: "colors.border",
   },
 
   backButton: {
@@ -184,19 +185,19 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#F3F4F6",
+    backgroundColor: "colors.surfaceMuted",
   },
 
   backIcon: {
     fontSize: 32,
     lineHeight: 34,
-    color: "#111827",
+    color: "colors.text",
   },
 
   headerTitle: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#111827",
+    color: "colors.text",
   },
 
   newButton: {
@@ -206,13 +207,13 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#111827",
+    backgroundColor: "colors.text",
   },
 
   newButtonText: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#FFFFFF",
+    color: "colors.surface",
   },
 
   content: {
@@ -230,7 +231,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     textAlign: "center",
     fontSize: 15,
-    color: "#6B7280",
+    color: "colors.textSecondary",
   },
 
   iconContainer: {
@@ -239,26 +240,26 @@ const styles = StyleSheet.create({
     borderRadius: 36,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#E5E7EB",
+    backgroundColor: "colors.border",
   },
 
   icon: {
     fontSize: 30,
-    color: "#374151",
+    color: "colors.textSecondary",
   },
 
   title: {
     marginTop: 20,
     fontSize: 24,
     fontWeight: "700",
-    color: "#111827",
+    color: "colors.text",
   },
 
   subtitle: {
     marginTop: 8,
     textAlign: "center",
     fontSize: 15,
-    color: "#6B7280",
+    color: "colors.textSecondary",
   },
 
   list: {
@@ -270,7 +271,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 16,
     borderRadius: 14,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "colors.surface",
   },
 
   avatar: {
@@ -279,13 +280,13 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#E5E7EB",
+    backgroundColor: "colors.border",
   },
 
   avatarText: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#374151",
+    color: "colors.textSecondary",
   },
 
   conversationContent: {
@@ -296,12 +297,12 @@ const styles = StyleSheet.create({
   participantName: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#111827",
+    color: "colors.text",
   },
 
   lastMessage: {
     marginTop: 4,
     fontSize: 14,
-    color: "#6B7280",
+    color: "colors.textSecondary",
   },
 });
