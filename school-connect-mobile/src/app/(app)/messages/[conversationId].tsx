@@ -312,14 +312,14 @@ export default function ConversationScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "colors.background",
+    backgroundColor: colors.background,
   },
 
   header: {
     paddingHorizontal: 20,
     paddingTop: 24,
     paddingBottom: 20,
-    backgroundColor: "colors.surface",
+    backgroundColor: colors.surface,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -333,13 +333,13 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "colors.surfaceMuted",
+    backgroundColor: colors.surfaceMuted,
   },
 
   backIcon: {
     fontSize: 32,
     lineHeight: 34,
-    color: "colors.text",
+    color: colors.text,
   },
 
   headerTitle: {
@@ -348,7 +348,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 20,
     fontWeight: "700",
-    color: "colors.text",
+    color: colors.text,
   },
 
   headerSpacer: {
@@ -366,7 +366,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     textAlign: "center",
     fontSize: 15,
-    color: "colors.textSecondary",
+    color: colors.textSecondary,
   },
 
   messageScroll: {
@@ -392,14 +392,14 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 22,
     fontWeight: "700",
-    color: "colors.text",
+    color: colors.text,
   },
 
   errorText: {
     marginBottom: 12,
     textAlign: "center",
     fontSize: 14,
-    color: "colors.danger",
+    color: colors.danger,
   },
 
   messageBubble: {
@@ -411,22 +411,22 @@ const styles = StyleSheet.create({
 
   ownMessage: {
     alignSelf: "flex-end",
-    backgroundColor: "colors.text",
+    backgroundColor: colors.text,
   },
 
   otherMessage: {
     alignSelf: "flex-start",
-    backgroundColor: "colors.surface",
+    backgroundColor: colors.surface,
   },
 
   messageText: {
     fontSize: 15,
     lineHeight: 21,
-    color: "colors.text",
+    color: colors.text,
   },
 
   ownMessageText: {
-    color: "colors.surface",
+    color: colors.surface,
   },
 
   messageStatus: {
@@ -437,11 +437,11 @@ const styles = StyleSheet.create({
   },
 
   messageDelivered: {
-    color: "colors.border",
+    color: colors.border,
   },
 
   messageRead: {
-    color: "colors.primary",
+    color: colors.primary,
   },
 
   composer: {
@@ -450,7 +450,7 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: "colors.surface",
+    backgroundColor: colors.surface,
     borderTopWidth: 1,
     borderTopColor: "colors.border",
   },
@@ -462,11 +462,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderWidth: 1,
-    borderColor: "colors.border",
+    borderColor: colors.border,
     borderRadius: 22,
-    backgroundColor: "colors.surfaceMuted",
+    backgroundColor: colors.surfaceMuted,
     fontSize: 15,
-    color: "colors.text",
+    color: colors.text,
   },
 
   sendButton: {
@@ -475,7 +475,7 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "colors.text",
+    backgroundColor: colors.text,
   },
 
   sendButtonDisabled: {
@@ -485,6 +485,6 @@ const styles = StyleSheet.create({
   sendButtonText: {
     fontSize: 14,
     fontWeight: "700",
-    color: "colors.surface",
+    color: colors.surface,
   },
 });
