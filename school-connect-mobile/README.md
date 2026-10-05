@@ -244,3 +244,20 @@ Le sous-projet contient son propre fichier `LICENSE`. Le consulter avant redistr
 ## Repository
 
 https://github.com/zagarino0/correspondant-school
+
+## Design system — Correspondant
+
+L’interface mobile utilise une palette unique, lumineuse et sans noir pur :
+
+| Token | Valeur | Usage |
+| --- | --- | --- |
+| primary | #237A57 | Actions principales et éléments actifs |
+| primaryDark | #18543E | Variantes profondes |
+| accent | #55A77D | Accents et états positifs |
+| background | #F7F6F0 | Fond général |
+| surface | #FFFDF8 | Cartes et surfaces |
+| text | #263B32 | Texte principal |
+| textSecondary | #6B7C74 | Texte secondaire |
+| border | #DCE5DF | Bordures |
+
+Les écrans Parent, Élève, Enseignant, Staff, messages, médical, emploi du temps et administration doivent consommer les tokens de src/theme/colors.ts plutôt que des couleurs hexadécimales locales.
