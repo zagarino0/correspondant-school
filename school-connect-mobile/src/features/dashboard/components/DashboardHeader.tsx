@@ -10,7 +10,7 @@ import { getSummonsNotifications } from "../../../services/surveillant/surveilla
 import { getSchoolLifeAuthorizations } from "../../../services/surveillant/schoolLife.service";
 import type { StaffFunction, UserRole } from "../../../types/auth";
 import { useNotificationCenterStore } from "../../../stores/notificationCenterStore";
-import { colors, radius, spacing, typography } from "../../../theme";
+import { colors, radius, spacing } from "../../../theme";
 
 type DashboardHeaderProps = {
   firstName: string;
