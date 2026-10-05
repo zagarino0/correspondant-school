@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   interactive: {
-    borderColor: "#D9D6FE",
+    borderColor: colors.primarySoft,
   },
   cardPressed: {
     opacity: 0.72,
