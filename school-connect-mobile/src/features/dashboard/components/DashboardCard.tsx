@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
+import { colors, radius, spacing } from "../../../theme";
 import type { DashboardCardData } from "../dashboard.types";
 
 type DashboardCardProps = DashboardCardData;
@@ -28,12 +29,14 @@ export function DashboardCard({
       <View style={styles.titleRow}>
         <View style={styles.titleWrap}>
           <View style={styles.accent} />
-          <Text style={styles.title} numberOfLines={1}>{title}</Text>
+          <Text style={styles.title} numberOfLines={1}>
+            {title}
+          </Text>
         </View>
 
         {onPress ? (
           <View style={styles.arrow}>
-            <Ionicons name="arrow-forward" size={14} color="#4F46E5" />
+            <Ionicons name="arrow-forward" size={14} color={colors.primary} />
           </View>
         ) : badge ? (
           <View style={styles.badge}>
@@ -45,7 +48,9 @@ export function DashboardCard({
       {value ? <Text style={styles.value}>{value}</Text> : null}
 
       {description ? (
-        <Text style={styles.description} numberOfLines={3}>{description}</Text>
+        <Text style={styles.description} numberOfLines={3}>
+          {description}
+        </Text>
       ) : null}
 
       {content ? <View style={styles.content}>{content}</View> : null}
@@ -56,85 +61,79 @@ export function DashboardCard({
 const styles = StyleSheet.create({
   card: {
     flex: 1,
-    minHeight: 124,
-    padding: 18,
-    borderRadius: 18,
-    backgroundColor: "#FFFFFF",
+    minHeight: 112,
+    padding: spacing.lg,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "#E4E7EC",
-    shadowColor: "#101828",
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.06,
-    shadowRadius: 14,
-    elevation: 2,
+    borderColor: colors.border,
   },
   interactive: {
     borderColor: "#D9D6FE",
   },
   cardPressed: {
-    opacity: 0.78,
-    transform: [{ scale: 0.985 }],
+    opacity: 0.72,
+    transform: [{ scale: 0.988 }],
   },
   titleRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    gap: 8,
+    gap: spacing.sm,
   },
   titleWrap: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: spacing.sm,
   },
   accent: {
-    width: 4,
-    height: 18,
+    width: 3,
+    height: 16,
     borderRadius: 2,
-    backgroundColor: "#4F46E5",
+    backgroundColor: colors.primary,
   },
   title: {
     flex: 1,
     fontSize: 13,
     fontWeight: "700",
-    color: "#344054",
+    color: colors.textSecondary,
   },
   arrow: {
     width: 28,
     height: 28,
-    borderRadius: 14,
+    borderRadius: radius.full,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#EEF2FF",
+    backgroundColor: colors.primarySoft,
   },
   badge: {
-    minWidth: 24,
-    height: 24,
-    paddingHorizontal: 7,
-    borderRadius: 12,
+    minHeight: 24,
+    paddingHorizontal: 8,
+    borderRadius: radius.full,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#D92D20",
+    backgroundColor: colors.primarySoft,
   },
   badgeText: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#FFFFFF",
+    fontSize: 10,
+    fontWeight: "800",
+    color: colors.primary,
   },
   value: {
-    marginTop: 14,
-    fontSize: 27,
-    lineHeight: 32,
+    marginTop: spacing.md,
+    fontSize: 24,
+    lineHeight: 29,
     fontWeight: "800",
-    color: "#101828",
+    color: colors.text,
   },
   description: {
-    marginTop: 7,
-    fontSize: 13,
-    lineHeight: 19,
-    color: "#667085",
+    marginTop: 6,
+    fontSize: 12,
+    lineHeight: 18,
+    color: colors.textSecondary,
   },
   content: {
-    marginTop: 14,
+    marginTop: spacing.md,
   },
 });
