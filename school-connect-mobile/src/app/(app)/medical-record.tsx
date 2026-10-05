@@ -8,6 +8,7 @@ import {
   View,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { colors } from "../../theme";
 
 import {
   getChildMedicalRecord,
@@ -255,18 +256,18 @@ export default function MedicalRecordScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F5F7FA",
+    backgroundColor: "colors.background",
   },
   header: {
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 14,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "colors.surface",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
+    borderBottomColor: "colors.border",
   },
   backButton: {
     width: 44,
@@ -274,17 +275,17 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#F3F4F6",
+    backgroundColor: "colors.surfaceMuted",
   },
   backIcon: {
     fontSize: 32,
     lineHeight: 34,
-    color: "#111827",
+    color: "colors.text",
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#111827",
+    color: "colors.text",
   },
   headerSpacer: {
     width: 44,
@@ -301,7 +302,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     fontSize: 16,
     fontWeight: "800",
-    color: "#111827",
+    color: "colors.text",
   },
   childrenList: {
     gap: 8,
@@ -311,41 +312,41 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
-    backgroundColor: "#FFFFFF",
+    borderColor: "colors.border",
+    backgroundColor: "colors.surface",
   },
   childButtonSelected: {
-    borderColor: "#111827",
-    backgroundColor: "#F3F4F6",
+    borderColor: "colors.text",
+    backgroundColor: "colors.surfaceMuted",
   },
   childButtonText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#374151",
+    color: "colors.textSecondary",
   },
   childButtonTextSelected: {
-    color: "#111827",
+    color: "colors.text",
     fontWeight: "800",
   },
   identityCard: {
     padding: 18,
     borderRadius: 16,
-    backgroundColor: "#111827",
+    backgroundColor: "colors.text",
   },
   identityName: {
     fontSize: 21,
     fontWeight: "800",
-    color: "#FFFFFF",
+    color: "colors.surface",
   },
   identityNumber: {
     marginTop: 5,
     fontSize: 13,
-    color: "#D1D5DB",
+    color: "colors.border",
   },
   card: {
     padding: 18,
     borderRadius: 16,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "colors.surface",
   },
   infoRow: {
     paddingVertical: 11,
@@ -355,35 +356,35 @@ const styles = StyleSheet.create({
   infoLabel: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#6B7280",
+    color: "colors.textSecondary",
   },
   infoValue: {
     marginTop: 4,
     fontSize: 15,
     lineHeight: 21,
-    color: "#111827",
+    color: "colors.text",
   },
   notes: {
     fontSize: 15,
     lineHeight: 22,
-    color: "#374151",
+    color: "colors.textSecondary",
   },
   emptyTitle: {
     fontSize: 16,
     fontWeight: "800",
-    color: "#111827",
+    color: "colors.text",
   },
   emptyText: {
     marginTop: 7,
     fontSize: 14,
     lineHeight: 20,
-    color: "#6B7280",
+    color: "colors.textSecondary",
   },
   errorText: {
     padding: 14,
     borderRadius: 12,
     backgroundColor: "#FEF2F2",
-    color: "#B91C1C",
+    color: "colors.danger",
     fontSize: 14,
   },
   stateContainer: {
@@ -395,7 +396,7 @@ const styles = StyleSheet.create({
   stateText: {
     marginTop: 10,
     textAlign: "center",
-    color: "#6B7280",
+    color: "colors.textSecondary",
     fontSize: 14,
   },
 });
