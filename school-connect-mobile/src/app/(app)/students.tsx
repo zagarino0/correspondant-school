@@ -17,7 +17,7 @@ import type {
   StudentStatus,
 } from "../../services/students/student.types";
 import { useAuthStore } from "../../stores/authStore";
-import { colors } from "../../../theme";
+import { colors } from "../../theme";
 
 type StudentCategory =
   | "PRIMAIRE"
