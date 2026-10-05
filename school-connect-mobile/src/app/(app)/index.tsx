@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
+import { colors } from "../../theme";
 
 import { DashboardHeader } from "../../features/dashboard/components/DashboardHeader";
 import { ParentDashboard } from "../../features/dashboard/dashboards/ParentDashboard";
@@ -53,7 +54,7 @@ export default function AppHomeScreen() {
 
       <View style={styles.bottomNavigation}>
         <Pressable style={[styles.navItem, styles.navItemActive]} accessibilityRole="button" accessibilityLabel="Accueil">
-          <Ionicons name="home" size={20} color="#4F46E5" />
+          <Ionicons name="home" size={20} color="colors.primary" />
           <Text style={[styles.navLabel, styles.navLabelActive]}>Accueil</Text>
         </Pressable>
 
@@ -87,10 +88,10 @@ const styles = StyleSheet.create({
     justifyContent: "space-around",
     paddingHorizontal: 8,
     borderRadius: 24,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "colors.surface",
     borderWidth: 1,
     borderColor: "#E4E7EC",
-    shadowColor: "#101828",
+    shadowColor: "colors.text",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.10,
     shadowRadius: 18,
@@ -104,7 +105,7 @@ const styles = StyleSheet.create({
     borderRadius: 17,
     gap: 3,
   },
-  navItemActive: { backgroundColor: "#EEF2FF" },
+  navItemActive: { backgroundColor: "colors.primarySoft" },
   navIconWrap: { position: "relative" },
   messageBadge: {
     position: "absolute",
@@ -118,9 +119,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "#D92D20",
     borderWidth: 2,
-    borderColor: "#FFFFFF",
+    borderColor: "colors.surface",
   },
-  messageBadgeText: { color: "#FFFFFF", fontSize: 8, fontWeight: "900" },
+  messageBadgeText: { color: "colors.surface", fontSize: 8, fontWeight: "900" },
   navLabel: { fontSize: 10, fontWeight: "700", color: "#667085" },
-  navLabelActive: { color: "#4F46E5" },
+  navLabelActive: { color: "colors.primary" },
 });
