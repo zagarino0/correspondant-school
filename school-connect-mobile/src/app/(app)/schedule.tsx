@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useAuthStore } from "../../stores/authStore";
+import { colors } from "../../theme";
 
 import { getMySchedule, getMyTeacherSchedule, getSchoolSchedule } from "../../services/schedule/schedule.service";
 import type {
@@ -199,7 +200,7 @@ export default function ScheduleScreen() {
               value={classSearch}
               onChangeText={setClassSearch}
               placeholder="Rechercher une classe…"
-              placeholderTextColor="#94A3B8"
+              placeholderTextColor="colors.textMuted"
               style={styles.classSearchInput}
             />
           </View>
@@ -349,33 +350,33 @@ export default function ScheduleScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F5F7FA",
+    backgroundColor: "colors.background",
   },
   header: {
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 14,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "colors.surface",
     flexDirection: "row",
     alignItems: "center",
     gap: 14,
     borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
+    borderBottomColor: "colors.border",
   },
   backButton: {
     fontSize: 36,
     lineHeight: 36,
-    color: "#111827",
+    color: "colors.text",
   },
   title: {
     fontSize: 24,
     fontWeight: "700",
-    color: "#111827",
+    color: "colors.text",
   },
   subtitle: {
     marginTop: 4,
     fontSize: 14,
-    color: "#6B7280",
+    color: "colors.textSecondary",
   },
   verticalScroll: {
     flex: 1,
@@ -391,37 +392,37 @@ const styles = StyleSheet.create({
     marginTop: 14,
     padding: 14,
     borderRadius: 14,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "colors.surface",
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: "colors.border",
   },
   selectorHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
   selectorCopy: { flex: 1 },
-  selectorLabel: { fontSize: 10, fontWeight: "900", letterSpacing: 0.8, color: "#64748B" },
-  selectorTitle: { marginTop: 3, fontSize: 16, fontWeight: "900", color: "#111827" },
+  selectorLabel: { fontSize: 10, fontWeight: "900", letterSpacing: 0.8, color: "colors.textSecondary" },
+  selectorTitle: { marginTop: 3, fontSize: 16, fontWeight: "900", color: "colors.text" },
   allClassesButton: { paddingHorizontal: 11, paddingVertical: 8, borderRadius: 9, borderWidth: 1, borderColor: "#CBD5E1" },
-  allClassesText: { fontSize: 10, fontWeight: "900", color: "#344976" },
-  classSearchBox: { marginTop: 10, minHeight: 42, flexDirection: "row", alignItems: "center", paddingHorizontal: 11, borderRadius: 10, borderWidth: 1, borderColor: "#CBD5E1", backgroundColor: "#F8FAFC" },
-  searchIcon: { marginRight: 7, fontSize: 18, color: "#64748B" },
-  classSearchInput: { flex: 1, fontSize: 12, color: "#111827", paddingVertical: 8 },
+  allClassesText: { fontSize: 10, fontWeight: "900", color: "colors.primary" },
+  classSearchBox: { marginTop: 10, minHeight: 42, flexDirection: "row", alignItems: "center", paddingHorizontal: 11, borderRadius: 10, borderWidth: 1, borderColor: "#CBD5E1", backgroundColor: "colors.background" },
+  searchIcon: { marginRight: 7, fontSize: 18, color: "colors.textSecondary" },
+  classSearchInput: { flex: 1, fontSize: 12, color: "colors.text", paddingVertical: 8 },
   classChips: { gap: 7, paddingTop: 10 },
-  classChip: { minWidth: 82, paddingHorizontal: 11, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: "#CBD5E1", backgroundColor: "#FFFFFF" },
-  classChipActive: { borderColor: "#344976", backgroundColor: "#344976" },
-  classChipName: { fontSize: 11, fontWeight: "900", color: "#344976" },
-  classChipLevel: { marginTop: 2, fontSize: 9, color: "#64748B" },
-  classChipTextActive: { color: "#FFFFFF" },
+  classChip: { minWidth: 82, paddingHorizontal: 11, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: "#CBD5E1", backgroundColor: "colors.surface" },
+  classChipActive: { borderColor: "colors.primary", backgroundColor: "colors.primary" },
+  classChipName: { fontSize: 11, fontWeight: "900", color: "colors.primary" },
+  classChipLevel: { marginTop: 2, fontSize: 9, color: "colors.textSecondary" },
+  classChipTextActive: { color: "colors.surface" },
   table: {
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: "colors.border",
     borderRadius: 12,
     overflow: "hidden",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "colors.surface",
   },
   row: {
     flexDirection: "row",
   },
   headerCell: {
-    backgroundColor: "#F3F4F6",
+    backgroundColor: "colors.surfaceMuted",
   },
   timeCell: {
     minHeight: 68,
@@ -429,7 +430,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderRightWidth: 1,
     borderBottomWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: "colors.border",
   },
   dayCell: {
     minHeight: 68,
@@ -438,18 +439,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderRightWidth: 1,
     borderBottomWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: "colors.border",
   },
   headerText: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#374151",
+    color: "colors.textSecondary",
     textAlign: "center",
   },
   timeText: {
     fontSize: 11,
     fontWeight: "600",
-    color: "#4B5563",
+    color: "colors.textSecondary",
     textAlign: "center",
   },
   scheduleItem: {
@@ -459,14 +460,14 @@ const styles = StyleSheet.create({
   subjectText: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#111827",
+    color: "colors.text",
     textAlign: "center",
   },
   classText: {
     marginTop: 3,
     fontSize: 10,
     fontWeight: "600",
-    color: "#374151",
+    color: "colors.textSecondary",
     textAlign: "center",
   },
   teacherText: {
@@ -478,12 +479,12 @@ const styles = StyleSheet.create({
   roomText: {
     marginTop: 4,
     fontSize: 10,
-    color: "#6B7280",
+    color: "colors.textSecondary",
     textAlign: "center",
   },
   emptyText: {
     fontSize: 16,
-    color: "#9CA3AF",
+    color: "colors.textMuted",
   },
   stateContainer: {
     flex: 1,
@@ -494,20 +495,20 @@ const styles = StyleSheet.create({
   stateTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#111827",
+    color: "colors.text",
     textAlign: "center",
   },
   stateText: {
     marginTop: 8,
     fontSize: 14,
     lineHeight: 20,
-    color: "#6B7280",
+    color: "colors.textSecondary",
     textAlign: "center",
   },
   errorText: {
     fontSize: 14,
     lineHeight: 20,
-    color: "#B91C1C",
+    color: "colors.danger",
     textAlign: "center",
   },
 });
