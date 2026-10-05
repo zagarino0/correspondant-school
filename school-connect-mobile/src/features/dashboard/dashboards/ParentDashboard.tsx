@@ -726,84 +726,110 @@ export function ParentDashboard({ firstName }: ParentDashboardProps) {
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.contentContainer}
+      showsVerticalScrollIndicator={false}
     >
-      <Text style={styles.title}>Espace parent</Text>
-      <Text style={styles.subtitle}>
-        Bonjour {firstName}, voici le suivi scolaire de votre enfant.
-      </Text>
-
-      {selectedChild && (
-        <Text style={styles.selectedChild}>
-          Enfant suivi : {selectedChild.firstName} {selectedChild.lastName} ·{" "}
-          {selectedChildDescription}
-        </Text>
-      )}
-
+      <View style={styles.hero}>
+        <View style={styles.heroIcon}>
+          <Text style={styles.heroIconText}>
+            {selectedChild?.firstName?.charAt(0) ?? "P"}
+          </Text>
+        </View>
+        <View style={styles.heroText}>
+          <Text style={styles.eyebrow}>ESPACE PARENT</Text>
+          <Text style={styles.title}>Suivi de la scolarité</Text>
+          <Text style={styles.subtitle} numberOfLines={2}>
+            {selectedChild
+              ? `${selectedChild.firstName} ${selectedChild.lastName} · ${selectedChildDescription}`
+              : "Sélectionnez un enfant pour commencer le suivi."}
+          </Text>
+        </View>
+      </View>
 
       {sections.map((section) => (
         <DashboardSection key={section.id} {...section} />
       ))}
-
-
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  container: { flex: 1 },
   contentContainer: {
     paddingHorizontal: 16,
-    paddingTop: 18,
-    paddingBottom: 32,
+    paddingTop: 14,
+    paddingBottom: 110,
+  },
+  hero: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 16,
+    borderRadius: 20,
+    backgroundColor: "#101828",
+  },
+  heroIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#4F46E5",
+  },
+  heroIconText: {
+    fontSize: 18,
+    fontWeight: "900",
+    color: "#FFFFFF",
+  },
+  heroText: { flex: 1, minWidth: 0 },
+  eyebrow: {
+    fontSize: 9,
+    fontWeight: "900",
+    letterSpacing: 1.3,
+    color: "#C7D2FE",
   },
   title: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: "#111827",
+    marginTop: 3,
+    fontSize: 21,
+    lineHeight: 26,
+    fontWeight: "800",
+    color: "#FFFFFF",
   },
   subtitle: {
-    marginTop: 8,
-    fontSize: 15,
-    color: "#6B7280",
-  },
-  selectedChild: {
-    marginTop: 16,
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#374151",
+    marginTop: 4,
+    fontSize: 12,
+    lineHeight: 18,
+    color: "#D0D5DD",
   },
   scheduleGrid: {
     width: "100%",
     flexDirection: "row",
     flexWrap: "wrap",
-    columnGap: 10,
-    rowGap: 10,
+    columnGap: 8,
+    rowGap: 8,
   },
   scheduleDay: {
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
-    backgroundColor: "#F9FAFB",
+    borderColor: "#E4E7EC",
+    backgroundColor: "#F8FAFC",
     overflow: "hidden",
   },
   scheduleDayToday: {
-    borderColor: "#344976",
-    backgroundColor: "#EEF2F7",
+    borderColor: "#C7D2FE",
+    backgroundColor: "#F5F7FF",
   },
   scheduleDayHeader: {
-    minHeight: 52,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
+    minHeight: 48,
+    paddingHorizontal: 11,
+    paddingVertical: 8,
     justifyContent: "center",
-    backgroundColor: "#F3F4F6",
+    backgroundColor: "#F2F4F7",
     borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
+    borderBottomColor: "#E4E7EC",
   },
   scheduleDayHeaderToday: {
-    backgroundColor: "#344976",
-    borderBottomColor: "#344976",
+    backgroundColor: "#4F46E5",
+    borderBottomColor: "#4F46E5",
   },
   scheduleDayLabel: {
     fontSize: 13,
@@ -820,17 +846,17 @@ const styles = StyleSheet.create({
     color: "#E7ECF5",
   },
   scheduleLesson: {
-    margin: 8,
-    padding: 10,
-    borderRadius: 10,
+    margin: 7,
+    padding: 9,
+    borderRadius: 11,
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: "#E4E7EC",
   },
   scheduleTime: {
     fontSize: 11,
     fontWeight: "700",
-    color: "#344976",
+    color: "#4F46E5",
   },
   scheduleSubject: {
     marginTop: 5,
