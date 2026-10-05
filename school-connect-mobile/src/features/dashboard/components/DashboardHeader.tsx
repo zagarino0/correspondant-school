@@ -10,7 +10,7 @@ import { getSummonsNotifications } from "../../../services/surveillant/surveilla
 import { getSchoolLifeAuthorizations } from "../../../services/surveillant/schoolLife.service";
 import type { StaffFunction, UserRole } from "../../../types/auth";
 import { useNotificationCenterStore } from "../../../stores/notificationCenterStore";
-import { colors, radius, spacing } from "../../../theme";
+import { colors, radius, spacing, typography } from "../../../theme";
 
 type DashboardHeaderProps = {
   firstName: string;
@@ -236,6 +236,7 @@ const styles = StyleSheet.create({
   },
   brand: {
     fontSize: 15,
+    lineHeight: 20,
     fontWeight: "800",
     color: colors.text,
   },
@@ -270,7 +271,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: colors.text,
+    backgroundColor: colors.primaryDark,
   },
   badge: {
     position: "absolute",
