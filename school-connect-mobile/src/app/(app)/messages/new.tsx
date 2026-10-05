@@ -9,6 +9,7 @@ import {
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { colors } from "../../../theme";
 
 import type { MessageRecipient } from "../../../features/messages/message.types";
 import {
@@ -229,7 +230,7 @@ export default function NewMessageScreen() {
               value={content}
               onChangeText={setContent}
               placeholder="Écrire votre message..."
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor="colors.textMuted"
               multiline
               maxLength={5000}
               editable={!isSending}
@@ -250,7 +251,7 @@ export default function NewMessageScreen() {
               accessibilityLabel="Envoyer le message"
             >
               {isSending ? (
-                <ActivityIndicator color="#FFFFFF" size="small" />
+                <ActivityIndicator color="colors.surface" size="small" />
               ) : (
                 <Text style={styles.sendButtonText}>Envoyer</Text>
               )}
@@ -265,19 +266,19 @@ export default function NewMessageScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F5F7FA",
+    backgroundColor: "colors.background",
   },
 
   header: {
     paddingHorizontal: 20,
     paddingTop: 24,
     paddingBottom: 20,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "colors.surface",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
+    borderBottomColor: "colors.border",
   },
 
   backButton: {
@@ -286,13 +287,13 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#F3F4F6",
+    backgroundColor: "colors.surfaceMuted",
   },
 
   backIcon: {
     fontSize: 32,
     lineHeight: 34,
-    color: "#111827",
+    color: "colors.text",
   },
 
   headerTitle: {
@@ -301,7 +302,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 20,
     fontWeight: "700",
-    color: "#111827",
+    color: "colors.text",
   },
 
   headerSpacer: {
@@ -321,7 +322,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     fontSize: 16,
     fontWeight: "800",
-    color: "#111827",
+    color: "colors.text",
   },
 
   recipientList: {
@@ -334,13 +335,13 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
-    backgroundColor: "#FFFFFF",
+    borderColor: "colors.border",
+    backgroundColor: "colors.surface",
   },
 
   recipientCardSelected: {
-    borderColor: "#111827",
-    backgroundColor: "#F3F4F6",
+    borderColor: "colors.text",
+    backgroundColor: "colors.surfaceMuted",
   },
 
   avatar: {
@@ -349,13 +350,13 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#E5E7EB",
+    backgroundColor: "colors.border",
   },
 
   avatarText: {
     fontSize: 17,
     fontWeight: "700",
-    color: "#374151",
+    color: "colors.textSecondary",
   },
 
   recipientContent: {
@@ -366,13 +367,13 @@ const styles = StyleSheet.create({
   recipientName: {
     fontSize: 15,
     fontWeight: "700",
-    color: "#111827",
+    color: "colors.text",
   },
 
   recipientRole: {
     marginTop: 3,
     fontSize: 13,
-    color: "#6B7280",
+    color: "colors.textSecondary",
   },
 
   radio: {
@@ -380,27 +381,27 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: 11,
     borderWidth: 2,
-    borderColor: "#D1D5DB",
+    borderColor: "colors.border",
     alignItems: "center",
     justifyContent: "center",
   },
 
   radioSelected: {
-    borderColor: "#111827",
+    borderColor: "colors.text",
   },
 
   radioDot: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: "#111827",
+    backgroundColor: "colors.text",
   },
 
   selectedText: {
     marginTop: -4,
     marginBottom: 10,
     fontSize: 13,
-    color: "#6B7280",
+    color: "colors.textSecondary",
   },
 
   input: {
@@ -409,21 +410,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
     borderWidth: 1,
-    borderColor: "#D1D5DB",
+    borderColor: "colors.border",
     borderRadius: 14,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "colors.surface",
     fontSize: 15,
     lineHeight: 21,
-    color: "#111827",
+    color: "colors.text",
     textAlignVertical: "top",
   },
 
   footer: {
     paddingHorizontal: 20,
     paddingVertical: 12,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "colors.surface",
     borderTopWidth: 1,
-    borderTopColor: "#E5E7EB",
+    borderTopColor: "colors.border",
   },
 
   sendButton: {
@@ -431,7 +432,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#111827",
+    backgroundColor: "colors.text",
   },
 
   sendButtonDisabled: {
@@ -441,14 +442,14 @@ const styles = StyleSheet.create({
   sendButtonText: {
     fontSize: 15,
     fontWeight: "800",
-    color: "#FFFFFF",
+    color: "colors.surface",
   },
 
   errorText: {
     marginBottom: 12,
     fontSize: 14,
     lineHeight: 20,
-    color: "#B91C1C",
+    color: "colors.danger",
   },
 
   stateContainer: {
@@ -463,19 +464,19 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 14,
     lineHeight: 20,
-    color: "#6B7280",
+    color: "colors.textSecondary",
   },
 
   emptyContainer: {
     marginBottom: 24,
     padding: 18,
     borderRadius: 14,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "colors.surface",
   },
 
   emptyTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#111827",
+    color: "colors.text",
   },
 });
