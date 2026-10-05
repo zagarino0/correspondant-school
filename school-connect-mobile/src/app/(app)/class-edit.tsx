@@ -2,6 +2,7 @@ import { useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput } from "react-native";
 import { updateSchoolClass } from "../../services/school-admin/school-admin.service";
+import { colors } from "../../../theme";
 
 export default function ClassEditScreen() {
   const params = useLocalSearchParams<{ classId: string; name?: string; level?: string }>();
@@ -58,16 +59,16 @@ export default function ClassEditScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: "#F8FAFC" },
+  screen: { flex: 1, backgroundColor: "colors.background" },
   content: { width: "100%", maxWidth: 760, alignSelf: "center", padding: 24, paddingBottom: 40 },
-  eyebrow: { fontSize: 10, fontWeight: "800", letterSpacing: 1.5, color: "#344976", marginBottom: 6 },
-  title: { fontSize: 27, fontWeight: "800", color: "#111827" },
-  subtitle: { marginTop: 6, marginBottom: 22, color: "#6B7280", lineHeight: 20 },
-  label: { marginTop: 14, marginBottom: 7, fontWeight: "700", color: "#374151" },
-  input: { height: 48, borderWidth: 1, borderColor: "#D9DEE5", borderRadius: 12, paddingHorizontal: 13, backgroundColor: "#FFF" },
-  button: { marginTop: 24, minHeight: 50, paddingHorizontal: 16, borderRadius: 12, backgroundColor: "#344976", alignItems: "center", justifyContent: "center" },
-  buttonText: { color: "#FFF", fontWeight: "800" },
+  eyebrow: { fontSize: 10, fontWeight: "800", letterSpacing: 1.5, color: "colors.primary", marginBottom: 6 },
+  title: { fontSize: 27, fontWeight: "800", color: "colors.text" },
+  subtitle: { marginTop: 6, marginBottom: 22, color: "colors.textSecondary", lineHeight: 20 },
+  label: { marginTop: 14, marginBottom: 7, fontWeight: "700", color: "colors.textSecondary" },
+  input: { height: 48, borderWidth: 1, borderColor: "colors.border", borderRadius: 12, paddingHorizontal: 13, backgroundColor: "colors.surface" },
+  button: { marginTop: 24, minHeight: 50, paddingHorizontal: 16, borderRadius: 12, backgroundColor: "colors.primary", alignItems: "center", justifyContent: "center" },
+  buttonText: { color: "colors.surface", fontWeight: "800" },
   disabled: { opacity: 0.55 },
   cancel: { marginTop: 14, padding: 14, alignItems: "center" },
-  cancelText: { color: "#344976", fontWeight: "700" },
+  cancelText: { color: "colors.primary", fontWeight: "700" },
 });
