@@ -441,7 +441,7 @@ const styles = StyleSheet.create({
   },
 
   messageRead: {
-    color: "#60A5FA",
+    color: "colors.primary",
   },
 
   composer: {
@@ -464,7 +464,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "colors.border",
     borderRadius: 22,
-    backgroundColor: "#F9FAFB",
+    backgroundColor: "colors.surfaceMuted",
     fontSize: 15,
     color: "colors.text",
   },
