@@ -10,6 +10,7 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { colors } from "../../theme";
 
 import { useAuthStore } from "../../stores/authStore";
 import {
@@ -228,7 +229,7 @@ export default function MedicalScreen() {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator color="#344976" />
+        <ActivityIndicator color="colors.primary" />
         <Text style={styles.muted}>Chargement du module médical…</Text>
       </View>
     );
@@ -293,7 +294,7 @@ export default function MedicalScreen() {
             value={search}
             onChangeText={setSearch}
             placeholder={access.mode === "PARENT" ? "Rechercher un enfant…" : "Rechercher une personne…"}
-            placeholderTextColor="#94A3B8"
+            placeholderTextColor="colors.textMuted"
             style={styles.search}
           />
 
@@ -338,7 +339,7 @@ export default function MedicalScreen() {
         <ScrollView style={[styles.detailPanel, width < 760 ? styles.detailPanelMobile : null]} contentContainerStyle={styles.detailContent}>
           {detailLoading ? (
             <View style={styles.detailState}>
-              <ActivityIndicator color="#344976" />
+              <ActivityIndicator color="colors.primary" />
               <Text style={styles.muted}>Chargement de la fiche…</Text>
             </View>
           ) : details ? (
@@ -394,7 +395,7 @@ export default function MedicalScreen() {
                             }))
                           }
                           placeholder={field.placeholder}
-                          placeholderTextColor="#94A3B8"
+                          placeholderTextColor="colors.textMuted"
                           editable={canEdit}
                           keyboardType="decimal-pad"
                           style={[styles.vitalInput, !canEdit ? styles.inputReadOnly : null]}
@@ -423,7 +424,7 @@ export default function MedicalScreen() {
                         setDraft((current) => ({ ...current, [field.key]: value }))
                       }
                       placeholder={field.placeholder}
-                      placeholderTextColor="#94A3B8"
+                      placeholderTextColor="colors.textMuted"
                       editable={canEdit}
                       multiline={field.multiline}
                       style={[
@@ -442,7 +443,7 @@ export default function MedicalScreen() {
                     style={[styles.saveButton, saving ? styles.disabled : null]}
                   >
                     {saving ? (
-                      <ActivityIndicator color="#FFFFFF" />
+                      <ActivityIndicator color="colors.surface" />
                     ) : (
                       <Text style={styles.saveText}>Enregistrer la fiche</Text>
                     )}
@@ -465,69 +466,69 @@ export default function MedicalScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F5F7FA" },
-  center: { flex: 1, alignItems: "center", justifyContent: "center", padding: 28, gap: 10, backgroundColor: "#F5F7FA" },
+  container: { flex: 1, backgroundColor: "colors.background" },
+  center: { flex: 1, alignItems: "center", justifyContent: "center", padding: 28, gap: 10, backgroundColor: "colors.background" },
   lockIcon: { fontSize: 36 },
-  title: { fontSize: 21, fontWeight: "800", color: "#111827", textAlign: "center" },
-  muted: { marginTop: 5, fontSize: 13, lineHeight: 19, color: "#64748B", textAlign: "center" },
-  backButton: { marginTop: 18, paddingHorizontal: 18, paddingVertical: 11, borderRadius: 10, backgroundColor: "#344976" },
-  backButtonText: { color: "#FFFFFF", fontWeight: "800" },
-  header: { minHeight: 76, paddingHorizontal: 18, paddingVertical: 12, flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "#FFFFFF", borderBottomWidth: 1, borderBottomColor: "#E2E8F0" },
-  backCircle: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center", backgroundColor: "#F1F5F9" },
-  backIcon: { fontSize: 31, color: "#111827", lineHeight: 34 },
+  title: { fontSize: 21, fontWeight: "800", color: "colors.text", textAlign: "center" },
+  muted: { marginTop: 5, fontSize: 13, lineHeight: 19, color: "colors.textSecondary", textAlign: "center" },
+  backButton: { marginTop: 18, paddingHorizontal: 18, paddingVertical: 11, borderRadius: 10, backgroundColor: "colors.primary" },
+  backButtonText: { color: "colors.surface", fontWeight: "800" },
+  header: { minHeight: 76, paddingHorizontal: 18, paddingVertical: 12, flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "colors.surface", borderBottomWidth: 1, borderBottomColor: "colors.border" },
+  backCircle: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center", backgroundColor: "colors.surfaceMuted" },
+  backIcon: { fontSize: 31, color: "colors.text", lineHeight: 34 },
   headerCopy: { flex: 1 },
-  kicker: { fontSize: 10, fontWeight: "900", letterSpacing: 1.5, color: "#344976" },
-  headerTitle: { marginTop: 2, fontSize: 20, fontWeight: "800", color: "#111827" },
-  headerBadge: { paddingHorizontal: 10, paddingVertical: 7, borderRadius: 9, backgroundColor: "#EEF2FF" },
-  historyButton: { paddingHorizontal: 11, paddingVertical: 8, borderRadius: 9, backgroundColor: "#F1F5F9" },
-  historyButtonText: { fontSize: 11, fontWeight: "900", color: "#344976" },
-  headerBadgeText: { fontSize: 11, fontWeight: "800", color: "#344976" },
+  kicker: { fontSize: 10, fontWeight: "900", letterSpacing: 1.5, color: "colors.primary" },
+  headerTitle: { marginTop: 2, fontSize: 20, fontWeight: "800", color: "colors.text" },
+  headerBadge: { paddingHorizontal: 10, paddingVertical: 7, borderRadius: 9, backgroundColor: "colors.primarySoft" },
+  historyButton: { paddingHorizontal: 11, paddingVertical: 8, borderRadius: 9, backgroundColor: "colors.surfaceMuted" },
+  historyButtonText: { fontSize: 11, fontWeight: "900", color: "colors.primary" },
+  headerBadgeText: { fontSize: 11, fontWeight: "800", color: "colors.primary" },
   body: { flex: 1, flexDirection: "row", gap: 14, padding: 14 },
   bodyMobile: { flexDirection: "column" },
-  listPanel: { width: 330, maxWidth: "38%", padding: 12, borderRadius: 16, backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#E2E8F0" },
+  listPanel: { width: 330, maxWidth: "38%", padding: 12, borderRadius: 16, backgroundColor: "colors.surface", borderWidth: 1, borderColor: "colors.border" },
   listPanelMobile: { width: "100%", maxWidth: "100%", height: 235 },
-  search: { minHeight: 44, paddingHorizontal: 13, borderRadius: 10, backgroundColor: "#F8FAFC", borderWidth: 1, borderColor: "#E2E8F0", color: "#111827" },
+  search: { minHeight: 44, paddingHorizontal: 13, borderRadius: 10, backgroundColor: "colors.background", borderWidth: 1, borderColor: "colors.border", color: "colors.text" },
   personItem: { marginTop: 7, padding: 10, flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 11 },
-  personItemSelected: { backgroundColor: "#EEF2F7" },
-  avatar: { width: 38, height: 38, borderRadius: 19, alignItems: "center", justifyContent: "center", backgroundColor: "#E2E8F0" },
-  avatarText: { fontSize: 12, fontWeight: "800", color: "#344976" },
+  personItemSelected: { backgroundColor: "colors.surfaceMuted" },
+  avatar: { width: 38, height: 38, borderRadius: 19, alignItems: "center", justifyContent: "center", backgroundColor: "colors.border" },
+  avatarText: { fontSize: 12, fontWeight: "800", color: "colors.primary" },
   personCopy: { flex: 1 },
-  personName: { fontSize: 13, fontWeight: "800", color: "#111827" },
-  personMeta: { marginTop: 3, fontSize: 11, color: "#64748B" },
-  empty: { marginTop: 20, paddingHorizontal: 8, fontSize: 13, color: "#64748B", textAlign: "center" },
-  detailPanel: { flex: 1, borderRadius: 16, backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#E2E8F0" },
+  personName: { fontSize: 13, fontWeight: "800", color: "colors.text" },
+  personMeta: { marginTop: 3, fontSize: 11, color: "colors.textSecondary" },
+  empty: { marginTop: 20, paddingHorizontal: 8, fontSize: 13, color: "colors.textSecondary", textAlign: "center" },
+  detailPanel: { flex: 1, borderRadius: 16, backgroundColor: "colors.surface", borderWidth: 1, borderColor: "colors.border" },
   detailPanelMobile: { width: "100%" },
   detailContent: { padding: 18, paddingBottom: 40 },
   detailState: { minHeight: 300, alignItems: "center", justifyContent: "center", padding: 28 },
   personHeader: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 12 },
-  personTitle: { fontSize: 23, fontWeight: "900", color: "#111827" },
-  personSubtitle: { marginTop: 5, fontSize: 13, color: "#64748B" },
-  secureBadge: { paddingHorizontal: 10, paddingVertical: 7, borderRadius: 9, backgroundColor: "#F1F5F9" },
+  personTitle: { fontSize: 23, fontWeight: "900", color: "colors.text" },
+  personSubtitle: { marginTop: 5, fontSize: 13, color: "colors.textSecondary" },
+  secureBadge: { paddingHorizontal: 10, paddingVertical: 7, borderRadius: 9, backgroundColor: "colors.surfaceMuted" },
   secureBadgeText: { fontSize: 11, fontWeight: "800", color: "#475569" },
-  alertCard: { marginTop: 16, padding: 13, borderRadius: 11, backgroundColor: "#FFF7ED", borderWidth: 1, borderColor: "#FED7AA" },
+  alertCard: { marginTop: 16, padding: 13, borderRadius: 11, backgroundColor: "colors.surface7ED", borderWidth: 1, borderColor: "#FED7AA" },
   alertTitle: { fontSize: 12, fontWeight: "900", color: "#9A3412" },
   alertText: { marginTop: 4, fontSize: 12, lineHeight: 18, color: "#9A3412" },
-  formCard: { marginTop: 14, padding: 16, borderRadius: 14, borderWidth: 1, borderColor: "#E2E8F0", backgroundColor: "#FFFFFF" },
-  sectionTitle: { fontSize: 17, fontWeight: "900", color: "#111827" },
+  formCard: { marginTop: 14, padding: 16, borderRadius: 14, borderWidth: 1, borderColor: "colors.border", backgroundColor: "colors.surface" },
+  sectionTitle: { fontSize: 17, fontWeight: "900", color: "colors.text" },
   sectionHeading: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 },
   sectionHeadingCopy: { flex: 1 },
-  sectionHint: { marginTop: 4, fontSize: 11, lineHeight: 17, color: "#64748B" },
-  sectionIcon: { width: 34, height: 34, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: "#EEF2F7" },
-  sectionIconText: { fontSize: 18, fontWeight: "900", color: "#344976" },
+  sectionHint: { marginTop: 4, fontSize: 11, lineHeight: 17, color: "colors.textSecondary" },
+  sectionIcon: { width: 34, height: 34, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: "colors.surfaceMuted" },
+  sectionIconText: { fontSize: 18, fontWeight: "900", color: "colors.primary" },
   vitalsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 14 },
-  vitalCard: { flexGrow: 1, flexBasis: 150, minWidth: 140, padding: 11, borderRadius: 12, backgroundColor: "#F8FAFC", borderWidth: 1, borderColor: "#E2E8F0" },
+  vitalCard: { flexGrow: 1, flexBasis: 150, minWidth: 140, padding: 11, borderRadius: 12, backgroundColor: "colors.background", borderWidth: 1, borderColor: "colors.border" },
   vitalLabel: { fontSize: 11, fontWeight: "800", color: "#475569" },
   vitalInputRow: { flexDirection: "row", alignItems: "center", marginTop: 7 },
-  vitalInput: { flex: 1, minHeight: 40, paddingHorizontal: 10, borderWidth: 1, borderColor: "#CBD5E1", borderRadius: 9, backgroundColor: "#FFFFFF", color: "#111827", fontSize: 14, fontWeight: "800" },
-  vitalSuffix: { marginLeft: 7, minWidth: 38, fontSize: 11, fontWeight: "900", color: "#64748B" },
-  sectionDivider: { height: 1, backgroundColor: "#E2E8F0", marginVertical: 18 },
+  vitalInput: { flex: 1, minHeight: 40, paddingHorizontal: 10, borderWidth: 1, borderColor: "#CBD5E1", borderRadius: 9, backgroundColor: "colors.surface", color: "colors.text", fontSize: 14, fontWeight: "800" },
+  vitalSuffix: { marginLeft: 7, minWidth: 38, fontSize: 11, fontWeight: "900", color: "colors.textSecondary" },
+  sectionDivider: { height: 1, backgroundColor: "colors.border", marginVertical: 18 },
   field: { marginTop: 13 },
   fieldLabel: { marginBottom: 6, fontSize: 12, fontWeight: "800", color: "#475569" },
-  input: { minHeight: 44, paddingHorizontal: 12, paddingVertical: 10, borderWidth: 1, borderColor: "#D1D5DB", borderRadius: 10, backgroundColor: "#FFFFFF", color: "#111827", fontSize: 13 },
+  input: { minHeight: 44, paddingHorizontal: 12, paddingVertical: 10, borderWidth: 1, borderColor: "colors.border", borderRadius: 10, backgroundColor: "colors.surface", color: "colors.text", fontSize: 13 },
   inputMultiline: { minHeight: 86, textAlignVertical: "top" },
-  inputReadOnly: { backgroundColor: "#F8FAFC", color: "#475569" },
-  saveButton: { marginTop: 18, minHeight: 46, borderRadius: 11, alignItems: "center", justifyContent: "center", backgroundColor: "#344976" },
-  saveText: { color: "#FFFFFF", fontSize: 13, fontWeight: "900" },
+  inputReadOnly: { backgroundColor: "colors.background", color: "#475569" },
+  saveButton: { marginTop: 18, minHeight: 46, borderRadius: 11, alignItems: "center", justifyContent: "center", backgroundColor: "colors.primary" },
+  saveText: { color: "colors.surface", fontSize: 13, fontWeight: "900" },
   disabled: { opacity: 0.55 },
-  error: { marginTop: 12, padding: 10, borderRadius: 9, backgroundColor: "#FEF2F2", color: "#B91C1C", fontSize: 12 },
+  error: { marginTop: 12, padding: 10, borderRadius: 9, backgroundColor: "#FEF2F2", color: "colors.danger", fontSize: 12 },
 });
