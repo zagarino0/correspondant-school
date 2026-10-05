@@ -7,6 +7,7 @@ import { useRouter } from "expo-router";
 import { loginSchema, type LoginFormData } from "../../features/auth/auth.schema";
 import { login } from "../../services/auth/auth.service";
 import { useAuthStore } from "../../stores/authStore";
+import { colors, radius, spacing, typography } from "../../theme";
 
 export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
@@ -32,7 +33,7 @@ export default function LoginScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <View style={styles.container}>
           <View style={styles.brandRow}>
-            <View style={styles.brandIcon}><Ionicons name="school-outline" size={24} color="#FFFFFF" /></View>
+            <View style={styles.brandIcon}><Ionicons name="school-outline" size={24} color="colors.surface" /></View>
             <View>
               <Text style={styles.brand}>CORRESPONDANT</Text>
               <Text style={styles.brandSub}>Espace scolaire</Text>
@@ -49,8 +50,8 @@ export default function LoginScreen() {
               <View style={styles.field}>
                 <Text style={styles.label}>Adresse e-mail</Text>
                 <View style={[styles.inputWrap, errors.email && styles.inputError]}>
-                  <Ionicons name="mail-outline" size={18} color="#98A2B3" />
-                  <TextInput value={value} onChangeText={onChange} onBlur={onBlur} placeholder="parent@example.com" placeholderTextColor="#98A2B3" autoCapitalize="none" autoCorrect={false} keyboardType="email-address" editable={!isSubmitting} style={styles.input} />
+                  <Ionicons name="mail-outline" size={18} color="colors.textMuted" />
+                  <TextInput value={value} onChangeText={onChange} onBlur={onBlur} placeholder="parent@example.com" placeholderTextColor={colors.textMuted} autoCapitalize="none" autoCorrect={false} keyboardType="email-address" editable={!isSubmitting} style={styles.input} />
                 </View>
                 {errors.email && <Text style={styles.error}>{errors.email.message}</Text>}
               </View>
@@ -60,10 +61,10 @@ export default function LoginScreen() {
               <View style={styles.field}>
                 <Text style={styles.label}>Mot de passe</Text>
                 <View style={[styles.inputWrap, errors.password && styles.inputError]}>
-                  <Ionicons name="lock-closed-outline" size={18} color="#98A2B3" />
-                  <TextInput value={value} onChangeText={onChange} onBlur={onBlur} placeholder="Votre mot de passe" placeholderTextColor="#98A2B3" secureTextEntry={!showPassword} autoCapitalize="none" autoCorrect={false} editable={!isSubmitting} style={styles.input} />
+                  <Ionicons name="lock-closed-outline" size={18} color="colors.textMuted" />
+                  <TextInput value={value} onChangeText={onChange} onBlur={onBlur} placeholder="Votre mot de passe" placeholderTextColor="colors.textMuted" secureTextEntry={!showPassword} autoCapitalize="none" autoCorrect={false} editable={!isSubmitting} style={styles.input} />
                   <Pressable onPress={() => setShowPassword((current) => !current)} disabled={isSubmitting} hitSlop={8}>
-                    <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={19} color="#667085" />
+                    <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={19} color="colors.textSecondary" />
                   </Pressable>
                 </View>
                 {errors.password && <Text style={styles.error}>{errors.password.message}</Text>}
@@ -73,13 +74,13 @@ export default function LoginScreen() {
             <Pressable disabled={isSubmitting} style={styles.forgotButton}><Text style={styles.forgotText}>Mot de passe oublié ?</Text></Pressable>
 
             <Pressable onPress={handleSubmit(onSubmit)} disabled={isSubmitting} style={({ pressed }) => [styles.loginButton, pressed && styles.pressed, isSubmitting && styles.loginButtonDisabled]}>
-              {isSubmitting ? <ActivityIndicator color="#FFFFFF" size="small" /> : <><Text style={styles.loginButtonText}>Se connecter</Text><Ionicons name="arrow-forward" size={18} color="#FFFFFF" /></>}
+              {isSubmitting ? <ActivityIndicator color="colors.surface" size="small" /> : <><Text style={styles.loginButtonText}>Se connecter</Text><Ionicons name="arrow-forward" size={18} color="colors.surface" /></>}
             </Pressable>
 
             <View style={styles.separator}><View style={styles.separatorLine} /><Text style={styles.separatorText}>OU</Text><View style={styles.separatorLine} /></View>
 
             <Pressable disabled={isSubmitting} style={({ pressed }) => [styles.otpButton, pressed && styles.pressed]}>
-              <Ionicons name="key-outline" size={18} color="#344054" />
+              <Ionicons name="key-outline" size={18} color="colors.textSecondary" />
               <Text style={styles.otpButtonText}>Se connecter avec un code OTP</Text>
             </Pressable>
           </View>
@@ -92,33 +93,33 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  keyboard: { flex: 1, backgroundColor: "#F6F7FB" },
+  keyboard: { flex: 1, backgroundColor: colors.background },
   scrollContent: { flexGrow: 1 },
   container: { flex: 1, width: "100%", maxWidth: 520, alignSelf: "center", paddingHorizontal: 20, paddingVertical: 36, justifyContent: "center" },
   brandRow: { flexDirection: "row", alignItems: "center", gap: 11, marginBottom: 44 },
-  brandIcon: { width: 48, height: 48, borderRadius: 16, alignItems: "center", justifyContent: "center", backgroundColor: "#4F46E5" },
-  brand: { fontSize: 14, fontWeight: "900", letterSpacing: 1.8, color: "#101828" },
-  brandSub: { marginTop: 2, fontSize: 11, color: "#667085" },
+  brandIcon: { width: 48, height: 48, borderRadius: radius.lg, alignItems: "center", justifyContent: "center", backgroundColor: colors.primary },
+  brand: { fontSize: 14, fontWeight: "900", letterSpacing: 1.8, color: colors.text },
+  brandSub: { marginTop: 2, fontSize: 11, color: colors.textSecondary },
   header: { marginBottom: 30 },
-  title: { fontSize: 36, lineHeight: 42, fontWeight: "800", color: "#101828" },
-  subtitle: { marginTop: 10, maxWidth: 410, fontSize: 15, lineHeight: 23, color: "#667085" },
+  title: { fontSize: 36, lineHeight: 42, fontWeight: "800", color: "colors.text" },
+  subtitle: { marginTop: 10, maxWidth: 410, fontSize: 15, lineHeight: 23, color: "colors.textSecondary" },
   form: { width: "100%" },
   field: { marginBottom: 19 },
-  label: { marginBottom: 8, fontSize: 13, fontWeight: "700", color: "#344054" },
-  inputWrap: { minHeight: 54, flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 15, borderWidth: 1, borderColor: "#D0D5DD", borderRadius: 14, backgroundColor: "#FFFFFF" },
-  inputError: { borderColor: "#D92D20" },
-  input: { flex: 1, minHeight: 52, color: "#101828", fontSize: 15 },
-  error: { marginTop: 6, fontSize: 12, color: "#D92D20" },
+  label: { marginBottom: 8, fontSize: 13, fontWeight: "700", color: "colors.textSecondary" },
+  inputWrap: { minHeight: 54, flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 15, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, backgroundColor: colors.surface },
+  inputError: { borderColor: "colors.danger" },
+  input: { flex: 1, minHeight: 52, color: "colors.text", fontSize: 15 },
+  error: { marginTop: 6, fontSize: 12, color: colors.danger },
   forgotButton: { alignSelf: "flex-end", marginTop: -3, marginBottom: 22, paddingVertical: 4 },
-  forgotText: { fontSize: 13, fontWeight: "700", color: "#4F46E5" },
-  loginButton: { minHeight: 56, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, borderRadius: 15, backgroundColor: "#4F46E5", shadowColor: "#4F46E5", shadowOffset: { width: 0, height: 7 }, shadowOpacity: 0.20, shadowRadius: 14, elevation: 4 },
+  forgotText: { fontSize: 13, fontWeight: "700", color: "colors.primary" },
+  loginButton: { minHeight: 56, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, borderRadius: radius.lg, backgroundColor: "colors.primary", shadowColor: "colors.primary", shadowOffset: { width: 0, height: 7 }, shadowOpacity: 0.20, shadowRadius: 14, elevation: 4 },
   loginButtonDisabled: { opacity: 0.6 },
   pressed: { opacity: 0.78, transform: [{ scale: 0.985 }] },
-  loginButtonText: { fontSize: 14, fontWeight: "800", color: "#FFFFFF" },
+  loginButtonText: { fontSize: 14, fontWeight: "800", color: "colors.surface" },
   separator: { flexDirection: "row", alignItems: "center", marginVertical: 25 },
-  separatorLine: { flex: 1, height: 1, backgroundColor: "#E4E7EC" },
-  separatorText: { marginHorizontal: 13, fontSize: 10, fontWeight: "800", color: "#98A2B3" },
-  otpButton: { minHeight: 54, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 9, borderWidth: 1, borderColor: "#D0D5DD", borderRadius: 14, backgroundColor: "#FFFFFF" },
-  otpButtonText: { fontSize: 13, fontWeight: "700", color: "#344054" },
-  footer: { marginTop: 34, textAlign: "center", fontSize: 11, lineHeight: 17, color: "#98A2B3" },
+  separatorLine: { flex: 1, height: 1, backgroundColor: "colors.border" },
+  separatorText: { marginHorizontal: 13, fontSize: 10, fontWeight: "800", color: colors.textMuted },
+  otpButton: { minHeight: 54, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 9, borderWidth: 1, borderColor: "colors.border", borderRadius: 14, backgroundColor: "colors.surface" },
+  otpButtonText: { fontSize: 13, fontWeight: "700", color: "colors.textSecondary" },
+  footer: { marginTop: 34, textAlign: "center", fontSize: 11, lineHeight: 17, color: "colors.textMuted" },
 });
