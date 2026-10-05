@@ -9,6 +9,7 @@ import {
   View,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { colors } from "../../../theme";
 
 import type { Message } from "../../../features/messages/message.types";
 import {
@@ -278,7 +279,7 @@ export default function ConversationScreen() {
               value={content}
               onChangeText={setContent}
               placeholder="Écrire un message..."
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor="colors.textMuted"
               multiline
               maxLength={5000}
               editable={!isSending}
@@ -296,7 +297,7 @@ export default function ConversationScreen() {
               accessibilityLabel="Envoyer le message"
             >
               {isSending ? (
-                <ActivityIndicator color="#FFFFFF" size="small" />
+                <ActivityIndicator color="colors.surface" size="small" />
               ) : (
                 <Text style={styles.sendButtonText}>Envoyer</Text>
               )}
@@ -311,19 +312,19 @@ export default function ConversationScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F5F7FA",
+    backgroundColor: "colors.background",
   },
 
   header: {
     paddingHorizontal: 20,
     paddingTop: 24,
     paddingBottom: 20,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "colors.surface",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
+    borderBottomColor: "colors.border",
   },
 
   backButton: {
@@ -332,13 +333,13 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#F3F4F6",
+    backgroundColor: "colors.surfaceMuted",
   },
 
   backIcon: {
     fontSize: 32,
     lineHeight: 34,
-    color: "#111827",
+    color: "colors.text",
   },
 
   headerTitle: {
@@ -347,7 +348,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 20,
     fontWeight: "700",
-    color: "#111827",
+    color: "colors.text",
   },
 
   headerSpacer: {
@@ -365,7 +366,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     textAlign: "center",
     fontSize: 15,
-    color: "#6B7280",
+    color: "colors.textSecondary",
   },
 
   messageScroll: {
@@ -391,14 +392,14 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 22,
     fontWeight: "700",
-    color: "#111827",
+    color: "colors.text",
   },
 
   errorText: {
     marginBottom: 12,
     textAlign: "center",
     fontSize: 14,
-    color: "#B91C1C",
+    color: "colors.danger",
   },
 
   messageBubble: {
@@ -410,22 +411,22 @@ const styles = StyleSheet.create({
 
   ownMessage: {
     alignSelf: "flex-end",
-    backgroundColor: "#111827",
+    backgroundColor: "colors.text",
   },
 
   otherMessage: {
     alignSelf: "flex-start",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "colors.surface",
   },
 
   messageText: {
     fontSize: 15,
     lineHeight: 21,
-    color: "#111827",
+    color: "colors.text",
   },
 
   ownMessageText: {
-    color: "#FFFFFF",
+    color: "colors.surface",
   },
 
   messageStatus: {
@@ -436,7 +437,7 @@ const styles = StyleSheet.create({
   },
 
   messageDelivered: {
-    color: "#D1D5DB",
+    color: "colors.border",
   },
 
   messageRead: {
@@ -449,9 +450,9 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "colors.surface",
     borderTopWidth: 1,
-    borderTopColor: "#E5E7EB",
+    borderTopColor: "colors.border",
   },
 
   input: {
@@ -461,11 +462,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderWidth: 1,
-    borderColor: "#D1D5DB",
+    borderColor: "colors.border",
     borderRadius: 22,
     backgroundColor: "#F9FAFB",
     fontSize: 15,
-    color: "#111827",
+    color: "colors.text",
   },
 
   sendButton: {
@@ -474,7 +475,7 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#111827",
+    backgroundColor: "colors.text",
   },
 
   sendButtonDisabled: {
@@ -484,6 +485,6 @@ const styles = StyleSheet.create({
   sendButtonText: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#FFFFFF",
+    color: "colors.surface",
   },
 });
