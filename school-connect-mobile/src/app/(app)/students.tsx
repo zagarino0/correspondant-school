@@ -17,6 +17,7 @@ import type {
   StudentStatus,
 } from "../../services/students/student.types";
 import { useAuthStore } from "../../stores/authStore";
+import { colors } from "../../../theme";
 
 type StudentCategory =
   | "PRIMAIRE"
@@ -265,7 +266,7 @@ export default function StudentsScreen() {
           value={search}
           onChangeText={setSearch}
           placeholder="Rechercher un élève, matricule…"
-          placeholderTextColor="#9CA3AF"
+          placeholderTextColor="colors.textMuted"
           style={styles.searchInput}
         />
         <FlatList
@@ -480,37 +481,37 @@ export default function StudentsScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: "#F8FAFC" },
+  screen: { flex: 1, backgroundColor: "colors.background" },
   header: { paddingHorizontal: 18, paddingTop: 18, paddingBottom: 10 },
-  title: { fontSize: 24, fontWeight: "800", color: "#344976" },
-  subtitle: { marginTop: 3, fontSize: 12, color: "#6B7280" },
+  title: { fontSize: 24, fontWeight: "800", color: "colors.primary" },
+  subtitle: { marginTop: 3, fontSize: 12, color: "colors.textSecondary" },
   controls: { paddingHorizontal: 14, paddingBottom: 8 },
   searchInput: {
     height: 44,
     borderWidth: 1,
-    borderColor: "#D9DEE5",
+    borderColor: "colors.border",
     borderRadius: 12,
     paddingHorizontal: 13,
-    backgroundColor: "#FFFFFF",
-    color: "#344976",
+    backgroundColor: "colors.surface",
+    color: "colors.primary",
     fontSize: 13,
   },
   filters: { gap: 8, paddingVertical: 10 },
   filter: {
     borderWidth: 1,
-    borderColor: "#D9DEE5",
+    borderColor: "colors.border",
     borderRadius: 20,
     paddingHorizontal: 13,
     paddingVertical: 8,
-    color: "#4B5563",
-    backgroundColor: "#FFFFFF",
+    color: "colors.textSecondary",
+    backgroundColor: "colors.surface",
     fontSize: 12,
     fontWeight: "700",
   },
   filterActive: {
-    borderColor: "#344976",
-    backgroundColor: "#344976",
-    color: "#FFFFFF",
+    borderColor: "colors.primary",
+    backgroundColor: "colors.primary",
+    color: "colors.surface",
   },
   listContent: { paddingHorizontal: 14, paddingBottom: 28 },
   categorySection: {
@@ -518,8 +519,8 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#D9DEE5",
-    backgroundColor: "#EEF2F7",
+    borderColor: "colors.border",
+    backgroundColor: "colors.surfaceMuted",
   },
   categoryHeader: {
     flexDirection: "row",
@@ -535,13 +536,13 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   categoryHeaderText: { flex: 1 },
-  categoryTitle: { fontSize: 19, fontWeight: "900", color: "#344976" },
+  categoryTitle: { fontSize: 19, fontWeight: "900", color: "colors.primary" },
   expandIcon: {
     fontSize: 11,
     fontWeight: "900",
-    color: "#344976",
+    color: "colors.primary",
   },
-  categoryCount: { marginTop: 3, fontSize: 11, color: "#6B7280" },
+  categoryCount: { marginTop: 3, fontSize: 11, color: "colors.textSecondary" },
   categoryBadge: {
     minWidth: 34,
     height: 34,
@@ -549,9 +550,9 @@ const styles = StyleSheet.create({
     borderRadius: 17,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#344976",
+    backgroundColor: "colors.primary",
   },
-  categoryBadgeText: { fontSize: 11, fontWeight: "900", color: "#FFFFFF" },
+  categoryBadgeText: { fontSize: 11, fontWeight: "900", color: "colors.surface" },
   levelGrid: {
     flexDirection: "column",
   },
@@ -561,8 +562,8 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#D9DEE5",
-    backgroundColor: "#FFFFFF",
+    borderColor: "colors.border",
+    backgroundColor: "colors.surface",
   },
   levelHeader: {
     flexDirection: "row",
@@ -572,8 +573,8 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   levelHeaderText: { flex: 1 },
-  levelTitle: { fontSize: 15, fontWeight: "900", color: "#344976" },
-  levelCount: { marginTop: 2, fontSize: 10, fontWeight: "700", color: "#6B7280" },
+  levelTitle: { fontSize: 15, fontWeight: "900", color: "colors.primary" },
+  levelCount: { marginTop: 2, fontSize: 10, fontWeight: "700", color: "colors.textSecondary" },
   classGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -584,8 +585,8 @@ const styles = StyleSheet.create({
     marginBottom: 9,
     borderRadius: 11,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
-    backgroundColor: "#F8FAFC",
+    borderColor: "colors.border",
+    backgroundColor: "colors.background",
     overflow: "hidden",
   },
   classCardHeader: {
@@ -594,24 +595,24 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 9,
     paddingVertical: 9,
-    backgroundColor: "#344976",
+    backgroundColor: "colors.primary",
   },
   classHeaderIdentity: { flex: 1, flexDirection: "row", alignItems: "center", gap: 8 },
-  classTitle: { flex: 1, fontSize: 13, fontWeight: "900", color: "#FFFFFF" },
-  classCount: { fontSize: 9, fontWeight: "800", color: "#D1D5DB" },
+  classTitle: { flex: 1, fontSize: 13, fontWeight: "900", color: "colors.surface" },
+  classCount: { fontSize: 9, fontWeight: "800", color: "colors.border" },
   classExpandIcon: {
     marginLeft: 6,
     fontSize: 10,
     fontWeight: "900",
-    color: "#FFFFFF",
+    color: "colors.surface",
   },
   studentCards: { padding: 9, gap: 8 },
   studentCard: {
     padding: 11,
     borderRadius: 13,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "colors.surface",
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: "colors.border",
   },
   studentCardTop: {
     flexDirection: "row",
@@ -626,25 +627,25 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#EEF2F7",
+    backgroundColor: "colors.surfaceMuted",
   },
-  studentPositionBadgeText: { fontSize: 10, fontWeight: "900", color: "#344976" },
+  studentPositionBadgeText: { fontSize: 10, fontWeight: "900", color: "colors.primary" },
   studentIdentityText: { flex: 1, minWidth: 0 },
-  studentName: { fontSize: 13, fontWeight: "800", color: "#344976" },
-  studentMeta: { marginTop: 3, fontSize: 10, color: "#64748B" },
+  studentName: { fontSize: 13, fontWeight: "800", color: "colors.primary" },
+  studentMeta: { marginTop: 3, fontSize: 10, color: "colors.textSecondary" },
   studentCardBottom: {
     flexDirection: "row",
     marginTop: 10,
     paddingTop: 9,
     borderTopWidth: 1,
-    borderTopColor: "#E2E8F0",
+    borderTopColor: "colors.border",
     gap: 18,
   },
   studentInfoItem: { flex: 1, minWidth: 0 },
   studentInfoLabel: {
     fontSize: 8,
     fontWeight: "800",
-    color: "#94A3B8",
+    color: "colors.textMuted",
     textTransform: "uppercase",
   },
   studentInfoValue: {
@@ -657,34 +658,34 @@ const styles = StyleSheet.create({
     paddingHorizontal: 7,
     paddingVertical: 6,
     borderRadius: 7,
-    backgroundColor: "#344976",
+    backgroundColor: "colors.primary",
   },
   editButtonText: {
     fontSize: 8,
     fontWeight: "900",
-    color: "#FFFFFF",
+    color: "colors.surface",
   },
   errorBox: {
     marginHorizontal: 14,
     marginBottom: 8,
     padding: 12,
     borderRadius: 10,
-    backgroundColor: "#FEE2E2",
+    backgroundColor: "colors.dangerSoft",
   },
-  errorText: { color: "#991B1B", fontSize: 12, fontWeight: "600" },
+  errorText: { color: "colors.danger", fontSize: 12, fontWeight: "600" },
   empty: { alignItems: "center", paddingVertical: 60 },
   emptyTitle: {
     fontSize: 16,
     fontWeight: "800",
-    color: "#344976",
+    color: "colors.primary",
     marginBottom: 4,
   },
-  stateText: { marginTop: 8, fontSize: 12, color: "#6B7280" },
+  stateText: { marginTop: 8, fontSize: 12, color: "colors.textSecondary" },
   center: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#F8FAFC",
+    backgroundColor: "colors.background",
   },
   footer: { paddingVertical: 18 },
 });
