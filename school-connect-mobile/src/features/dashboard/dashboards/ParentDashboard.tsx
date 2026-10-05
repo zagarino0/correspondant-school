@@ -3,6 +3,7 @@ import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 
 import { DashboardSection } from "../components/DashboardSection";
+import { colors } from "../../../theme";
 import type { DashboardCardData, DashboardSectionData } from "../dashboard.types";
 import {
   getChildSchedule,
@@ -765,7 +766,7 @@ const styles = StyleSheet.create({
     gap: 12,
     padding: 16,
     borderRadius: 20,
-    backgroundColor: "#101828",
+    backgroundColor: colors.text,
   },
   heroIcon: {
     width: 44,
@@ -773,32 +774,32 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#4F46E5",
+    backgroundColor: colors.primary,
   },
   heroIconText: {
     fontSize: 18,
     fontWeight: "900",
-    color: "#FFFFFF",
+    color: colors.surface,
   },
   heroText: { flex: 1, minWidth: 0 },
   eyebrow: {
     fontSize: 9,
     fontWeight: "900",
     letterSpacing: 1.3,
-    color: "#C7D2FE",
+    color: colors.primarySoft,
   },
   title: {
     marginTop: 3,
     fontSize: 21,
     lineHeight: 26,
     fontWeight: "800",
-    color: "#FFFFFF",
+    color: colors.surface,
   },
   subtitle: {
     marginTop: 4,
     fontSize: 12,
     lineHeight: 18,
-    color: "#D0D5DD",
+    color: colors.textSecondary,
   },
   scheduleGrid: {
     width: "100%",
@@ -810,34 +811,34 @@ const styles = StyleSheet.create({
   scheduleDay: {
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#E4E7EC",
-    backgroundColor: "#F8FAFC",
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceMuted,
     overflow: "hidden",
   },
   scheduleDayToday: {
-    borderColor: "#C7D2FE",
-    backgroundColor: "#F5F7FF",
+    borderColor: colors.primarySoft,
+    backgroundColor: colors.primarySoft,
   },
   scheduleDayHeader: {
     minHeight: 48,
     paddingHorizontal: 11,
     paddingVertical: 8,
     justifyContent: "center",
-    backgroundColor: "#F2F4F7",
+    backgroundColor: colors.surfaceMuted,
     borderBottomWidth: 1,
-    borderBottomColor: "#E4E7EC",
+    borderBottomColor: colors.border,
   },
   scheduleDayHeaderToday: {
-    backgroundColor: "#4F46E5",
-    borderBottomColor: "#4F46E5",
+    backgroundColor: colors.primary,
+    borderBottomColor: colors.primary,
   },
   scheduleDayLabel: {
     fontSize: 13,
     fontWeight: "800",
-    color: "#374151",
+    color: colors.textSecondary,
   },
   scheduleDayLabelToday: {
-    color: "#FFFFFF",
+    color: colors.surface,
   },
   todayLabel: {
     marginTop: 2,
@@ -849,20 +850,20 @@ const styles = StyleSheet.create({
     margin: 7,
     padding: 9,
     borderRadius: 11,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "#E4E7EC",
+    borderColor: colors.border,
   },
   scheduleTime: {
     fontSize: 11,
     fontWeight: "700",
-    color: "#4F46E5",
+    color: colors.primary,
   },
   scheduleSubject: {
     marginTop: 5,
     fontSize: 13,
     fontWeight: "800",
-    color: "#111827",
+    color: colors.text,
   },
   scheduleTeacher: {
     marginTop: 5,
@@ -872,7 +873,7 @@ const styles = StyleSheet.create({
   scheduleRoom: {
     marginTop: 3,
     fontSize: 10,
-    color: "#6B7280",
+    color: colors.textSecondary,
   },
   scheduleEmpty: {
     minHeight: 72,
@@ -881,7 +882,7 @@ const styles = StyleSheet.create({
   },
   scheduleEmptyText: {
     fontSize: 11,
-    color: "#9CA3AF",
+    color: colors.textMuted,
     textAlign: "center",
   },
   scheduleState: {
@@ -890,6 +891,6 @@ const styles = StyleSheet.create({
   },
   scheduleStateText: {
     fontSize: 13,
-    color: "#6B7280",
+    color: colors.textSecondary,
   },
 });
