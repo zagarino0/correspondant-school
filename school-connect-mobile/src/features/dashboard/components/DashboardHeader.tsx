@@ -8,9 +8,9 @@ import { getMyAuthorizations, getMySummons } from "../../../services/parents/par
 import { createRealtimeConnection } from "../../../services/realtime/websocket.service";
 import { getSummonsNotifications } from "../../../services/surveillant/surveillant.service";
 import { getSchoolLifeAuthorizations } from "../../../services/surveillant/schoolLife.service";
-import type { StaffFunction } from "../../../types/auth";
-import type { UserRole } from "../../../types/auth";
+import type { StaffFunction, UserRole } from "../../../types/auth";
 import { useNotificationCenterStore } from "../../../stores/notificationCenterStore";
+import { colors, radius, spacing } from "../../../theme";
 
 type DashboardHeaderProps = {
   firstName: string;
@@ -145,38 +145,44 @@ export function DashboardHeader({ firstName, role, staffFunction }: DashboardHea
     };
   }, [role, staffFunction, lastViewedAt]);
 
+  const badgeCount =
+    unreadAnnouncements +
+    pendingSummons +
+    surveillantNotifications +
+    pendingAuthorizations +
+    authorizationResponses;
+
   return (
     <View style={styles.container}>
       <View style={styles.topRow}>
-        <View style={styles.identity}><View style={styles.logo}><Ionicons name="school-outline" size={21} color="#FFFFFF" /></View><View style={styles.textContainer}>
-          <Text style={styles.brand} numberOfLines={1}>
-            Correspondant
-          </Text>
-          <Text style={styles.greeting} numberOfLines={1}>
-            Bonjour {firstName}
-          </Text>
-          <Text style={styles.role} numberOfLines={1}>
-            {roleLabels[role]}
-          </Text>
-        </View></View>
+        <View style={styles.identity}>
+          <View style={styles.logo}>
+            <Ionicons name="school-outline" size={20} color={colors.primaryForeground} />
+          </View>
+          <View style={styles.textContainer}>
+            <Text style={styles.brand} numberOfLines={1}>
+              Correspondant
+            </Text>
+            <Text style={styles.greeting} numberOfLines={1}>
+              Bonjour {firstName}
+            </Text>
+            <Text style={styles.role} numberOfLines={1}>
+              {roleLabels[role]}
+            </Text>
+          </View>
+        </View>
 
         <View style={styles.actions}>
           <Pressable
-            onPress={() =>
-              router.push("/(app)/announcements")
-            }
+            onPress={() => router.push("/(app)/announcements")}
             style={styles.iconButton}
             accessibilityRole="button"
-            accessibilityLabel="Annonces"
+            accessibilityLabel="Notifications"
           >
-            <Ionicons name="notifications-outline" size={23} color="#344976" />
-            {unreadAnnouncements + pendingSummons + surveillantNotifications + pendingAuthorizations + authorizationResponses > 0 ? (
+            <Ionicons name="notifications-outline" size={21} color={colors.textSecondary} />
+            {badgeCount > 0 ? (
               <View style={styles.badge}>
-                <Text style={styles.badgeText}>
-                  {unreadAnnouncements + pendingSummons + surveillantNotifications + pendingAuthorizations + authorizationResponses > 99
-                    ? "99+"
-                    : unreadAnnouncements + pendingSummons + surveillantNotifications + pendingAuthorizations + authorizationResponses}
-                </Text>
+                <Text style={styles.badgeText}>{badgeCount > 99 ? "99+" : badgeCount}</Text>
               </View>
             ) : null}
           </Pressable>
@@ -187,27 +193,102 @@ export function DashboardHeader({ firstName, role, staffFunction }: DashboardHea
             accessibilityRole="button"
             accessibilityLabel="Profil"
           >
-            <Ionicons name="person-outline" size={22} color="#FFFFFF" />
+            <Ionicons name="person-outline" size={19} color={colors.primaryForeground} />
           </Pressable>
         </View>
       </View>
-
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { paddingHorizontal: 18, paddingTop: 14, paddingBottom: 14, backgroundColor: "#FFFFFF", borderBottomWidth: 1, borderBottomColor: "#EAECF0" },
-  topRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
-  identity: { flex: 1, flexDirection: "row", alignItems: "center", gap: 11 },
-  logo: { width: 44, height: 44, borderRadius: 14, alignItems: "center", justifyContent: "center", backgroundColor: "#4F46E5" },
-  textContainer: { flex: 1, minWidth: 0 },
-  brand: { fontSize: 17, fontWeight: "800", color: "#101828" },
-  greeting: { marginTop: 2, fontSize: 13, fontWeight: "600", color: "#475467" },
-  role: { marginTop: 1, fontSize: 11, color: "#98A2B3" },
-  actions: { flexDirection: "row", alignItems: "center", gap: 8 },
-  iconButton: { width: 42, height: 42, borderRadius: 14, alignItems: "center", justifyContent: "center", backgroundColor: "#F2F4F7", position: "relative" },
-  profileButton: { width: 42, height: 42, borderRadius: 14, alignItems: "center", justifyContent: "center", backgroundColor: "#101828" },
-  badge: { position: "absolute", top: -3, right: -3, minWidth: 18, height: 18, paddingHorizontal: 4, borderRadius: 9, alignItems: "center", justifyContent: "center", backgroundColor: "#D92D20", borderWidth: 2, borderColor: "#FFFFFF" },
-  badgeText: { color: "#FFFFFF", fontSize: 9, fontWeight: "900" },
+  container: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.md,
+    backgroundColor: colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  topRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: spacing.md,
+  },
+  identity: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+  },
+  logo: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.md,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.primary,
+  },
+  textContainer: {
+    flex: 1,
+    minWidth: 0,
+  },
+  brand: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: colors.text,
+  },
+  greeting: {
+    marginTop: 2,
+    fontSize: 12,
+    fontWeight: "600",
+    color: colors.textSecondary,
+  },
+  role: {
+    marginTop: 1,
+    fontSize: 10,
+    color: colors.textMuted,
+  },
+  actions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  iconButton: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.md,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.surfaceMuted,
+    position: "relative",
+  },
+  profileButton: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.md,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.text,
+  },
+  badge: {
+    position: "absolute",
+    top: -3,
+    right: -3,
+    minWidth: 18,
+    height: 18,
+    paddingHorizontal: 4,
+    borderRadius: radius.full,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.danger,
+    borderWidth: 2,
+    borderColor: colors.surface,
+  },
+  badgeText: {
+    color: colors.primaryForeground,
+    fontSize: 9,
+    fontWeight: "900",
+  },
 });
