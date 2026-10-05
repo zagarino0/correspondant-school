@@ -15,6 +15,7 @@ import { getSchoolAdminDashboard, deleteSchoolClass } from "../../services/schoo
 import { hasPermission } from "../../features/secretariat/access";
 import { useAuthStore } from "../../stores/authStore";
 import type { SchoolAdminDashboardResponse } from "../../services/school-admin/school-admin.types";
+import { colors } from "../../theme";
 
 type Category = "PRIMAIRE" | "PREMIER_CYCLE" | "SECOND_CYCLE" | "AUTRE";
 
@@ -98,7 +99,7 @@ export default function ClassesScreen() {
   };
 
   if (loading) {
-    return <View style={styles.center}><ActivityIndicator size="large" color="#344976" /></View>;
+    return <View style={styles.center}><ActivityIndicator size="large" color="colors.primary" /></View>;
   }
 
   return (
@@ -182,7 +183,7 @@ export default function ClassesScreen() {
                         onPress={() => confirmDelete(item.id, item.name)}
                       >
                         {deleting ? (
-                          <ActivityIndicator size="small" color="#B91C1C" />
+                          <ActivityIndicator size="small" color="colors.danger" />
                         ) : (
                           <Text style={styles.deleteText}>Supprimer</Text>
                         )}
@@ -207,44 +208,44 @@ export default function ClassesScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: "#F8FAFC" },
+  screen: { flex: 1, backgroundColor: "colors.background" },
   content: { width: "100%", maxWidth: 1320, alignSelf: "center", padding: 24, paddingBottom: 44, gap: 18 },
   contentMobile: { padding: 16 },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
   header: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", gap: 18 },
   headerMobile: { alignItems: "flex-start" },
   headerText: { flex: 1, minWidth: 0 },
-  eyebrow: { fontSize: 10, fontWeight: "800", letterSpacing: 1.5, color: "#344976", marginBottom: 5 },
-  title: { fontSize: 28, fontWeight: "800", color: "#111827" },
+  eyebrow: { fontSize: 10, fontWeight: "800", letterSpacing: 1.5, color: "colors.primary", marginBottom: 5 },
+  title: { fontSize: 28, fontWeight: "800", color: "colors.text" },
   titleMobile: { fontSize: 24 },
-  subtitle: { marginTop: 5, fontSize: 13, color: "#6B7280" },
-  addButton: { paddingHorizontal: 15, paddingVertical: 11, borderRadius: 12, backgroundColor: "#344976" },
-  addButtonText: { color: "#FFF", fontWeight: "800", fontSize: 13 },
-  group: { borderRadius: 18, borderWidth: 1, borderColor: "#D9DEE5", backgroundColor: "#FFF", overflow: "hidden" },
-  groupHeader: { padding: 15, backgroundColor: "#EEF2F7", flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  groupTitle: { fontSize: 17, fontWeight: "800", color: "#344976" },
-  groupMeta: { marginTop: 2, fontSize: 12, color: "#6B7280" },
-  groupCount: { minWidth: 30, textAlign: "center", paddingVertical: 5, borderRadius: 15, backgroundColor: "#344976", color: "#FFF", fontWeight: "800" },
+  subtitle: { marginTop: 5, fontSize: 13, color: "colors.textSecondary" },
+  addButton: { paddingHorizontal: 15, paddingVertical: 11, borderRadius: 12, backgroundColor: "colors.primary" },
+  addButtonText: { color: "colors.surface", fontWeight: "800", fontSize: 13 },
+  group: { borderRadius: 18, borderWidth: 1, borderColor: "colors.border", backgroundColor: "colors.surface", overflow: "hidden" },
+  groupHeader: { padding: 15, backgroundColor: "colors.surfaceMuted", flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  groupTitle: { fontSize: 17, fontWeight: "800", color: "colors.primary" },
+  groupMeta: { marginTop: 2, fontSize: 12, color: "colors.textSecondary" },
+  groupCount: { minWidth: 30, textAlign: "center", paddingVertical: 5, borderRadius: 15, backgroundColor: "colors.primary", color: "colors.surface", fontWeight: "800" },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 12, padding: 12 },
-  classCard: { minHeight: 148, padding: 15, borderRadius: 15, borderWidth: 1, borderColor: "#E5E7EB", backgroundColor: "#FFF", justifyContent: "space-between" },
+  classCard: { minHeight: 148, padding: 15, borderRadius: 15, borderWidth: 1, borderColor: "colors.border", backgroundColor: "colors.surface", justifyContent: "space-between" },
   classCardMobile: { width: "100%" },
   classCardTablet: { width: "48.5%" },
   classCardWeb: { width: "31.8%" },
   cardTop: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
   cardCopy: { flex: 1, minWidth: 0 },
-  className: { fontSize: 16, fontWeight: "800", color: "#111827" },
-  level: { marginTop: 5, fontSize: 12, color: "#6B7280" },
-  studentBadge: { minWidth: 54, paddingVertical: 6, paddingHorizontal: 7, borderRadius: 10, backgroundColor: "#F1F5F9", alignItems: "center" },
-  studentValue: { fontSize: 15, fontWeight: "800", color: "#344976" },
-  studentLabel: { fontSize: 9, color: "#6B7280" },
+  className: { fontSize: 16, fontWeight: "800", color: "colors.text" },
+  level: { marginTop: 5, fontSize: 12, color: "colors.textSecondary" },
+  studentBadge: { minWidth: 54, paddingVertical: 6, paddingHorizontal: 7, borderRadius: 10, backgroundColor: "colors.surfaceMuted", alignItems: "center" },
+  studentValue: { fontSize: 15, fontWeight: "800", color: "colors.primary" },
+  studentLabel: { fontSize: 9, color: "colors.textSecondary" },
   actions: { flexDirection: "row", gap: 8, marginTop: 18 },
-  editButton: { flex: 1, minHeight: 38, paddingHorizontal: 10, borderRadius: 10, borderWidth: 1, borderColor: "#344976", alignItems: "center", justifyContent: "center" },
-  editText: { color: "#344976", fontSize: 12, fontWeight: "800" },
-  deleteButton: { flex: 1, minHeight: 38, paddingHorizontal: 10, borderRadius: 10, borderWidth: 1, borderColor: "#FECACA", backgroundColor: "#FFF7F7", alignItems: "center", justifyContent: "center" },
-  deleteText: { color: "#B91C1C", fontSize: 12, fontWeight: "800" },
+  editButton: { flex: 1, minHeight: 38, paddingHorizontal: 10, borderRadius: 10, borderWidth: 1, borderColor: "colors.primary", alignItems: "center", justifyContent: "center" },
+  editText: { color: "colors.primary", fontSize: 12, fontWeight: "800" },
+  deleteButton: { flex: 1, minHeight: 38, paddingHorizontal: 10, borderRadius: 10, borderWidth: 1, borderColor: "colors.dangerSoft", backgroundColor: "colors.surface7F7", alignItems: "center", justifyContent: "center" },
+  deleteText: { color: "colors.danger", fontSize: 12, fontWeight: "800" },
   disabled: { opacity: 0.55 },
   pressed: { opacity: 0.75 },
-  empty: { padding: 28, borderRadius: 16, backgroundColor: "#FFF", borderWidth: 1, borderColor: "#E5E7EB", alignItems: "center" },
-  emptyTitle: { fontSize: 16, fontWeight: "800", color: "#111827" },
-  emptyText: { marginTop: 5, color: "#6B7280", textAlign: "center" },
+  empty: { padding: 28, borderRadius: 16, backgroundColor: "colors.surface", borderWidth: 1, borderColor: "colors.border", alignItems: "center" },
+  emptyTitle: { fontSize: 16, fontWeight: "800", color: "colors.text" },
+  emptyText: { marginTop: 5, color: "colors.textSecondary", textAlign: "center" },
 });
