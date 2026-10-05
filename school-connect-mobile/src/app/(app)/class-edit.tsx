@@ -2,7 +2,7 @@ import { useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput } from "react-native";
 import { updateSchoolClass } from "../../services/school-admin/school-admin.service";
-import { colors } from "../../../theme";
+import { colors } from "../../theme";
 
 export default function ClassEditScreen() {
   const params = useLocalSearchParams<{ classId: string; name?: string; level?: string }>();
