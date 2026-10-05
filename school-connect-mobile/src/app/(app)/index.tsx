@@ -76,7 +76,7 @@ export default function AppHomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "colors.background" },
+  container: { flex: 1, backgroundColor: colors.background },
   bottomNavigation: {
     position: "absolute",
     left: 14,
@@ -88,10 +88,10 @@ const styles = StyleSheet.create({
     justifyContent: "space-around",
     paddingHorizontal: 8,
     borderRadius: 24,
-    backgroundColor: "colors.surface",
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "colors.border",
-    shadowColor: "colors.text",
+    borderColor: colors.border,
+    shadowColor: colors.text,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.10,
     shadowRadius: 18,
@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
     borderRadius: 17,
     gap: 3,
   },
-  navItemActive: { backgroundColor: "colors.primarySoft" },
+  navItemActive: { backgroundColor: colors.primarySoft },
   navIconWrap: { position: "relative" },
   messageBadge: {
     position: "absolute",
@@ -117,11 +117,11 @@ const styles = StyleSheet.create({
     borderRadius: 9,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "colors.danger",
+    backgroundColor: colors.danger,
     borderWidth: 2,
-    borderColor: "colors.surface",
+    borderColor: colors.surface,
   },
-  messageBadgeText: { color: "colors.surface", fontSize: 8, fontWeight: "900" },
-  navLabel: { fontSize: 10, fontWeight: "700", color: "colors.textSecondary" },
-  navLabelActive: { color: "colors.primary" },
+  messageBadgeText: { color: colors.surface, fontSize: 8, fontWeight: "900" },
+  navLabel: { fontSize: 10, fontWeight: "700", color: colors.textSecondary },
+  navLabelActive: { color: colors.primary },
 });
