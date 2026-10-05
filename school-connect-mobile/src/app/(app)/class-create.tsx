@@ -2,7 +2,7 @@ import { useState } from "react";
 import { router } from "expo-router";
 import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { createSchoolClass } from "../../services/school-admin/school-admin.service";
-import { colors } from "../../../theme";
+import { colors } from "../../theme";
 
 export default function ClassCreateScreen(){
  const [name,setName]=useState(""); const [level,setLevel]=useState(""); const [saving,setSaving]=useState(false);
