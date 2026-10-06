@@ -25,6 +25,7 @@ const invoiceRoutes: FastifyPluginAsync = async (fastify) => {
 
       const query = z
         .object({
+          id: z.string().min(1).optional(),
           studentId: z.string().min(1).optional(),
           status: z
             .enum([
