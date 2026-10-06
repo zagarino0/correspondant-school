@@ -193,7 +193,7 @@ export async function allocatePayment(
           });
 
           if (!invoice) throw new Error("INVOICE_NOT_FOUND");
-          if (invoice.status === "CANCELLED") {
+          if (!["ISSUED", "PARTIALLY_PAID", "OVERDUE"].includes(invoice.status)) {
             throw new Error("INVOICE_NOT_ALLOCATABLE");
           }
 
