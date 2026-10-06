@@ -223,6 +223,11 @@ const staffPermissions: Record<StaffFunction, readonly Permission[]> = {
     "payment.read",
     "payment.create",
     "payment.update",
+    "invoice.read",
+    "invoice.create",
+    "invoice.update",
+    "payment-allocation.read",
+    "payment-allocation.create",
 
     // Demandes internes
     "ticket.read",
