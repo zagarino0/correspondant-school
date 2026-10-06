@@ -44,6 +44,14 @@ export function AccountantDashboard({
       title: "Finance",
       cards: [
         {
+          id: "invoices",
+          title: "Factures",
+          description:
+            "Consulter les factures, les montants déjà payés et les soldes restant dus.",
+          permission: "invoice.read",
+          onPress: () => router.push("/(app)/finance-invoices"),
+        },
+        {
           id: "payments",
           title: "Paiements",
           description:
