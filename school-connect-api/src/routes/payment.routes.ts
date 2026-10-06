@@ -2,7 +2,6 @@ import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { authenticate } from "../middleware/authenticate.js";
 import { authorize } from "../middleware/authorize.js";
-import { z } from "zod";
 import { allocatePayment, serializeMoney } from "../services/financial.service.js";
 
 const paymentRoutes: FastifyPluginAsync = async (fastify) => {
