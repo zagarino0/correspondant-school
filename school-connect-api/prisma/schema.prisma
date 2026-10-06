@@ -115,6 +115,7 @@ model AcademicYear {
   schedules     Schedule[]
   classes       SchoolClass[]
   enrollments   StudentEnrollment[]
+  invoices      Invoice[]
 
   @@unique([schoolId, name])
   @@index([schoolId])
