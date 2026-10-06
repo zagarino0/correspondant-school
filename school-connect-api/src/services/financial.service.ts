@@ -95,6 +95,7 @@ export async function getInvoices(
   prisma: any,
   input: {
     schoolId: string;
+    id?: string;
     studentId?: string;
     status?: string;
     take?: number;
@@ -103,6 +104,7 @@ export async function getInvoices(
   const invoices = await prisma.invoice.findMany({
     where: {
       schoolId: input.schoolId,
+      ...(input.id ? { id: input.id } : {}),
       ...(input.studentId ? { studentId: input.studentId } : {}),
       ...(input.status ? { status: input.status } : {}),
     },
