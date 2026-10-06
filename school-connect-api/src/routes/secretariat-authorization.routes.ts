@@ -70,7 +70,7 @@ const secretariatAuthorizationRoutes: FastifyPluginAsync = async (fastify) => {
           studentId: parsed.data.studentId,
           parentId: parsed.data.parentId,
           type: parsed.data.type,
-          reason: parsed.data.reason,
+          reason: parsed.data.reason ?? null,
           status: "PENDING",
         },
         select: {
