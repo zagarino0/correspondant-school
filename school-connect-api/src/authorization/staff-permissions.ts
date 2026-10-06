@@ -196,15 +196,35 @@ const staffPermissions: Record<StaffFunction, readonly Permission[]> = {
     // La création/modification des comptes reste réservée à l'administration.
   ],
 
+  /*
+   * COMPTABILITE / ECONOME
+   *
+   * Gestion financière de l'établissement :
+   * - consultation du contexte élève nécessaire à l'encaissement
+   * - consultation des documents utiles au traitement financier
+   * - enregistrement et mise à jour des paiements
+   * - suivi des demandes internes liées à l'activité financière
+   *
+   * Le comptable n'a pas de responsabilité sur les dossiers scolaires,
+   * les absences, les emplois du temps, les autorisations parentales,
+   * les annonces ou la gestion des comptes utilisateurs.
+   *
+   * Les permissions financières plus avancées (facturation, caisse,
+   * dépenses, rapprochement, clôture) ne sont pas exposées ici tant
+   * que les ressources/API correspondantes ne sont pas présentes dans
+   * le catalogue central des permissions.
+   */
   COMPTABILITE: [
+    // Contexte nécessaire à l'activité financière
     "student.read",
-
     "document.read",
 
+    // Cycle de paiement actuellement supporté par l'API
     "payment.read",
     "payment.create",
     "payment.update",
 
+    // Demandes internes
     "ticket.read",
     "ticket.create",
     "ticket.update",
