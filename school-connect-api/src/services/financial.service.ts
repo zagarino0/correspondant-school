@@ -79,6 +79,7 @@ export async function createInvoice(
         issueDate: input.issueDate ?? new Date(),
         dueDate: input.dueDate,
         currency: input.currency ?? "MGA",
+        status: "ISSUED",
         notes: input.notes?.trim() || undefined,
         totalAmount,
         items: { create: items },
