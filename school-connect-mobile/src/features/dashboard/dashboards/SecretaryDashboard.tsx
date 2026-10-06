@@ -48,7 +48,7 @@ export function SecretaryDashboard({
           id: "students",
           title: "Élèves",
           description:
-            "Rechercher, consulter et gérer les informations administratives des élèves.",
+            "Rechercher, consulter et mettre à jour les informations administratives des élèves.",
           permission: "student.read",
           onPress: () => router.push("/(app)/students"),
         },
@@ -64,7 +64,7 @@ export function SecretaryDashboard({
           id: "personnel",
           title: "Personnel",
           description:
-            "Consulter l'annuaire du personnel de l'établissement.",
+            "Consulter l'annuaire du personnel de l'établissement, sans gérer les comptes.",
           permission: "user.read",
           onPress: () => router.push("/(app)/personnel"),
         },
@@ -140,7 +140,7 @@ export function SecretaryDashboard({
           id: "payments",
           title: "Paiements",
           description:
-            "Consulter et enregistrer les paiements autorisés au Secrétariat.",
+            "Consulter et enregistrer les paiements autorisés au Secrétariat, sans annulation ni modification.",
           permission: "payment.read",
           onPress: () => router.push("/(app)/secretariat-payments"),
         },
