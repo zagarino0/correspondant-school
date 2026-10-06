@@ -192,9 +192,8 @@ const staffPermissions: Record<StaffFunction, readonly Permission[]> = {
     "ticket.create",
     "ticket.update",
 
-    // Comptes utilisateurs administratifs : périmètre à contrôler par les routes
-    "user.create",
-    "user.update",
+    // Annuaire du personnel : consultation uniquement.
+    // La création/modification des comptes reste réservée à l'administration.
   ],
 
   COMPTABILITE: [
