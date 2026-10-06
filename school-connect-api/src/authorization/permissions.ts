@@ -84,6 +84,11 @@ export const permissions = [
   "payment.read",
   "payment.create",
   "payment.update",
+  "invoice.read",
+  "invoice.create",
+  "invoice.update",
+  "payment-allocation.read",
+  "payment-allocation.create",
 
   "ticket.read",
   "ticket.create",
