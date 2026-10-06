@@ -42,6 +42,7 @@ function statusStyle(status: InvoiceStatus) {
 export default function FinanceInvoicesScreen() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
+  const permissions = user?.permissions ?? [];
   const [invoices, setInvoices] = useState<FinancialInvoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -61,7 +62,7 @@ export default function FinanceInvoicesScreen() {
     void load();
   }, [load]);
 
-  if (!user?.permissions.includes("invoice.read")) {
+  if (!permissions.includes("invoice.read")) {
     return (
       <View style={styles.center}>
         <Text style={styles.title}>Accès non autorisé</Text>
