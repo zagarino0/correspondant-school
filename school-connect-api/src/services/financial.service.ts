@@ -124,6 +124,7 @@ export async function getInvoices(
         select: {
           id: true,
           paymentId: true,
+          invoiceId: true,
           amount: true,
           createdAt: true,
         },
