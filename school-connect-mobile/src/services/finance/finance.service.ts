@@ -22,10 +22,10 @@ export async function getFinancialInvoice(
 ): Promise<FinancialInvoice> {
   const response = await apiClient.get<{ invoices: FinancialInvoice[] }>(
     "/api/v1/invoices",
-    { params: { take: 100 } },
+    { params: { id: invoiceId, take: 1 } },
   );
 
-  const invoice = response.data.invoices.find((item) => item.id === invoiceId);
+  const invoice = response.data.invoices[0];
   if (!invoice) {
     throw new Error("INVOICE_NOT_FOUND");
   }
