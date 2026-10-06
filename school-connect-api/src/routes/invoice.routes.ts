@@ -53,7 +53,10 @@ const invoiceRoutes: FastifyPluginAsync = async (fastify) => {
 
       const invoices = await getInvoices(fastify.prisma, {
         schoolId: schoolId ?? "",
-        ...query.data,
+        ...(query.data.id ? { id: query.data.id } : {}),
+        ...(query.data.studentId ? { studentId: query.data.studentId } : {}),
+        ...(query.data.status ? { status: query.data.status } : {}),
+        take: query.data.take,
       });
 
       return reply.send({
@@ -137,7 +140,12 @@ const invoiceRoutes: FastifyPluginAsync = async (fastify) => {
             : undefined,
           currency: parsed.data.currency,
           notes: parsed.data.notes,
-          items: parsed.data.items,
+          items: parsed.data.items.map((item) => ({
+            label: item.label,
+            ...(item.category ? { category: item.category } : {}),
+            quantity: item.quantity,
+            unitAmount: item.unitAmount,
+          })),
         });
 
         return reply.status(201).send({
