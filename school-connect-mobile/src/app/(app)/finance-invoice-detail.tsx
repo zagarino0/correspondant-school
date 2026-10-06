@@ -31,6 +31,7 @@ export default function FinanceInvoiceDetailScreen() {
   const router = useRouter();
   const { invoiceId } = useLocalSearchParams<{ invoiceId?: string }>();
   const user = useAuthStore((state) => state.user);
+  const permissions = user?.permissions ?? [];
 
   const [invoice, setInvoice] = useState<FinancialInvoice | null>(null);
   const [payments, setPayments] = useState<FinancialPayment[]>([]);
@@ -118,7 +119,7 @@ export default function FinanceInvoiceDetailScreen() {
     }
   };
 
-  if (!user?.permissions.includes("invoice.read")) {
+  if (!permissions.includes("invoice.read")) {
     return (
       <View style={styles.center}>
         <Text style={styles.title}>Accès non autorisé</Text>
@@ -214,7 +215,7 @@ export default function FinanceInvoiceDetailScreen() {
         )}
       </View>
 
-      {user.permissions.includes("payment-allocation.create") && remaining > 0 ? (
+      {permissions.includes("payment-allocation.create") && remaining > 0 ? (
         <View style={styles.card}>
           <Pressable style={styles.primaryButton} onPress={openAllocation}>
             <Text style={styles.primaryButtonText}>Affecter un paiement</Text>
