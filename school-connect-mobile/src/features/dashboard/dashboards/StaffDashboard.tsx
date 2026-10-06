@@ -2,6 +2,8 @@ import { RoleDashboard } from "./RoleDashboard";
 import { MedicalAccessCard } from "../components/MedicalAccessCard";
 import { NurseDashboard } from "./NurseDashboard";
 import { SurveillantDashboard } from "./SurveillantDashboard";
+import { AccountantDashboard } from "./AccountantDashboard";
+import { SecretaryDashboard } from "./SecretaryDashboard";
 import type { StaffFunction } from "../../../types/auth";
 
 type StaffDashboardProps = {
@@ -19,6 +21,14 @@ export function StaffDashboard({
 
   if (staffFunction === "SURVEILLANT") {
     return <SurveillantDashboard firstName={firstName} />;
+  }
+
+  if (staffFunction === "SECRETARIAT") {
+    return <SecretaryDashboard firstName={firstName} />;
+  }
+
+  if (staffFunction === "COMPTABILITE") {
+    return <AccountantDashboard firstName={firstName} />;
   }
 
   return (
