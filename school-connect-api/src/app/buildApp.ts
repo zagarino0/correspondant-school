@@ -35,6 +35,7 @@ import { disciplineVisibilityRoutes } from "../routes/discipline-visibility.rout
 import documentRoutes from "../routes/document.routes.js";
 import meetingRoutes from "../routes/meeting.routes.js";
 import paymentRoutes from "../routes/payment.routes.js";
+import invoiceRoutes from "../routes/invoice.routes.js";
 import ticketRoutes from "../routes/ticket.routes.js";
 import secretariatAuthorizationRoutes from "../routes/secretariat-authorization.routes.js";
 import { startSmsWorker } from "../services/sms.service.js";
@@ -150,6 +151,9 @@ export async function buildApp() {
     prefix: "/api/v1",
   });
   await app.register(paymentRoutes, {
+    prefix: "/api/v1",
+  });
+  await app.register(invoiceRoutes, {
     prefix: "/api/v1",
   });
   await app.register(ticketRoutes, {
